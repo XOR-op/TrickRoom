@@ -1,4 +1,4 @@
-package Parser;// Generated from MxStar.g4 by ANTLR 4.9
+package parser;// Generated from MxStar.g4 by ANTLR 4.9
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
