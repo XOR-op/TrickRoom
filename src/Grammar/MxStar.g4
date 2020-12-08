@@ -44,20 +44,19 @@ statement:
 	| continueStatement
 	| breakStatement
 	| returnStatement
-	| simpleStatement
-	;
+	| simpleStatement;
 
 ifStatement:
-	IF_KW L_PARENTNESS expression R_PARENTNESS trueStat=statement (
-		ELSE_KW falseStat=statement
+	IF_KW L_PARENTNESS expression R_PARENTNESS trueStat = statement (
+		ELSE_KW falseStat = statement
 	)?;
 
 whileStatement:
 	WHILE_KW L_PARENTNESS expression R_PARENTNESS statement;
 
 forStatement:
-	FOR_KW L_PARENTNESS initExp=exprOrDecl? SEMICOLON condExp=expression? SEMICOLON updExp=expression? R_PARENTNESS
-		statement;
+	FOR_KW L_PARENTNESS initExp = exprOrDecl? SEMICOLON condExp = expression? SEMICOLON updExp =
+		expression? R_PARENTNESS statement;
 
 continueStatement: CONTINUE_KW SEMICOLON;
 
@@ -77,43 +76,38 @@ atomExp:
 	| L_PARENTNESS expression R_PARENTNESS;
 
 expression:
-	atomExp
-	| funcCall
-	| expression indexAccess
-	| expression memberAccess
-	| newExpression
-	| expression suffix = (SELF_PLUS | SELF_MINUS)
-	| <assoc = right> prefix = unaryOp expression
-	| expression multiplicativeOp expression
-	| expression additiveOp expression
-	| expression relationalCmpOp expression
-	| expression equalityCmpOp expression
-	| expression shiftOp expression
-	| expression AND_ARI expression
-	| expression XOR_ARI expression
-	| expression OR_ARI expression
-	| expression AND_LOGIC expression
-	| expression OR_LOGIC expression
-	| <assoc = right> expression ASSIGNMENT expression;
+	atomExp												# atomExpr
+	| funcCall											# funcExpr
+	| expression L_BRACKET expression R_BRACKET			# indexExpr
+	| expression DOT expression							# memberExpr
+	| NEW_KW (arrayLiteral | funcCall | Identifier)		# newExpr
+	| expression suffix = (SELF_PLUS | SELF_MINUS)		# suffixExpr
+	| <assoc = right> prefix = unaryOp expression		# prefixExpr
+	| expression multiplicativeOp expression			# binaryExpr
+	| expression additiveOp expression					# binaryExpr
+	| expression relationalCmpOp expression				# binaryExpr
+	| expression equalityCmpOp expression				# binaryExpr
+	| expression shiftOp expression						# binaryExpr
+	| expression AND_ARI expression						# binaryExpr
+	| expression XOR_ARI expression						# binaryExpr
+	| expression OR_ARI expression						# binaryExpr
+	| expression AND_LOGIC expression					# binaryExpr
+	| expression OR_LOGIC expression					# binaryExpr
+	| <assoc = right> expression ASSIGNMENT expression	# assignExpr;
 
 // Basic Compnent
 funcCall: Identifier L_PARENTNESS expressionList? R_PARENTNESS;
-indexAccess: L_BRACKET expression R_BRACKET;
-memberAccess: DOT expression;
-exprOrDecl:expression|declExpr;
-declExpr:varType varDeclaration (COMMA varDeclaration)*;
+exprOrDecl: expression | declExpr;
+declExpr: varType varDeclaration (COMMA varDeclaration)*;
 
-newExpression:
-	NEW_KW (arrayLiteral|funcCall|Identifier);
-arrayLiteral:varType(L_BRACKET expression? R_BRACKET)+;
+arrayLiteral:
+	(builtinType | Identifier) (L_BRACKET expression R_BRACKET)+ (
+		L_BRACKET R_BRACKET
+	)*;
 varDeclaration: Identifier (ASSIGNMENT expression)?;
-varType:
-	varType L_BRACKET R_BRACKET
-	| INT_KW
-	| STRING_KW
-	| BOOL_KW
-	| Identifier;
+varType: varType (L_BRACKET R_BRACKET)+ | builtinType | Identifier;
 returnType: VOID_KW | varType;
+builtinType: INT_KW | STRING_KW | BOOL_KW;
 
 // Token
 Constant:
@@ -125,7 +119,7 @@ Constant:
 	| THIS_KW;
 DecInteger: [1-9][0-9]* | '0';
 String: '"' (ESCAPE_DB_QUOTATION | ESCAPE_BACKSLASH | .)*? '"';
-LineComment: '//' .*? '\n' -> skip;
+LineComment: '//' (~'\n')* -> skip;
 BlockComment: '/*' .*? '*/' -> skip;
 WhiteSpace: (SPACE | LINE_BREAK | TAB)+ -> skip;
 
@@ -139,7 +133,7 @@ unaryOp:
 	| NOT_ARI;
 multiplicativeOp: MUL | DIV | MOD;
 additiveOp: PLUS | MINUS;
-shiftOp:LEFT_SHIFT|RIGHT_SHIFT;
+shiftOp: LEFT_SHIFT | RIGHT_SHIFT;
 relationalCmpOp: LESS | LESS_EQ | GREATER | GREATER_EQ;
 equalityCmpOp: EQUAL | NOT_EQ;
 
