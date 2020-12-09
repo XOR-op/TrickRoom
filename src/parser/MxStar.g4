@@ -12,7 +12,6 @@ functionDef:
 functionParamDef: (
 		varType Identifier (COMMA varType Identifier)*
 	)?;
-functionParam: (Identifier (COMMA Identifier)*)?;
 
 // Class
 
@@ -27,7 +26,7 @@ memberDeclaration:
 	varType Identifier (COMMA Identifier)* SEMICOLON;
 
 constructorDefinition:
-	Identifier L_PARENTNESS functionParam R_PARENTNESS suite;
+	Identifier L_PARENTNESS functionParamDef R_PARENTNESS suite;
 // parameter as extension
 
 expressionList: expression (COMMA expression)*;
@@ -72,7 +71,7 @@ declarationStatement:
 // Expression
 atomExp:
 	Identifier
-	| Constant
+	| constant
 	| L_PARENTNESS expression R_PARENTNESS;
 
 expression:
@@ -110,13 +109,6 @@ returnType: VOID_KW | varType;
 builtinType: INT_KW | STRING_KW | BOOL_KW;
 
 // Token
-Constant:
-	DecInteger
-	| String
-	| NULL_KW
-	| TRUE_KW
-	| FALSE_KW
-	| THIS_KW;
 DecInteger: [1-9][0-9]* | '0';
 String: '"' (ESCAPE_DB_QUOTATION | ESCAPE_BACKSLASH | .)*? '"';
 LineComment: '//' (~'\n')* -> skip;
@@ -124,6 +116,13 @@ BlockComment: '/*' .*? '*/' -> skip;
 WhiteSpace: (SPACE | LINE_BREAK | TAB)+ -> skip;
 
 // Associativity
+constant:
+	DecInteger
+	| String
+	| NULL_KW
+	| TRUE_KW
+	| FALSE_KW
+	| THIS_KW;
 unaryOp:
 	SELF_PLUS
 	| SELF_MINUS

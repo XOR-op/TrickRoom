@@ -6,8 +6,12 @@ public class Identifier {
     public Type type;
     public String id;
     public Scope belonging;
-    public Identifier(String id,Scope belonging){
+    public Identifier(Type t,String id){
         this.id=id;
-        this.belonging=belonging;
+        this.type=t;
     }
+    public Identifier(String name){
+        this(null,name);
+    }
+
 }

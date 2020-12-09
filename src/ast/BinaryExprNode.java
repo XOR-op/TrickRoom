@@ -2,5 +2,6 @@ package ast;
 
 public class BinaryExprNode extends ExprNode {
     public ExprNode lhs,rhs;
-    public int lexerSign; // signs in lexer
+    public String lexerSign; // signs in lexer
+    public BinaryExprNode(String sign){lexerSign=sign;}
 }
