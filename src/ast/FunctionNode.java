@@ -13,5 +13,6 @@ public class FunctionNode extends ASTNode{
     public SuiteNode suite;
     public FunctionNode(String name){
         this.funcId=new Identifier(Type.Func,name);
+        parameters=new ArrayList<>();
     }
 }

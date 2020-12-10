@@ -17,13 +17,10 @@ functionParamDef: (
 
 classDef:
 	CLASS_KW Identifier L_BRACE (
-		memberDeclaration
+		declarationStatement
 		| functionDef
 		| constructorDefinition
 	)* R_BRACE SEMICOLON;
-
-memberDeclaration:
-	varType Identifier (COMMA Identifier)* SEMICOLON;
 
 constructorDefinition:
 	Identifier L_PARENTNESS functionParamDef R_PARENTNESS suite;

@@ -11,7 +11,7 @@ public class Type {
 
     public String id;
     public int dimension; // array dimension; 0 means scalar
-    private boolean reserved;
+    private final boolean reserved;
 
     private Type(String name, int dimension, boolean reserved) {
         this.id = name;
