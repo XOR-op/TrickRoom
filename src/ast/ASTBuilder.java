@@ -13,7 +13,14 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitCode(MxStarParser.CodeContext ctx) {
-        return null;
+        var rn = new RootNode();
+        for (var sctx : ctx.functionDef())
+            rn.functions.add((FunctionNode) visitFunctionDef(sctx));
+        for (var sctx : ctx.declarationStatement())
+            iterateDeclExpr(sctx.declExpr(), rn.globalVars);
+        for (var sctx : ctx.classDef())
+            rn.classes.add((ClassNode) visitClassDef(sctx));
+        return rn;
     }
 
     @Override
@@ -37,15 +44,15 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitClassDef(MxStarParser.ClassDefContext ctx) {
         ClassNode cn = new ClassNode(ctx.Identifier().getText());
-        for (var sctx : ctx.functionDef()) {
+        for (var sctx : ctx.functionDef())
             cn.methods.add((FunctionNode) visitFunctionDef(sctx));
-        }
-        for (var sctx : ctx.declarationStatement()) {
-            iterateDeclExpr(sctx.declExpr(),cn.members);
-        }
-        for (var sctx : ctx.constructorDefinition()) {
+
+        for (var sctx : ctx.declarationStatement())
+            iterateDeclExpr(sctx.declExpr(), cn.members);
+
+        for (var sctx : ctx.constructorDefinition())
             cn.constructor.add((FunctionNode) visitConstructorDefinition(sctx));
-        }
+
         return cn;
     }
 
@@ -86,10 +93,10 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitIfStatement(MxStarParser.IfStatementContext ctx) {
-        var cn=new ConditionalNode();
-        cn.condExpr= (ExprNode) visit(ctx.expression());
-        cn.trueStat= (StmtNode) visitStatement(ctx.trueStat);
-        if(ctx.falseStat!=null)cn.falseStat= (StmtNode) visitStatement(ctx.falseStat);
+        var cn = new ConditionalNode();
+        cn.condExpr = (ExprNode) visit(ctx.expression());
+        cn.trueStat = (StmtNode) visitStatement(ctx.trueStat);
+        if (ctx.falseStat != null) cn.falseStat = (StmtNode) visitStatement(ctx.falseStat);
         return cn;
     }
 
@@ -132,12 +139,14 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitSimpleStatement(MxStarParser.SimpleStatementContext ctx) {
-        return ctx.expression() == null ? null : visit(ctx.expression());
+        return ctx.expression() == null ? null : new ExprStmtNode((ExprNode) visit(ctx.expression()));
     }
 
     @Override
     public ASTNode visitDeclarationStatement(MxStarParser.DeclarationStatementContext ctx) {
-        return null;
+        var n=new DeclarationBlockNode();
+        iterateDeclExpr(ctx.declExpr(),n.decls);
+        return n;
     }
 
     @Override
@@ -153,13 +162,20 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitNewExpr(MxStarParser.NewExprContext ctx) {
-        var nn=new NewExprNode(ctx.arrayLiteral()==null);
-        if(nn)
+        var nn = new NewExprNode(ctx.arrayLiteral() == null);
+        if (nn.isFuncCall) {
+            nn.classNew = ctx.Identifier() != null ?
+                    new FuncCallNode(ctx.Identifier().getText()) :
+                    (FuncCallNode) visitFuncCall(ctx.funcCall());
+        } else {
+            nn.arrNew = (ArrayLiteralNode) visitArrayLiteral(ctx.arrayLiteral());
+        }
+        return nn;
     }
 
     @Override
     public ASTNode visitIndexExpr(MxStarParser.IndexExprContext ctx) {
-        return null;
+        return new BinaryExprNode("[", (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
     }
 
     @Override
@@ -169,15 +185,12 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitFuncExpr(MxStarParser.FuncExprContext ctx) {
-        return null;
+        return visitFuncCall(ctx.funcCall());
     }
 
     @Override
     public ASTNode visitMemberExpr(MxStarParser.MemberExprContext ctx) {
-        var bn=new BinaryExprNode(".");
-        bn.lhs= (ExprNode) visit(ctx.expression(0));
-        bn.rhs= (ExprNode) visit(ctx.expression(1));
-        return bn;
+        return new BinaryExprNode(".", (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
     }
 
     @Override
@@ -193,64 +206,73 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitBinaryExpr(MxStarParser.BinaryExprContext ctx) {
         String sign = null;
-        if (ctx.multiplicativeOp() != null) {
+        if (ctx.multiplicativeOp() != null)
             sign = ctx.multiplicativeOp().getText();
-        } else if (ctx.additiveOp() != null) {
+        else if (ctx.additiveOp() != null)
             sign = ctx.additiveOp().getText();
-        } else if (ctx.relationalCmpOp() != null) {
+        else if (ctx.relationalCmpOp() != null)
             sign = ctx.relationalCmpOp().getText();
-        } else if (ctx.equalityCmpOp() != null) {
+        else if (ctx.equalityCmpOp() != null)
             sign = ctx.equalityCmpOp().getText();
-        } else if (ctx.shiftOp() != null) {
+        else if (ctx.shiftOp() != null)
             sign = ctx.shiftOp().getText();
-        } else if (ctx.AND_ARI() != null) {
+        else if (ctx.AND_ARI() != null)
             sign = ctx.AND_ARI().getText();
-        } else if (ctx.XOR_ARI() != null) {
+        else if (ctx.XOR_ARI() != null)
             sign = ctx.XOR_ARI().getText();
-        } else if (ctx.OR_ARI() != null) {
+        else if (ctx.OR_ARI() != null)
             sign = ctx.OR_ARI().getText();
-        } else if (ctx.AND_LOGIC() != null) {
+        else if (ctx.AND_LOGIC() != null)
             sign = ctx.AND_LOGIC().getText();
-        } else if (ctx.OR_LOGIC() != null) {
+        else if (ctx.OR_LOGIC() != null)
             sign = ctx.OR_LOGIC().getText();
-        }
-        BinaryExprNode re = new BinaryExprNode(sign);
-        re.lhs = (ExprNode) visit(ctx.expression(0));
-        re.rhs = (ExprNode) visit(ctx.expression(1));
-        return re;
+        return new BinaryExprNode(sign, (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
+
     }
 
     @Override
     public ASTNode visitAssignExpr(MxStarParser.AssignExprContext ctx) {
-        var bn=new BinaryExprNode("=");
-        bn.lhs= (ExprNode) visit(ctx.expression(0));
-        bn.rhs= (ExprNode) visit(ctx.expression(1));
-        return bn;
+        return new BinaryExprNode("=", (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
     }
 
     @Override
     public ASTNode visitFuncCall(MxStarParser.FuncCallContext ctx) {
-        return null;
+        var fcn = new FuncCallNode(ctx.Identifier().getText());
+        if (ctx.expressionList() != null)
+            for (var exp : ctx.expressionList().expression())
+                fcn.arguments.add((ExprNode) visit(exp));
+        return fcn;
     }
 
-    private void iterateDeclExpr(MxStarParser.DeclExprContext ctx,ArrayList<DeclarationNode> list){
-        Type type=iterateVarType(ctx.varType());
-        for(var declCtx:ctx.varDeclaration()){
-            var entry=(DeclarationNode)visitVarDeclaration(declCtx);
-            entry.id.type=type;
+    private void iterateDeclExpr(MxStarParser.DeclExprContext ctx, ArrayList<DeclarationNode> list) {
+        Type type = iterateVarType(ctx.varType());
+        for (var declCtx : ctx.varDeclaration()) {
+            var entry = (DeclarationNode) visitVarDeclaration(declCtx);
+            entry.id.type = type;
             list.add(entry);
         }
     }
 
     @Override
     public ASTNode visitArrayLiteral(MxStarParser.ArrayLiteralContext ctx) {
-        return null;
+        Type type;
+        if (ctx.builtinType() != null) {
+            var ref = ctx.builtinType();
+            if (ref.STRING_KW() != null) type = Type.String;
+            else if (ref.INT_KW() != null) type = Type.Int;
+            else type = Type.Bool;
+        } else type = Type.Class;
+        var aln = new ArrayLiteralNode(type, ctx.L_BRACKET().size());
+        if (ctx.expression() != null)
+            for (var exp : ctx.expression())
+                aln.dimArr.add((ExprNode) visit(exp));
+        return aln;
     }
 
     @Override
     public ASTNode visitVarDeclaration(MxStarParser.VarDeclarationContext ctx) {
-        var dn=new DeclarationNode(ctx.Identifier().getText());
-        if(ctx.expression()!=null)dn.expr= (ExprNode) visit(ctx.expression());
+        var dn = new DeclarationNode(ctx.Identifier().getText());
+        if (ctx.expression() != null) dn.expr = (ExprNode) visit(ctx.expression());
         return dn;
     }
 
@@ -285,10 +307,12 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
      * NOT USED
      *
      * */
+
     @Override
     public ASTNode visitExprOrDecl(MxStarParser.ExprOrDeclContext ctx) {
         throw new UnUsedVisitorException();
     }
+
     @Override
     public ASTNode visitDeclExpr(MxStarParser.DeclExprContext ctx) {
         throw new UnUsedVisitorException();

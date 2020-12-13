@@ -6,7 +6,7 @@ public abstract class Scope {
     abstract public boolean contains(Identifier id);
     abstract public Scope getParent();
     public Identifier attach(String name){
-        return new Identifier(name,this);
+        return null;
     }
     public Scope(){
 

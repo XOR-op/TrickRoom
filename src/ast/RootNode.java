@@ -1,11 +1,15 @@
 package ast;
 
-import compnent.scope.Scope;
+import java.util.ArrayList;
 
 class RootNode extends ASTNode {
 
-    @Override
-    Scope getBelonging() {
-        return null;
+    public ArrayList<DeclarationNode> globalVars;
+    public ArrayList<FunctionNode> functions;
+    public ArrayList<ClassNode> classes;
+    public RootNode(){
+        globalVars =new ArrayList<>();
+        functions =new ArrayList<>();
+        classes=new ArrayList<>();
     }
 }

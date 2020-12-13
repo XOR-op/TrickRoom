@@ -1,6 +1,7 @@
 # TrickRoom
+<img src="https://cdn.bulbagarden.net/upload/thumb/8/87/Trick_Room_VIII.png/800px-Trick_Room_VIII.png" alt="Trick Room" style="width:300px "/>
+
 Compiler for Mx* language.
-<img src="https://cdn.bulbagarden.net/upload/thumb/8/87/Trick_Room_VIII.png/800px-Trick_Room_VIII.png"/>
 ## Mx* language
 Mx*[^1] is a programming language designed for teaching purpose, 
 which resembles a mixture of Java and Cpp.

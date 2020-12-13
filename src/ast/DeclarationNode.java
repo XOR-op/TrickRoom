@@ -2,7 +2,7 @@ package ast;
 
 import compnent.basic.Identifier;
 
-public class DeclarationNode extends ExprNode{
+public class DeclarationNode extends StmtNode{
     public Identifier id;
     public ExprNode expr;
     public DeclarationNode(String id){

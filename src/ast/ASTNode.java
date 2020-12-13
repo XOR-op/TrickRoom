@@ -2,6 +2,6 @@ package ast;
 
 import compnent.scope.Scope;
 
-abstract class ASTNode {
+abstract public class ASTNode {
 }
 

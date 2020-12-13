@@ -4,4 +4,7 @@ import java.util.ArrayList;
 
 public class SuiteNode extends StmtNode {
     public ArrayList<StmtNode> statements;
+    public SuiteNode(){
+        statements=new ArrayList<>();
+    }
 }
