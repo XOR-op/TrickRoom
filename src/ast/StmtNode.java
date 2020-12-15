@@ -1,4 +1,4 @@
 package ast;
 
-public class StmtNode extends ASTNode{
+public interface StmtNode extends ASTNode{
 }

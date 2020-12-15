@@ -1,6 +1,6 @@
-package ast;
+package semantic;
 
-import compnent.basic.Identifier;
+import ast.*;
 import compnent.basic.Type;
 import exception.semantic.UnUsedVisitorException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
@@ -33,10 +33,10 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     }
 
 
-    private ArrayList<Identifier> iterateFunctionParamDef(MxStarParser.FunctionParamDefContext ctx) {
-        var re = new ArrayList<Identifier>();
+    private ArrayList<DeclarationNode> iterateFunctionParamDef(MxStarParser.FunctionParamDefContext ctx) {
+        var re = new ArrayList<DeclarationNode>();
         for (int i = 0; i < ctx.Identifier().size(); ++i) {
-            re.add(new Identifier(iterateVarType(ctx.varType(i)), ctx.Identifier(i).getText()));
+            re.add(new DeclarationNode(iterateVarType(ctx.varType(i)), ctx.Identifier(i).getText()));
         }
         return re;
     }
@@ -144,8 +144,8 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitDeclarationStatement(MxStarParser.DeclarationStatementContext ctx) {
-        var n=new DeclarationBlockNode();
-        iterateDeclExpr(ctx.declExpr(),n.decls);
+        var n = new DeclarationBlockNode();
+        iterateDeclExpr(ctx.declExpr(), n.decls);
         return n;
     }
 
@@ -248,7 +248,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         Type type = iterateVarType(ctx.varType());
         for (var declCtx : ctx.varDeclaration()) {
             var entry = (DeclarationNode) visitVarDeclaration(declCtx);
-            entry.id.type = type;
+            entry.type = type;
             list.add(entry);
         }
     }
@@ -271,7 +271,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitVarDeclaration(MxStarParser.VarDeclarationContext ctx) {
-        var dn = new DeclarationNode(ctx.Identifier().getText());
+        var dn = new DeclarationNode(null, ctx.Identifier().getText());
         if (ctx.expression() != null) dn.expr = (ExprNode) visit(ctx.expression());
         return dn;
     }

@@ -1,6 +1,8 @@
 package ast;
 
-public class NewExprNode extends ExprNode{
+import semantic.ASTVisitor;
+
+public class NewExprNode implements ExprNode {
     public FuncCallNode classNew;
     public ArrayLiteralNode arrNew;
     public boolean isFuncCall;
@@ -8,5 +10,9 @@ public class NewExprNode extends ExprNode{
         this.isFuncCall=isCall;
         if(isCall)arrNew=null;
         else classNew=null;
+    }
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
     }
 }

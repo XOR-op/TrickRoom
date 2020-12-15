@@ -1,7 +1,9 @@
 package ast;
 
-import compnent.scope.Scope;
 
-abstract public class ASTNode {
+import semantic.ASTVisitor;
+
+ public interface ASTNode {
+    void accept(ASTVisitor visitor);
 }
 

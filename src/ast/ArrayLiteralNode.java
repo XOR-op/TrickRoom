@@ -1,10 +1,11 @@
 package ast;
 
 import compnent.basic.Type;
+import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class ArrayLiteralNode extends ASTNode{
+public class ArrayLiteralNode implements ExprNode {
     public Type type;
     public int dimension;
     public ArrayList<ExprNode> dimArr;
@@ -12,5 +13,9 @@ public class ArrayLiteralNode extends ASTNode{
         type=t;
         dimension=dim;
         dimArr=new ArrayList<>();
+    }
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
     }
 }

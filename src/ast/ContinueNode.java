@@ -1,4 +1,10 @@
 package ast;
 
-public class ContinueNode extends StmtNode{
+import semantic.ASTVisitor;
+
+public class ContinueNode implements StmtNode {
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
+    }
 }

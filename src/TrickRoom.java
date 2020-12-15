@@ -1,4 +1,4 @@
-import ast.ASTBuilder;
+import semantic.ASTBuilder;
 import ast.ASTNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;

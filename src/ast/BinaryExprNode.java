@@ -1,6 +1,8 @@
 package ast;
 
-public class BinaryExprNode extends ExprNode {
+import semantic.ASTVisitor;
+
+public class BinaryExprNode implements ExprNode {
     public ExprNode lhs,rhs;
     public String lexerSign; // signs in lexer
     public BinaryExprNode(String sign){lexerSign=sign;}
@@ -10,4 +12,8 @@ public class BinaryExprNode extends ExprNode {
         rhs=r;
     }
 
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
+    }
 }

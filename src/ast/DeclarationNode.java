@@ -1,12 +1,18 @@
 package ast;
 
-import compnent.basic.Identifier;
+import compnent.basic.Type;
+import semantic.ASTVisitor;
 
-public class DeclarationNode extends StmtNode{
-    public Identifier id;
+public class DeclarationNode implements StmtNode {
+    public Type type;
+    public String id;
     public ExprNode expr;
-    public DeclarationNode(String id){
-        this.id=new Identifier(id);
-        expr=null;
+    public DeclarationNode(Type tp,String id){
+        this.type=tp;
+        this.id=id;
+    }
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
     }
 }

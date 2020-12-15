@@ -1,6 +1,8 @@
 package ast;
 
-public class UnaryExprNode extends ExprNode{
+import semantic.ASTVisitor;
+
+public class UnaryExprNode implements ExprNode {
     public ExprNode expr;
     public String lexerSign;
     public boolean isPrefix;
@@ -8,6 +10,10 @@ public class UnaryExprNode extends ExprNode{
         this.lexerSign=lexerSign;
         this.isPrefix=isPrefix;
         this.expr=expr;
+    }
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
     }
 
 }

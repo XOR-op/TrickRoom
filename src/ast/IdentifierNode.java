@@ -1,10 +1,14 @@
 package ast;
 
-import compnent.basic.Identifier;
+import semantic.ASTVisitor;
 
-public class IdentifierNode extends ExprNode{
-    public Identifier id;
+public class IdentifierNode implements ExprNode {
+    public String id;
     public IdentifierNode(String name){
-        id=new Identifier(name);
+        id=name;
+    }
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
     }
 }

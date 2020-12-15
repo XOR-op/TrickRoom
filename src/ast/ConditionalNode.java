@@ -1,6 +1,12 @@
 package ast;
 
-public class ConditionalNode extends StmtNode{
+import semantic.ASTVisitor;
+
+public class ConditionalNode implements StmtNode {
     public ExprNode condExpr;
     public StmtNode trueStat,falseStat;
+    @Override
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
+    }
 }

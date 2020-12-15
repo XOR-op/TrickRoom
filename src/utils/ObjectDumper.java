@@ -1,9 +1,7 @@
 package utils;
-import compnent.basic.Identifier;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.List;
 
 public class ObjectDumper {
     private static final String pre="|   ";
@@ -23,8 +21,8 @@ public class ObjectDumper {
                     buffer.append("=");
                     buffer.append(value);
                     System.out.println(buffer.toString());
-                    if(f.getType().equals(ArrayList.class)){
-                        var ls=(ArrayList<Object>)value;
+                    if(value instanceof ArrayList){
+                        @SuppressWarnings("unchecked") var ls=(ArrayList<Object>)value;
                         for(var o:ls){
                             DFS(o,prefix.concat(pre));
                         }
