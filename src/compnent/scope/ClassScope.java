@@ -18,7 +18,7 @@ public class ClassScope extends Scope{
 
     public void registerMethod(Function func) {
         checkFunctionSyntax(func.name);
-        if (methodTable.get(func.name) != null) throw new DuplicateSyntaxException(func.name);
+        if (methodTable.containsKey(func.name) ) throw new DuplicateSyntaxException(func.name);
         methodTable.put(func.name, func);
     }
     @Override

@@ -42,7 +42,7 @@ public class Scope {
 
     public void registerVar(Symbol sym) {
         checkVarSyntax(sym.getName());
-        if (syntaxTable.get(sym.getName()) != null) throw new DuplicateSyntaxException(sym.getName());
+        if (syntaxTable.containsKey(sym.getName()) ) throw new DuplicateSyntaxException(sym.getName());
         sym.setScope(this);
         syntaxTable.put(sym.getName(), sym);
     }

@@ -16,13 +16,13 @@ public class FileScope extends Scope {
     }
 
     public void registerFunction(Function func) {
-        if (functionTable.get(func.name) != null) throw new DuplicateSyntaxException(func.name);
+        if (functionTable.containsKey(func.name)) throw new DuplicateSyntaxException(func.name);
         functionTable.put(func.name, func);
     }
 
     public void registerClass(ClassType cls) {
-        if (classTable.get(cls.name) != null || syntaxTable.get(cls.name) != null ||
-                functionTable.get(cls.name) != null) throw new DuplicateSyntaxException(cls.name);
+        if (classTable.containsKey(cls.name)  || syntaxTable.containsKey(cls.name)  ||
+                functionTable.containsKey(cls.name) ) throw new DuplicateSyntaxException(cls.name);
         classTable.put(cls.name, cls);
     }
 
@@ -35,7 +35,7 @@ public class FileScope extends Scope {
 
     @Override
     protected void checkClassCollision(String id) {
-        if(classTable.get(id)!=null)throw new DuplicateSyntaxException(id);
+        if(classTable.containsKey(id))throw new DuplicateSyntaxException(id);
     }
     @Override
     protected void checkVarSyntax(String id) {
@@ -45,6 +45,6 @@ public class FileScope extends Scope {
     @Override
     protected void checkFunctionSyntax(String id) {
         // method can have the same identifier with static function
-        if(classTable.get(id)!=null)throw new DuplicateSyntaxException(id);
+        if(classTable.containsKey(id))throw new DuplicateSyntaxException(id);
     }
 }

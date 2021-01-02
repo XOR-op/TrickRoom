@@ -1,94 +1,47 @@
 package semantic;
 
 import ast.*;
-import exception.MissingOverrideException;
 
-public class ASTVisitor {
-    public void visit(ASTNode node) {
-        throw new MissingOverrideException();
-    }
+public interface ASTVisitor {
 
-    public void visit(ArrayLiteralNode node) {
-        throw new MissingOverrideException();
-    }
+    void visit(ArrayLiteralNode node);
 
-    public void visit(BinaryExprNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(BinaryExprNode node) ;
 
-    public void visit(BreakNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(BreakNode node) ;
 
-    public void visit(ClassNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ClassNode node) ;
 
-    public void visit(ConditionalNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ConditionalNode node) ;
 
-    public void visit(ContinueNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ContinueNode node) ;
 
-    public void visit(DeclarationBlockNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(DeclarationBlockNode node) ;
 
-    public void visit(DeclarationNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(DeclarationNode node) ;
 
-    public void visit(ExprNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ExprStmtNode node) ;
 
-    public void visit(ExprStmtNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(FuncCallNode node) ;
 
-    public void visit(FuncCallNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(FunctionNode node) ;
 
-    public void visit(FunctionNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(IdentifierNode node) ;
 
-    public void visit(IdentifierNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(LiteralNode node) ;
 
-    public void visit(LiteralNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(LoopNode node) ;
 
-    public void visit(LoopNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(NewExprNode node) ;
 
-    public void visit(NewExprNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ReturnNode node) ;
 
-    public void visit(ReturnNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(RootNode node) ;
 
-    public void visit(RootNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(SuiteNode node) ;
 
-    public void visit(StmtNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(ThisNode node);
 
-    public void visit(SuiteNode node) {
-        throw new MissingOverrideException();
-    }
+     void visit(UnaryExprNode node) ;
 
-    public void visit(UnaryExprNode node) {
-        throw new MissingOverrideException();
-    }
 }

@@ -1,6 +1,7 @@
-import exception.semantic.SemanticException;
-import semantic.ASTBuilder;
-import ast.ASTNode;
+import compnent.scope.*;
+import exception.semantic.*;
+import semantic.*;
+import ast.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
@@ -18,12 +19,14 @@ public class TrickRoom {
             tokenStream.fill();
             var parser=new MxStarParser(tokenStream);
             var builder=new ASTBuilder();
-            ASTNode rootNode=builder.visit(parser.code());
+            RootNode rootNode=(RootNode) builder.visit(parser.code());
+            Scope scope=new ScopeBuilder(rootNode).build();
             ObjectDumper.dump(rootNode);
         }catch (Exception e){
+
             if(e instanceof SemanticException)
                 e.printStackTrace();
-            else throw e;
+            throw e;
         }
     }
 }

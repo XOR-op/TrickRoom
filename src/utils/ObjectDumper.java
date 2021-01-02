@@ -3,6 +3,7 @@ package utils;
 import ast.ASTNode;
 import ast.DeclarationNode;
 import ast.RootNode;
+import compnent.scope.Scope;
 import parser.MxStarParser;
 
 import java.lang.reflect.*;
@@ -48,6 +49,7 @@ public class ObjectDumper {
                         StringBuilder buffer = new StringBuilder();
                         f.setAccessible(true);
                         Object value = f.get(obj);
+                        if(value instanceof Scope&&f.getName().equals("upstream"))continue;
                         //  colorful
                         if (value instanceof ASTNode) buffer.append(ANSI_GREEN);
                         else if (value instanceof compnent.basic.Type) buffer.append(ANSI_YELLOW);

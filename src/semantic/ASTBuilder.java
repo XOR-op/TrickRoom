@@ -14,12 +14,6 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitCode(MxStarParser.CodeContext ctx) {
         var rn = new RootNode();
-        for (var sctx : ctx.functionDef())
-            rn.functions.add((FunctionNode) visitFunctionDef(sctx));
-        for (var sctx : ctx.declarationStatement())
-            iterateDeclExpr(sctx.declExpr(), rn.globalVars);
-        for (var sctx : ctx.classDef())
-            rn.classes.add((ClassNode) visitClassDef(sctx));
         for (var subctx:ctx.children){
             if(subctx instanceof MxStarParser.FunctionDefContext)
                 rn.addFuncNode((FunctionNode) visitFunctionDef((MxStarParser.FunctionDefContext) subctx));
@@ -114,6 +108,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     public ASTNode visitWhileStatement(MxStarParser.WhileStatementContext ctx) {
         LoopNode ln = new LoopNode();
         ln.initExpr = null;
+        ln.initDecl=null;
         ln.condExpr = (ExprNode) visit(ctx.expression());
         ln.updateExpr = null;
         ln.loopBody = ctx.statement() == null ? null : (StmtNode) visitStatement(ctx.statement());
@@ -123,7 +118,17 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitForStatement(MxStarParser.ForStatementContext ctx) {
         LoopNode ln = new LoopNode();
-        ln.initExpr = ctx.initExp == null ? null : (ExprNode) visitDeclExpr(ctx.initExp.declExpr());
+        if(ctx.initExp!=null){
+            if(ctx.initExp.declExpr()!=null){
+                ln.initDecl=new DeclarationBlockNode();
+                ln.initExpr=null;
+                iterateDeclExpr(ctx.initExp.declExpr(),ln.initDecl.decls);
+            }else {
+                // normal expression
+                ln.initDecl=null;
+                ln.initExpr= (ExprNode) visit(ctx.initExp.expression());
+            }
+        }
         ln.condExpr = ctx.condExp == null ? null : (ExprNode) visit(ctx.condExp);
         ln.updateExpr = ctx.updExp == null ? null : (ExprNode) visit(ctx.updExp);
         ln.loopBody = ctx.statement() == null ? null : (StmtNode) visitStatement(ctx.statement());
