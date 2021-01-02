@@ -2,7 +2,7 @@ package ast;
 
 import semantic.ASTVisitor;
 
-public class NewExprNode implements ExprNode {
+public class NewExprNode extends ExprNode {
     public FuncCallNode classNew;
     public ArrayLiteralNode arrNew;
     public boolean isFuncCall;

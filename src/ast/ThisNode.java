@@ -2,11 +2,9 @@ package ast;
 
 import semantic.ASTVisitor;
 
-public class ExprStmtNode extends StmtNode {
-    public ExprNode expr;
-    public ExprStmtNode(ExprNode e){
-        expr=e;
-    }
+public class ThisNode extends ExprNode {
+    public ThisNode(){}
+
     @Override
     public void accept(ASTVisitor visitor) {
         visitor.visit(this);

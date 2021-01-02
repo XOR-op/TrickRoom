@@ -3,7 +3,7 @@ package ast;
 import compnent.basic.Type;
 import semantic.ASTVisitor;
 
-public class DeclarationNode implements StmtNode {
+public class DeclarationNode extends StmtNode {
     public Type type;
     public String id;
     public ExprNode expr;

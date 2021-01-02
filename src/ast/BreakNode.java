@@ -2,7 +2,7 @@ package ast;
 
 import semantic.ASTVisitor;
 
-public class BreakNode implements StmtNode {
+public class BreakNode extends StmtNode {
     @Override
     public void accept(ASTVisitor visitor) {
         visitor.visit(this);

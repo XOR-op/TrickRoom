@@ -1,0 +1,105 @@
+package semantic;
+import ast.*;
+import compnent.basic.*;
+import compnent.scope.*;
+import exception.MissingOverrideException;
+
+/*
+ * build scope
+ *
+ */
+public class ScopeBuilder extends ASTVisitor{
+    private RootNode root;
+    private Scope currentScope;
+    private void pushScope(Scope scope){
+        currentScope=scope;
+    }
+    private void pushScope(ASTNode node){
+        pushScope(node.scope);
+    }
+    private void popScope(){
+        currentScope=currentScope.getUpstream();
+    }
+    public ScopeBuilder(RootNode tree){
+        root=tree;
+    }
+    public Scope build(){
+        // global file scope
+        var top=new FileScope();
+        currentScope=top;
+        // scan class and function definition to support forwarding reference
+        for(var fun:root.functions){
+            top.registerFunction(scanFunction(fun));
+        }
+        for(var cls:root.classes){
+            top.registerClass(scanClass(cls));
+        }
+        // sequentially visit variable declarations and functions
+        for(var node:root.nodeList){
+            visit(node);
+        }
+        return top;
+    }
+
+    private Symbol visitDecl(DeclarationNode node){
+        return new Symbol(node.type,node.id);
+    }
+
+    private Function scanFunction(FunctionNode node){
+        // will check parameters
+        node.scope=new FunctionScope(currentScope);
+        var func=new Function(node);
+        func.name=node.funcId;
+        for(var para:node.parameters){
+            var re=visitDecl(para);
+            node.scope.registerVar(re);
+            func.parameters.add(re);
+        }
+        return func;
+    }
+
+    private ClassType scanClass(ClassNode node){
+        // will check names
+        var cls=new ClassType(node);
+        var scp=new ClassScope(currentScope,cls);
+        node.scope=scp;
+        cls.name=node.className;
+        for(var method:node.methods){
+            var func=scanFunction(method);
+            scp.registerMethod(func);
+            cls.memberFuncs.put(func.name,func);
+        }
+        for(var member:node.members){
+            scp.registerVar(visitDecl(member));
+        }
+        // todo constructor
+        return cls;
+    }
+
+    @Override
+    public void visit(DeclarationNode node) {
+        currentScope.registerVar(visitDecl(node));
+    }
+
+    @Override
+    public void visit(ClassNode node) {
+        pushScope(node);
+        for(var con:node.constructor)
+            visit(con);
+        for(var method:node.methods)
+            visit(method);
+        popScope();
+    }
+
+    @Override
+    public void visit(FunctionNode node) {
+        pushScope(node);
+        visit(node.suite);
+        popScope();
+    }
+
+    @Override
+    public void visit(SuiteNode node) {
+        // suite
+    }
+}

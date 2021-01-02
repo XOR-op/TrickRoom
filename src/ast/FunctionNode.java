@@ -5,7 +5,7 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class FunctionNode implements ASTNode {
+public class FunctionNode extends ASTNode {
     public Type returnType;
     public String funcId;
     public ArrayList<DeclarationNode> parameters;

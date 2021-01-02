@@ -4,11 +4,11 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class ClassNode implements ASTNode {
+public class ClassNode extends ASTNode {
+    public String className;
     public ArrayList<DeclarationNode> members;
     public ArrayList<FunctionNode> methods;
     public ArrayList<FunctionNode> constructor;
-    public String className;
     public ClassNode(String name){
         className=name;
         constructor=new ArrayList<>();

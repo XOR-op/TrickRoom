@@ -1,8 +1,8 @@
 package exception.semantic;
 
-public class DuplicateException extends SemanticException{
+public class DuplicateSyntaxException extends SemanticException{
     private final String info;
-    public DuplicateException(String s){
+    public DuplicateSyntaxException(String s){
         info=s;
     }
 

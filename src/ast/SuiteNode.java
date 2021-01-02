@@ -4,7 +4,7 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class SuiteNode implements StmtNode {
+public class SuiteNode extends StmtNode {
     public ArrayList<StmtNode> statements;
     public SuiteNode(){
         statements=new ArrayList<>();

@@ -20,6 +20,16 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             iterateDeclExpr(sctx.declExpr(), rn.globalVars);
         for (var sctx : ctx.classDef())
             rn.classes.add((ClassNode) visitClassDef(sctx));
+        for (var subctx:ctx.children){
+            if(subctx instanceof MxStarParser.FunctionDefContext)
+                rn.addFuncNode((FunctionNode) visitFunctionDef((MxStarParser.FunctionDefContext) subctx));
+            else if(subctx instanceof MxStarParser.ClassDefContext)
+                rn.addClassNode((ClassNode) visitClassDef((MxStarParser.ClassDefContext) subctx));
+            else {
+                // variable declaration
+                iterateDeclExpr(((MxStarParser.DeclarationStatementContext) subctx).declExpr(), rn);
+            }
+        }
         return rn;
     }
 
@@ -244,6 +254,16 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         return fcn;
     }
 
+    // RootNode calls for sequential order
+    private void iterateDeclExpr(MxStarParser.DeclExprContext ctx, RootNode node) {
+        Type type = iterateVarType(ctx.varType());
+        for (var declCtx : ctx.varDeclaration()) {
+            var entry = (DeclarationNode) visitVarDeclaration(declCtx);
+            entry.type = type;
+            node.addDeclNode(entry);
+        }
+    }
+    // ClassNode not and declaration statement not
     private void iterateDeclExpr(MxStarParser.DeclExprContext ctx, ArrayList<DeclarationNode> list) {
         Type type = iterateVarType(ctx.varType());
         for (var declCtx : ctx.varDeclaration()) {
@@ -299,7 +319,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         } else if (ctx.TRUE_KW() != null || ctx.FALSE_KW() != null) {
             return new LiteralNode(Type.Bool, ctx.getText());
         } else {
-            return new IdentifierNode("this");
+            return new ThisNode();
         }
     }
 

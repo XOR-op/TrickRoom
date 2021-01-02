@@ -5,7 +5,7 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class ArrayLiteralNode implements ExprNode {
+public class ArrayLiteralNode extends ExprNode {
     public Type type;
     public int dimension;
     public ArrayList<ExprNode> dimArr;

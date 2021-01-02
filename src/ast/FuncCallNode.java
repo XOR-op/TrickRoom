@@ -4,7 +4,7 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class FuncCallNode implements ExprNode {
+public class FuncCallNode extends ExprNode {
     public String funcName;
     public ArrayList<ExprNode> arguments;
     public FuncCallNode(String s){

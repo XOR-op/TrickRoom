@@ -1,18 +1,15 @@
 package compnent.basic;
 
-import syntaxTable.SyntaxTable;
+import compnent.scope.Scope;
 
 public class Symbol {
     private String name;
-
-
     private Type type;
+    private Scope scope;
 
-
-    private SyntaxTable scope;
-    public Symbol(Type type,String name){
-        this.type=type;
-        this.name=name;
+    public Symbol(Type type, String name) {
+        this.type = type;
+        this.name = name;
     }
 
     public boolean matches(Type rhs) {
@@ -23,13 +20,14 @@ public class Symbol {
         return name;
     }
 
-    public void setScope(SyntaxTable st) {
+    public void setScope(Scope st) {
         scope = st;
     }
 
-    public SyntaxTable getScope() {
+    public Scope getScope() {
         return scope;
     }
+
     public Type getType() {
         return type;
     }

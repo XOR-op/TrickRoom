@@ -1,3 +1,4 @@
+import exception.semantic.SemanticException;
 import semantic.ASTBuilder;
 import ast.ASTNode;
 import org.antlr.v4.runtime.CharStreams;
@@ -20,7 +21,9 @@ public class TrickRoom {
             ASTNode rootNode=builder.visit(parser.code());
             ObjectDumper.dump(rootNode);
         }catch (Exception e){
-            e.printStackTrace();
+            if(e instanceof SemanticException)
+                e.printStackTrace();
+            else throw e;
         }
     }
 }

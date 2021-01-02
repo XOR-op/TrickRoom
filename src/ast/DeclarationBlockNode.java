@@ -4,7 +4,7 @@ import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
-public class DeclarationBlockNode implements StmtNode {
+public class DeclarationBlockNode extends StmtNode {
     public ArrayList<DeclarationNode> decls;
     public DeclarationBlockNode(){
         decls=new ArrayList<>();
