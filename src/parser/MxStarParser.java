@@ -1296,13 +1296,11 @@ public class MxStarParser extends Parser {
 		}
 	}
 	public static class MemberExprContext extends ExpressionContext {
-		public List<ExpressionContext> expression() {
-			return getRuleContexts(ExpressionContext.class);
-		}
-		public ExpressionContext expression(int i) {
-			return getRuleContext(ExpressionContext.class,i);
+		public ExpressionContext expression() {
+			return getRuleContext(ExpressionContext.class,0);
 		}
 		public TerminalNode DOT() { return getToken(MxStarParser.DOT, 0); }
+		public TerminalNode Identifier() { return getToken(MxStarParser.Identifier, 0); }
 		public MemberExprContext(ExpressionContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
@@ -1480,74 +1478,74 @@ public class MxStarParser extends Parser {
 					switch ( getInterpreter().adaptivePredict(_input,18,_ctx) ) {
 					case 1:
 						{
-						_localctx = new MemberExprContext(new ExpressionContext(_parentctx, _parentState));
+						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(215);
-						if (!(precpred(_ctx, 15))) throw new FailedPredicateException(this, "precpred(_ctx, 15)");
+						if (!(precpred(_ctx, 11))) throw new FailedPredicateException(this, "precpred(_ctx, 11)");
 						setState(216);
-						match(DOT);
+						multiplicativeOp();
 						setState(217);
-						expression(16);
+						expression(12);
 						}
 						break;
 					case 2:
 						{
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
-						setState(218);
-						if (!(precpred(_ctx, 11))) throw new FailedPredicateException(this, "precpred(_ctx, 11)");
 						setState(219);
-						multiplicativeOp();
+						if (!(precpred(_ctx, 10))) throw new FailedPredicateException(this, "precpred(_ctx, 10)");
 						setState(220);
-						expression(12);
+						additiveOp();
+						setState(221);
+						expression(11);
 						}
 						break;
 					case 3:
 						{
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
-						setState(222);
-						if (!(precpred(_ctx, 10))) throw new FailedPredicateException(this, "precpred(_ctx, 10)");
 						setState(223);
-						additiveOp();
+						if (!(precpred(_ctx, 9))) throw new FailedPredicateException(this, "precpred(_ctx, 9)");
 						setState(224);
-						expression(11);
+						relationalCmpOp();
+						setState(225);
+						expression(10);
 						}
 						break;
 					case 4:
 						{
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
-						setState(226);
-						if (!(precpred(_ctx, 9))) throw new FailedPredicateException(this, "precpred(_ctx, 9)");
 						setState(227);
-						relationalCmpOp();
+						if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
 						setState(228);
-						expression(10);
+						equalityCmpOp();
+						setState(229);
+						expression(9);
 						}
 						break;
 					case 5:
 						{
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
-						setState(230);
-						if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
 						setState(231);
-						equalityCmpOp();
+						if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
 						setState(232);
-						expression(9);
+						shiftOp();
+						setState(233);
+						expression(8);
 						}
 						break;
 					case 6:
 						{
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
-						setState(234);
-						if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
 						setState(235);
-						shiftOp();
+						if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
 						setState(236);
-						expression(8);
+						match(AND_ARI);
+						setState(237);
+						expression(7);
 						}
 						break;
 					case 7:
@@ -1555,11 +1553,11 @@ public class MxStarParser extends Parser {
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(238);
-						if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
+						if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
 						setState(239);
-						match(AND_ARI);
+						match(XOR_ARI);
 						setState(240);
-						expression(7);
+						expression(6);
 						}
 						break;
 					case 8:
@@ -1567,11 +1565,11 @@ public class MxStarParser extends Parser {
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(241);
-						if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
+						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(242);
-						match(XOR_ARI);
+						match(OR_ARI);
 						setState(243);
-						expression(6);
+						expression(5);
 						}
 						break;
 					case 9:
@@ -1579,11 +1577,11 @@ public class MxStarParser extends Parser {
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(244);
-						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
+						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(245);
-						match(OR_ARI);
+						match(AND_LOGIC);
 						setState(246);
-						expression(5);
+						expression(4);
 						}
 						break;
 					case 10:
@@ -1591,35 +1589,35 @@ public class MxStarParser extends Parser {
 						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(247);
-						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
+						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
 						setState(248);
-						match(AND_LOGIC);
+						match(OR_LOGIC);
 						setState(249);
-						expression(4);
+						expression(3);
 						}
 						break;
 					case 11:
 						{
-						_localctx = new BinaryExprContext(new ExpressionContext(_parentctx, _parentState));
+						_localctx = new AssignExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(250);
-						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
 						setState(251);
-						match(OR_LOGIC);
+						match(ASSIGNMENT);
 						setState(252);
-						expression(3);
+						expression(1);
 						}
 						break;
 					case 12:
 						{
-						_localctx = new AssignExprContext(new ExpressionContext(_parentctx, _parentState));
+						_localctx = new MemberExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(253);
-						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
+						if (!(precpred(_ctx, 16))) throw new FailedPredicateException(this, "precpred(_ctx, 16)");
 						setState(254);
-						match(ASSIGNMENT);
+						match(DOT);
 						setState(255);
-						expression(1);
+						match(Identifier);
 						}
 						break;
 					case 13:
@@ -1627,7 +1625,7 @@ public class MxStarParser extends Parser {
 						_localctx = new IndexExprContext(new ExpressionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expression);
 						setState(256);
-						if (!(precpred(_ctx, 16))) throw new FailedPredicateException(this, "precpred(_ctx, 16)");
+						if (!(precpred(_ctx, 15))) throw new FailedPredicateException(this, "precpred(_ctx, 15)");
 						setState(257);
 						match(L_BRACKET);
 						setState(258);
@@ -2558,31 +2556,31 @@ public class MxStarParser extends Parser {
 	private boolean expression_sempred(ExpressionContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 0:
-			return precpred(_ctx, 15);
-		case 1:
 			return precpred(_ctx, 11);
-		case 2:
+		case 1:
 			return precpred(_ctx, 10);
-		case 3:
+		case 2:
 			return precpred(_ctx, 9);
-		case 4:
+		case 3:
 			return precpred(_ctx, 8);
-		case 5:
+		case 4:
 			return precpred(_ctx, 7);
-		case 6:
+		case 5:
 			return precpred(_ctx, 6);
-		case 7:
+		case 6:
 			return precpred(_ctx, 5);
-		case 8:
+		case 7:
 			return precpred(_ctx, 4);
-		case 9:
+		case 8:
 			return precpred(_ctx, 3);
-		case 10:
+		case 9:
 			return precpred(_ctx, 2);
-		case 11:
+		case 10:
 			return precpred(_ctx, 1);
-		case 12:
+		case 11:
 			return precpred(_ctx, 16);
+		case 12:
+			return precpred(_ctx, 15);
 		case 13:
 			return precpred(_ctx, 13);
 		}
@@ -2674,22 +2672,22 @@ public class MxStarParser extends Parser {
 		"\7>\2\2\u00d2\u00cf\3\2\2\2\u00d2\u00d0\3\2\2\2\u00d2\u00d1\3\2\2\2\u00d3"+
 		"\u00d8\3\2\2\2\u00d4\u00d5\58\35\2\u00d5\u00d6\5$\23\16\u00d6\u00d8\3"+
 		"\2\2\2\u00d7\u00cb\3\2\2\2\u00d7\u00cd\3\2\2\2\u00d7\u00ce\3\2\2\2\u00d7"+
-		"\u00d4\3\2\2\2\u00d8\u010b\3\2\2\2\u00d9\u00da\f\21\2\2\u00da\u00db\7"+
-		"\37\2\2\u00db\u010a\5$\23\22\u00dc\u00dd\f\r\2\2\u00dd\u00de\5:\36\2\u00de"+
-		"\u00df\5$\23\16\u00df\u010a\3\2\2\2\u00e0\u00e1\f\f\2\2\u00e1\u00e2\5"+
-		"<\37\2\u00e2\u00e3\5$\23\r\u00e3\u010a\3\2\2\2\u00e4\u00e5\f\13\2\2\u00e5"+
-		"\u00e6\5@!\2\u00e6\u00e7\5$\23\f\u00e7\u010a\3\2\2\2\u00e8\u00e9\f\n\2"+
-		"\2\u00e9\u00ea\5B\"\2\u00ea\u00eb\5$\23\13\u00eb\u010a\3\2\2\2\u00ec\u00ed"+
-		"\f\t\2\2\u00ed\u00ee\5> \2\u00ee\u00ef\5$\23\n\u00ef\u010a\3\2\2\2\u00f0"+
-		"\u00f1\f\b\2\2\u00f1\u00f2\7\30\2\2\u00f2\u010a\5$\23\t\u00f3\u00f4\f"+
-		"\7\2\2\u00f4\u00f5\7\32\2\2\u00f5\u010a\5$\23\b\u00f6\u00f7\f\6\2\2\u00f7"+
-		"\u00f8\7\31\2\2\u00f8\u010a\5$\23\7\u00f9\u00fa\f\5\2\2\u00fa\u00fb\7"+
-		"\23\2\2\u00fb\u010a\5$\23\6\u00fc\u00fd\f\4\2\2\u00fd\u00fe\7\24\2\2\u00fe"+
-		"\u010a\5$\23\5\u00ff\u0100\f\3\2\2\u0100\u0101\7\34\2\2\u0101\u010a\5"+
-		"$\23\3\u0102\u0103\f\22\2\2\u0103\u0104\7\"\2\2\u0104\u0105\5$\23\2\u0105"+
+		"\u00d4\3\2\2\2\u00d8\u010b\3\2\2\2\u00d9\u00da\f\r\2\2\u00da\u00db\5:"+
+		"\36\2\u00db\u00dc\5$\23\16\u00dc\u010a\3\2\2\2\u00dd\u00de\f\f\2\2\u00de"+
+		"\u00df\5<\37\2\u00df\u00e0\5$\23\r\u00e0\u010a\3\2\2\2\u00e1\u00e2\f\13"+
+		"\2\2\u00e2\u00e3\5@!\2\u00e3\u00e4\5$\23\f\u00e4\u010a\3\2\2\2\u00e5\u00e6"+
+		"\f\n\2\2\u00e6\u00e7\5B\"\2\u00e7\u00e8\5$\23\13\u00e8\u010a\3\2\2\2\u00e9"+
+		"\u00ea\f\t\2\2\u00ea\u00eb\5> \2\u00eb\u00ec\5$\23\n\u00ec\u010a\3\2\2"+
+		"\2\u00ed\u00ee\f\b\2\2\u00ee\u00ef\7\30\2\2\u00ef\u010a\5$\23\t\u00f0"+
+		"\u00f1\f\7\2\2\u00f1\u00f2\7\32\2\2\u00f2\u010a\5$\23\b\u00f3\u00f4\f"+
+		"\6\2\2\u00f4\u00f5\7\31\2\2\u00f5\u010a\5$\23\7\u00f6\u00f7\f\5\2\2\u00f7"+
+		"\u00f8\7\23\2\2\u00f8\u010a\5$\23\6\u00f9\u00fa\f\4\2\2\u00fa\u00fb\7"+
+		"\24\2\2\u00fb\u010a\5$\23\5\u00fc\u00fd\f\3\2\2\u00fd\u00fe\7\34\2\2\u00fe"+
+		"\u010a\5$\23\3\u00ff\u0100\f\22\2\2\u0100\u0101\7\37\2\2\u0101\u010a\7"+
+		">\2\2\u0102\u0103\f\21\2\2\u0103\u0104\7\"\2\2\u0104\u0105\5$\23\2\u0105"+
 		"\u0106\7#\2\2\u0106\u010a\3\2\2\2\u0107\u0108\f\17\2\2\u0108\u010a\t\2"+
-		"\2\2\u0109\u00d9\3\2\2\2\u0109\u00dc\3\2\2\2\u0109\u00e0\3\2\2\2\u0109"+
-		"\u00e4\3\2\2\2\u0109\u00e8\3\2\2\2\u0109\u00ec\3\2\2\2\u0109\u00f0\3\2"+
+		"\2\2\u0109\u00d9\3\2\2\2\u0109\u00dd\3\2\2\2\u0109\u00e1\3\2\2\2\u0109"+
+		"\u00e5\3\2\2\2\u0109\u00e9\3\2\2\2\u0109\u00ed\3\2\2\2\u0109\u00f0\3\2"+
 		"\2\2\u0109\u00f3\3\2\2\2\u0109\u00f6\3\2\2\2\u0109\u00f9\3\2\2\2\u0109"+
 		"\u00fc\3\2\2\2\u0109\u00ff\3\2\2\2\u0109\u0102\3\2\2\2\u0109\u0107\3\2"+
 		"\2\2\u010a\u010d\3\2\2\2\u010b\u0109\3\2\2\2\u010b\u010c\3\2\2\2\u010c"+

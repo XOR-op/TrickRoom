@@ -4,7 +4,6 @@ import compnent.basic.Type;
 import semantic.ASTVisitor;
 
 public class LiteralNode extends ExprNode {
-    public Type type;
     public String content;
     public LiteralNode(Type type,String content){
         this.type=type;

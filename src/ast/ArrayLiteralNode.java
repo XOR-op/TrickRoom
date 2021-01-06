@@ -9,9 +9,8 @@ public class ArrayLiteralNode extends ExprNode {
     public Type type;
     public int dimension;
     public ArrayList<ExprNode> dimArr;
-    public ArrayLiteralNode(Type t,int dim){
+    public ArrayLiteralNode(Type t){
         type=t;
-        dimension=dim;
         dimArr=new ArrayList<>();
     }
     @Override

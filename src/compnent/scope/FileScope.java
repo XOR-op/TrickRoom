@@ -34,6 +34,13 @@ public class FileScope extends Scope {
     }
 
     @Override
+    public ClassType getClass(String cls) {
+        ClassType c;
+        if((c=classTable.get(cls))!=null)return c;
+        else throw new MissingSyntaxException(cls);
+    }
+
+    @Override
     protected void checkClassCollision(String id) {
         if(classTable.containsKey(id))throw new DuplicateSyntaxException(id);
     }

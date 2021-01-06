@@ -1,47 +1,101 @@
 package semantic;
 
 import ast.*;
+import exception.MissingOverrideException;
 
-public interface ASTVisitor {
+public interface ASTVisitor  {
+    private void notImplemented() {
+        throw new MissingOverrideException();
+    }
+    default void visit(ArrayLiteralNode node) {
+        notImplemented();
+    }
 
-    void visit(ArrayLiteralNode node);
+    default void visit(AssignmentNode node) {
+        notImplemented();
+    }
 
-     void visit(BinaryExprNode node) ;
+    default void visit(BinaryExprNode node) {
+        notImplemented();
+    }
 
-     void visit(BreakNode node) ;
+    default void visit(BreakNode node) {
+        notImplemented();
+    }
 
-     void visit(ClassNode node) ;
+    default void visit(ClassNode node) {
+        notImplemented();
+    }
 
-     void visit(ConditionalNode node) ;
+    default void visit(ConditionalNode node) {
+        notImplemented();
+    }
 
-     void visit(ContinueNode node) ;
+    default void visit(ContinueNode node) {
+        notImplemented();
+    }
 
-     void visit(DeclarationBlockNode node) ;
+    default void visit(DeclarationBlockNode node) {
+        notImplemented();
+    }
 
-     void visit(DeclarationNode node) ;
+    default void visit(DeclarationNode node) {
+        notImplemented();
+    }
 
-     void visit(ExprStmtNode node) ;
+    default void visit(ExprStmtNode node) {
+        notImplemented();
+    }
 
-     void visit(FuncCallNode node) ;
+    default void visit(FuncCallNode node) {
+        notImplemented();
+    }
 
-     void visit(FunctionNode node) ;
+    default void visit(FunctionNode node) {
+        notImplemented();
+    }
 
-     void visit(IdentifierNode node) ;
+    default void visit(IdentifierNode node) {
+        notImplemented();
+    }
 
-     void visit(LiteralNode node) ;
+    default void visit(LiteralNode node) {
+        notImplemented();
+    }
 
-     void visit(LoopNode node) ;
+    default void visit(LoopNode node) {
+        notImplemented();
+    }
 
-     void visit(NewExprNode node) ;
+    default void visit(MemberNode node) {
+        notImplemented();
+    }
 
-     void visit(ReturnNode node) ;
+    default void visit(NewExprNode node) {
+        notImplemented();
+    }
 
-     void visit(RootNode node) ;
+    default void visit(ReturnNode node) {
+        notImplemented();
+    }
 
-     void visit(SuiteNode node) ;
+    default void visit(RootNode node) {
+        notImplemented();
+    }
 
-     void visit(ThisNode node);
+    default void visit(SuiteNode node) {
+        notImplemented();
+    }
+    default void visit(SubscriptionNode node) {
+        notImplemented();
+    }
 
-     void visit(UnaryExprNode node) ;
+    default void visit(ThisNode node) {
+        notImplemented();
+    }
+
+    default void visit(UnaryExprNode node) {
+        notImplemented();
+    }
 
 }

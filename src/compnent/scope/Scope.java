@@ -1,5 +1,6 @@
 package compnent.scope;
 
+import compnent.basic.ClassType;
 import compnent.basic.Function;
 import compnent.basic.Symbol;
 import compnent.basic.Type;
@@ -33,6 +34,11 @@ public class Scope {
     public Function getFunction(String func){
         if(upstream==null)throw new MissingOverrideException();
         return upstream.getFunction(func);
+    }
+
+    public ClassType getClass(String cls){
+        if(upstream==null)throw new MissingOverrideException();
+        return upstream.getClass(cls);
     }
 
 

@@ -3,6 +3,7 @@ package semantic;
 import ast.*;
 import compnent.basic.*;
 import compnent.scope.*;
+import exception.MissingOverrideException;
 
 /*
  * build scope
@@ -24,6 +25,10 @@ public class ScopeBuilder implements ASTVisitor {
         currentScope = currentScope.getUpstream();
     }
 
+    private void registerFunc(String s){
+        ((FileScope)currentScope).registerFunction(Function.parse(s));
+    }
+
     public ScopeBuilder(RootNode tree) {
         root = tree;
     }
@@ -32,6 +37,14 @@ public class ScopeBuilder implements ASTVisitor {
         // global file scope
         var top = new FileScope();
         currentScope = top;
+        // register builtin functions
+        registerFunc("void print(string str);");
+        registerFunc("void println(string str);");
+        registerFunc("void printInt(int n);");
+        registerFunc("void printlnInt(int n);");
+        registerFunc("string getString();");
+        registerFunc("int getInt();");
+        registerFunc("string toString(int i);");
         // scan class and function definition to support forwarding reference
         for (var fun : root.functions) {
             top.registerFunction(scanFunction(fun));
@@ -55,6 +68,7 @@ public class ScopeBuilder implements ASTVisitor {
         node.scope = new FunctionScope(currentScope);
         var func = new Function(node);
         func.name = node.funcId;
+        func.returnType=func.node.returnType;
         for (var para : node.parameters) {
             var re = visitDecl(para);
             node.scope.registerVar(re);
@@ -89,31 +103,6 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     @Override
-    public void visit(ExprStmtNode node) {
-
-    }
-
-    @Override
-    public void visit(FuncCallNode node) {
-
-    }
-
-    @Override
-    public void visit(ArrayLiteralNode node) {
-
-    }
-
-    @Override
-    public void visit(BinaryExprNode node) {
-
-    }
-
-    @Override
-    public void visit(BreakNode node) {
-
-    }
-
-    @Override
     public void visit(ClassNode node) {
         pushScope(node);
         for (var con : node.constructor)
@@ -131,16 +120,6 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     @Override
-    public void visit(IdentifierNode node) {
-
-    }
-
-    @Override
-    public void visit(LiteralNode node) {
-
-    }
-
-    @Override
     public void visit(SuiteNode node) {
         // node.scope will be built ahead
         for (var sub : node.statements) {
@@ -155,23 +134,13 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     @Override
-    public void visit(ThisNode node) {
-
-    }
-
-    @Override
-    public void visit(UnaryExprNode node) {
-
-    }
-
-    @Override
     public void visit(ConditionalNode node) {
         node.trueStat.scope = new Scope(currentScope);
         pushScope(node.trueStat);
         node.trueStat.accept(this);
         popScope();
-        if(node.falseStat!=null){
-            node.falseStat.scope=new Scope(currentScope);
+        if (node.falseStat != null) {
+            node.falseStat.scope = new Scope(currentScope);
             pushScope(node.falseStat);
             node.falseStat.accept(this);
             popScope();
@@ -179,36 +148,22 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     @Override
-    public void visit(ContinueNode node) {
-
-    }
-
-    @Override
-    public void visit(DeclarationBlockNode node) {
-
-    }
-
-    @Override
     public void visit(LoopNode node) {
-        node.scope=new LoopScope(currentScope);
+        node.scope = new LoopScope(currentScope);
         pushScope(node);
-        if(node.initDecl !=null)visit(node.initDecl);
+        if (node.initDecl != null) visit(node.initDecl);
         node.loopBody.accept(this);
         popScope();
     }
 
     @Override
-    public void visit(NewExprNode node) {
-
-    }
-
-    @Override
     public void visit(ReturnNode node) {
-
+        // do nothing
     }
 
     @Override
-    public void visit(RootNode node) {
-
+    public void visit(ExprStmtNode node) {
+        // do nothing
     }
 }
+

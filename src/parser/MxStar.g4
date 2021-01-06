@@ -74,8 +74,8 @@ atomExp:
 expression:
 	atomExp												# atomExpr
 	| funcCall											# funcExpr
+	| expression DOT Identifier							# memberExpr
 	| expression L_BRACKET expression R_BRACKET			# indexExpr
-	| expression DOT expression							# memberExpr
 	| NEW_KW (arrayLiteral | funcCall | Identifier)		# newExpr
 	| expression suffix = (SELF_PLUS | SELF_MINUS)		# suffixExpr
 	| <assoc = right> prefix = unaryOp expression		# prefixExpr
