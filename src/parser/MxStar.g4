@@ -72,24 +72,24 @@ atomExp:
 	| L_PARENTNESS expression R_PARENTNESS;
 
 expression:
-	atomExp												# atomExpr
-	| funcCall											# funcExpr
-	| expression DOT Identifier							# memberExpr
-	| expression L_BRACKET expression R_BRACKET			# indexExpr
-	| NEW_KW (arrayLiteral | funcCall | Identifier)		# newExpr
-	| expression suffix = (SELF_PLUS | SELF_MINUS)		# suffixExpr
-	| <assoc = right> prefix = unaryOp expression		# prefixExpr
-	| expression multiplicativeOp expression			# binaryExpr
-	| expression additiveOp expression					# binaryExpr
-	| expression relationalCmpOp expression				# binaryExpr
-	| expression equalityCmpOp expression				# binaryExpr
-	| expression shiftOp expression						# binaryExpr
-	| expression AND_ARI expression						# binaryExpr
-	| expression XOR_ARI expression						# binaryExpr
-	| expression OR_ARI expression						# binaryExpr
-	| expression AND_LOGIC expression					# binaryExpr
-	| expression OR_LOGIC expression					# binaryExpr
-	| <assoc = right> expression ASSIGNMENT expression	# assignExpr;
+	atomExp												    # atomExpr
+	| NEW_KW (arrayLiteral | funcCall | Identifier)		    # newExpr
+	| expression DOT Identifier							    # memberExpr
+	| expression L_BRACKET expression R_BRACKET			    # indexExpr
+	| expression L_PARENTNESS expressionList? R_PARENTNESS	# funcExpr
+	| expression suffix = (SELF_PLUS | SELF_MINUS)		    # suffixExpr
+	| <assoc = right> prefix = unaryOp expression		    # prefixExpr
+	| expression multiplicativeOp expression			    # binaryExpr
+	| expression additiveOp expression					    # binaryExpr
+	| expression relationalCmpOp expression				    # binaryExpr
+	| expression equalityCmpOp expression				    # binaryExpr
+	| expression shiftOp expression						    # binaryExpr
+	| expression AND_ARI expression						    # binaryExpr
+	| expression XOR_ARI expression						    # binaryExpr
+	| expression OR_ARI expression						    # binaryExpr
+	| expression AND_LOGIC expression					    # binaryExpr
+	| expression OR_LOGIC expression					    # binaryExpr
+	| <assoc = right> expression ASSIGNMENT expression	    # assignExpr;
 
 // Basic Compnent
 funcCall: Identifier L_PARENTNESS expressionList? R_PARENTNESS;

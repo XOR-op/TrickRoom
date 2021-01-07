@@ -16,14 +16,14 @@ public class FileScope extends Scope {
     }
 
     public void registerFunction(Function func) {
-        if (functionTable.containsKey(func.name)) throw new DuplicateSyntaxException(func.name);
-        functionTable.put(func.name, func);
+        if (functionTable.containsKey(func.id)) throw new DuplicateSyntaxException(func.id);
+        functionTable.put(func.id, func);
     }
 
     public void registerClass(ClassType cls) {
-        if (classTable.containsKey(cls.name)  || syntaxTable.containsKey(cls.name)  ||
-                functionTable.containsKey(cls.name) ) throw new DuplicateSyntaxException(cls.name);
-        classTable.put(cls.name, cls);
+        if (classTable.containsKey(cls.id)  || syntaxTable.containsKey(cls.id)  ||
+                functionTable.containsKey(cls.id) ) throw new DuplicateSyntaxException(cls.id);
+        classTable.put(cls.id, cls);
     }
 
     @Override

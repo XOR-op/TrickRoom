@@ -5,10 +5,10 @@ import semantic.ASTVisitor;
 import java.util.ArrayList;
 
 public class FuncCallNode extends ExprNode {
-    public String funcName;
+    public ExprNode callee;
     public ArrayList<ExprNode> arguments;
-    public FuncCallNode(String s){
-        funcName=s;
+    public FuncCallNode(ExprNode s){
+        callee =s;
         arguments=new ArrayList<>();
     }
     @Override

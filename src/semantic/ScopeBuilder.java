@@ -67,7 +67,7 @@ public class ScopeBuilder implements ASTVisitor {
         // will check parameters
         node.scope = new FunctionScope(currentScope);
         var func = new Function(node);
-        func.name = node.funcId;
+        func.id = node.funcId;
         func.returnType=func.node.returnType;
         for (var para : node.parameters) {
             var re = visitDecl(para);
@@ -83,11 +83,11 @@ public class ScopeBuilder implements ASTVisitor {
         var scp = new ClassScope(currentScope, cls);
         node.scope = scp;
         pushScope(node);
-        cls.name = node.className;
+        cls.id = node.className;
         for (var method : node.methods) {
             var func = scanFunction(method);
             scp.registerMethod(func);
-            cls.memberFuncs.put(func.name, func);
+            cls.memberFuncs.put(func.id, func);
         }
         for (var member : node.members) {
             scp.registerVar(visitDecl(member));

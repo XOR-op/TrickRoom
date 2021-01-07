@@ -2,27 +2,24 @@ package compnent.basic;
 
 public class Type {
     public static final Type Int = new Type("int", 0, true);
-    public static final Type String = new Type("string", 0, true);
     public static final Type Bool = new Type("bool", 0, true);
     public static final Type Null = new Type("null", 0, true);
     public static final Type Void = new Type("void", 0, true);
-    public static final Type Func = new Type("function", 0, true);
+//    public static final Type Func = new Type("function", 0, true);
 
     public String id;
     public int dimension; // array dimension; 0 means scalar
-    public final boolean isClass;
     private final boolean reserved;
 
-    private Type(String name, int dimension, boolean reserved) {
+    protected Type(String name, int dimension, boolean reserved) {
         this.id = name;
         this.dimension = dimension;
         this.reserved = reserved;
-        this.isClass=!reserved||id.equals("string");
     }
 
     public Type(String name, int dimension) {
         this(name, dimension, false);
-        assert !(name.equals("int")||name.equals("string")||name.equals("bool")||name.equals("null")||name.equals("void")||name.equals("function"));
+        assert !(name.equals("int") || name.equals("string") || name.equals("bool") || name.equals("null") || name.equals("void") || name.equals("function"));
     }
 
     public Type(String name) {

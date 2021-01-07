@@ -3,10 +3,7 @@ package semantic;
 import ast.*;
 import compnent.basic.*;
 import compnent.scope.*;
-import exception.semantic.AssignmentException;
-import exception.semantic.MemberMisuseException;
-import exception.semantic.WrongParameterSizeException;
-import exception.semantic.TypeMismatchException;
+import exception.semantic.*;
 
 public class TypeChecker implements ASTVisitor {
     private Scope currentScope;
@@ -24,7 +21,7 @@ public class TypeChecker implements ASTVisitor {
     }
 
     private void check(Type a, Type b) {
-        if (!a.equals(b)||a.equals(Type.Void)) throw new TypeMismatchException();
+        if (!a.equals(b) || a.equals(Type.Void)) throw new TypeMismatchException();
     }
 
     @Override
@@ -59,29 +56,44 @@ public class TypeChecker implements ASTVisitor {
         // check left value
         if (node.lhs instanceof IdentifierNode
                 || node.lhs instanceof MemberNode || node.lhs instanceof SubscriptionNode) {
-            Type l=inferType(node.lhs), r=inferType(node.rhs);
-            check(l,r);
-            node.type=l;
+            Type l = inferType(node.lhs), r = inferType(node.rhs);
+            check(l, r);
+            node.type = l;
             return l;
         } else throw new AssignmentException();
     }
 
+    private ClassType getObjOfMemberNode(MemberNode node){
+        Type type = inferType(node.object);
+        if (!(type instanceof ClassType)) throw new MemberMisuseException();
+        return (ClassType) type;
+    }
     private Type calcType(MemberNode node) {
-        Type type=inferType(node.object);
-        if(!type.isClass)throw new MemberMisuseException();
-        ClassType cls=currentScope.getClass(type.id);
-
+        ClassType ct=getObjOfMemberNode(node);
+        Type tp;
+        if((tp=ct.memberFuncs.get( node.member))==null)
+            throw new MissingSyntaxException(node.member);
+        node.type=tp;
+        return tp;
     }
 
     private Type calcType(FuncCallNode node) {
-        Function func=currentScope.getFunction(node.funcName);
+        Function func;
+        if(node.callee instanceof IdentifierNode)
+                func=currentScope.getFunction(((IdentifierNode) node.callee).id);
+        else {
+            assert node.callee instanceof MemberNode;
+            ClassType ct=getObjOfMemberNode((MemberNode) node.callee);
+            if((func=ct.memberFuncs.get(((MemberNode) node.callee).member))==null)
+                throw new MissingSyntaxException(((MemberNode) node.callee).member);
+        }
         // check types of arguments
-        if(func.parameters.size()!=node.arguments.size())throw new WrongParameterSizeException();
-        for(int i=0;i<func.parameters.size();++i){
-            if(!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
+        if (func.parameters.size() != node.arguments.size()) throw new WrongParameterSizeException();
+        for (int i = 0; i < func.parameters.size(); ++i) {
+            if (!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
                 throw new WrongParameterSizeException();
         }
-        node.type=func.node.returnType;
+        node.type = func.node.returnType;
         return node.type;
     }
 
@@ -98,19 +110,19 @@ public class TypeChecker implements ASTVisitor {
     }
 
     private Type calcType(NewExprNode node) {
-        node.type=node.isConstruct ?calcType(node.classNew):calcType(node.arrNew);
+        node.type = node.isConstruct ? calcType(node.classNew) : calcType(node.arrNew);
         return node.type;
     }
 
     private Type calcType(BinaryExprNode node) {
         Type lhs = inferType(node.lhs), rhs = inferType(node.rhs);
         check(lhs, rhs);
-        node.type=lhs;
+        node.type = lhs;
         return lhs;
     }
 
     private Type calcType(UnaryExprNode node) {
-        node.type=inferType(node.expr);
+        node.type = inferType(node.expr);
         // todo specific type check
         return node.type;
     }

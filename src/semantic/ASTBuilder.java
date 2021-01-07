@@ -179,8 +179,9 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     public ASTNode visitNewExpr(MxStarParser.NewExprContext ctx) {
         var nn = new NewExprNode(ctx.arrayLiteral() == null);
         if (nn.isConstruct) {
+            // implicitly-invoked constructor or the opposite
             nn.classNew = ctx.Identifier() != null ?
-                    new FuncCallNode(ctx.Identifier().getText()) :
+                    new FuncCallNode(new IdentifierNode(ctx.Identifier().getText())) :
                     (FuncCallNode) visitFuncCall(ctx.funcCall());
         } else {
             nn.arrNew = (ArrayLiteralNode) visitArrayLiteral(ctx.arrayLiteral());
@@ -190,7 +191,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitIndexExpr(MxStarParser.IndexExprContext ctx) {
-        return new SubscriptionNode( (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
+        return new SubscriptionNode((ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
     }
 
     @Override
@@ -200,7 +201,12 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitFuncExpr(MxStarParser.FuncExprContext ctx) {
-        return visitFuncCall(ctx.funcCall());
+
+        var fcn = new FuncCallNode((ExprNode) visit(ctx.expression()));
+        if (ctx.expressionList() != null)
+            for (var exp : ctx.expressionList().expression())
+                fcn.arguments.add((ExprNode) visit(exp));
+        return fcn;
     }
 
     @Override
@@ -253,7 +259,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitFuncCall(MxStarParser.FuncCallContext ctx) {
-        var fcn = new FuncCallNode(ctx.Identifier().getText());
+        var fcn = new FuncCallNode(new IdentifierNode(ctx.Identifier().getText()));
         if (ctx.expressionList() != null)
             for (var exp : ctx.expressionList().expression())
                 fcn.arguments.add((ExprNode) visit(exp));
@@ -288,7 +294,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             if (ref.STRING_KW() != null) type = Type.String;
             else if (ref.INT_KW() != null) type = Type.Int;
             else type = Type.Bool;
-        } else type = Type.Class;
+        } else type = new Type(ctx.Identifier().getText());
         var aln = new ArrayLiteralNode(new Type(type.id, ctx.L_BRACKET().size()));
         if (ctx.expression() != null)
             for (var exp : ctx.expression())
