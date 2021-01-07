@@ -2,6 +2,7 @@ package semantic;
 
 import ast.*;
 import compnent.basic.Type;
+import compnent.basic.TypeConst;
 import exception.semantic.UnUsedVisitorException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import parser.MxStarParser;
@@ -30,7 +31,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitFunctionDef(MxStarParser.FunctionDefContext ctx) {
         FunctionNode fn = new FunctionNode(ctx.Identifier().getText());
-        fn.returnType = (ctx.returnType().VOID_KW() != null) ? Type.Void : iterateVarType(ctx.returnType().varType());
+        fn.returnType = (ctx.returnType().VOID_KW() != null) ? TypeConst.Void : iterateVarType(ctx.returnType().varType());
         fn.suite = (SuiteNode) visitSuite(ctx.suite());
         fn.parameters = iterateFunctionParamDef(ctx.functionParamDef());
         return fn;
@@ -64,7 +65,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitConstructorDefinition(MxStarParser.ConstructorDefinitionContext ctx) {
         var fn = new FunctionNode(ctx.Identifier().getText());
-        fn.returnType = Type.Void;
+        fn.returnType = TypeConst.Void;
         fn.suite = (SuiteNode) visitSuite(ctx.suite());
         fn.parameters = iterateFunctionParamDef(ctx.functionParamDef());
         return fn;
@@ -291,9 +292,9 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         Type type;
         if (ctx.builtinType() != null) {
             var ref = ctx.builtinType();
-            if (ref.STRING_KW() != null) type = Type.String;
-            else if (ref.INT_KW() != null) type = Type.Int;
-            else type = Type.Bool;
+            if (ref.STRING_KW() != null) type = TypeConst.String;
+            else if (ref.INT_KW() != null) type = TypeConst.Int;
+            else type = TypeConst.Bool;
         } else type = new Type(ctx.Identifier().getText());
         var aln = new ArrayLiteralNode(new Type(type.id, ctx.L_BRACKET().size()));
         if (ctx.expression() != null)
@@ -316,9 +317,9 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             tp.dimension = ctx.L_BRACKET().size();
             return tp;
         } else if (ctx.builtinType() != null) {
-            if (ctx.builtinType().INT_KW() != null) return Type.Int;
-            else if (ctx.builtinType().STRING_KW() != null) return Type.String;
-            else return Type.Bool;
+            if (ctx.builtinType().INT_KW() != null) return TypeConst.Int;
+            else if (ctx.builtinType().STRING_KW() != null) return TypeConst.String;
+            else return TypeConst.Bool;
         } else return new Type(ctx.Identifier().getText());
     }
 
@@ -326,11 +327,11 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
     @Override
     public ASTNode visitConstant(MxStarParser.ConstantContext ctx) {
         if (ctx.DecInteger() != null) {
-            return new LiteralNode(Type.Int, ctx.getText());
+            return new LiteralNode(TypeConst.Int, ctx.getText());
         } else if (ctx.String() != null) {
-            return new LiteralNode(Type.String, ctx.getText());
+            return new LiteralNode(TypeConst.String, ctx.getText());
         } else if (ctx.TRUE_KW() != null || ctx.FALSE_KW() != null) {
-            return new LiteralNode(Type.Bool, ctx.getText());
+            return new LiteralNode(TypeConst.Bool, ctx.getText());
         } else {
             return new ThisNode();
         }

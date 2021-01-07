@@ -20,13 +20,11 @@ public class TrickRoom {
             var parser=new MxStarParser(tokenStream);
             var builder=new ASTBuilder();
             RootNode rootNode=(RootNode) builder.visit(parser.code());
-            Scope scope=new ScopeBuilder(rootNode).build();
+            new ScopeBuilder(rootNode).build();
+            new TypeChecker().visit(rootNode);
             ObjectDumper.dump(rootNode);
-        }catch (Exception e){
-
-            if(e instanceof SemanticException)
-                e.printStackTrace();
-            throw e;
+        }catch (SemanticException e){
+            System.out.println(ObjectDumper.ANSI_PURPLE+e.toString()+ObjectDumper.ANSI_RESET);
         }
     }
 }

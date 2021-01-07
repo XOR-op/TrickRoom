@@ -19,8 +19,9 @@ public class Function extends Type{
     public static Function parse(String s){
         var slice=s.split(" |\\(|\\);");
         ArrayList<Symbol> ls=new ArrayList<>();
-        for(int i=2;i<slice.length;++i){
+        for(int i=2;i<slice.length;i+=2){
             assert !slice[i].equals("");
+            assert i+1<slice.length;
             ls.add(new Symbol(new Type(slice[i]),slice[i+1]));
         }
         return parse(new Type(slice[0]),slice[1],ls);
