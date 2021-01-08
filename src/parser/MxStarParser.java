@@ -33,16 +33,17 @@ public class MxStarParser extends Parser {
 		RULE_statement = 7, RULE_ifStatement = 8, RULE_whileStatement = 9, RULE_forStatement = 10, 
 		RULE_continueStatement = 11, RULE_breakStatement = 12, RULE_returnStatement = 13, 
 		RULE_simpleStatement = 14, RULE_declarationStatement = 15, RULE_atomExp = 16, 
-		RULE_expression = 17, RULE_funcCall = 18, RULE_exprOrDecl = 19, RULE_declExpr = 20, 
-		RULE_arrayLiteral = 21, RULE_varDeclaration = 22, RULE_varType = 23, RULE_returnType = 24, 
-		RULE_builtinType = 25, RULE_constant = 26, RULE_unaryOp = 27, RULE_multiplicativeOp = 28, 
-		RULE_additiveOp = 29, RULE_shiftOp = 30, RULE_relationalCmpOp = 31, RULE_equalityCmpOp = 32;
+		RULE_expression = 17, RULE_constructorCall = 18, RULE_exprOrDecl = 19, 
+		RULE_declExpr = 20, RULE_arrayLiteral = 21, RULE_varDeclaration = 22, 
+		RULE_varType = 23, RULE_returnType = 24, RULE_builtinType = 25, RULE_constant = 26, 
+		RULE_unaryOp = 27, RULE_multiplicativeOp = 28, RULE_additiveOp = 29, RULE_shiftOp = 30, 
+		RULE_relationalCmpOp = 31, RULE_equalityCmpOp = 32;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"code", "functionDef", "functionParamDef", "classDef", "constructorDefinition", 
 			"expressionList", "suite", "statement", "ifStatement", "whileStatement", 
 			"forStatement", "continueStatement", "breakStatement", "returnStatement", 
-			"simpleStatement", "declarationStatement", "atomExp", "expression", "funcCall", 
+			"simpleStatement", "declarationStatement", "atomExp", "expression", "constructorCall", 
 			"exprOrDecl", "declExpr", "arrayLiteral", "varDeclaration", "varType", 
 			"returnType", "builtinType", "constant", "unaryOp", "multiplicativeOp", 
 			"additiveOp", "shiftOp", "relationalCmpOp", "equalityCmpOp"
@@ -1242,8 +1243,8 @@ public class MxStarParser extends Parser {
 		public ArrayLiteralContext arrayLiteral() {
 			return getRuleContext(ArrayLiteralContext.class,0);
 		}
-		public FuncCallContext funcCall() {
-			return getRuleContext(FuncCallContext.class,0);
+		public ConstructorCallContext constructorCall() {
+			return getRuleContext(ConstructorCallContext.class,0);
 		}
 		public TerminalNode Identifier() { return getToken(MxStarParser.Identifier, 0); }
 		public NewExprContext(ExpressionContext ctx) { copyFrom(ctx); }
@@ -1443,7 +1444,7 @@ public class MxStarParser extends Parser {
 				case 2:
 					{
 					setState(205);
-					funcCall();
+					constructorCall();
 					}
 					break;
 				case 3:
@@ -1705,27 +1706,27 @@ public class MxStarParser extends Parser {
 		return _localctx;
 	}
 
-	public static class FuncCallContext extends ParserRuleContext {
+	public static class ConstructorCallContext extends ParserRuleContext {
 		public TerminalNode Identifier() { return getToken(MxStarParser.Identifier, 0); }
 		public TerminalNode L_PARENTNESS() { return getToken(MxStarParser.L_PARENTNESS, 0); }
 		public TerminalNode R_PARENTNESS() { return getToken(MxStarParser.R_PARENTNESS, 0); }
 		public ExpressionListContext expressionList() {
 			return getRuleContext(ExpressionListContext.class,0);
 		}
-		public FuncCallContext(ParserRuleContext parent, int invokingState) {
+		public ConstructorCallContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_funcCall; }
+		@Override public int getRuleIndex() { return RULE_constructorCall; }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MxStarVisitor ) return ((MxStarVisitor<? extends T>)visitor).visitFuncCall(this);
+			if ( visitor instanceof MxStarVisitor ) return ((MxStarVisitor<? extends T>)visitor).visitConstructorCall(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final FuncCallContext funcCall() throws RecognitionException {
-		FuncCallContext _localctx = new FuncCallContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_funcCall);
+	public final ConstructorCallContext constructorCall() throws RecognitionException {
+		ConstructorCallContext _localctx = new ConstructorCallContext(_ctx, getState());
+		enterRule(_localctx, 36, RULE_constructorCall);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);

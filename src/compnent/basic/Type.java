@@ -1,11 +1,6 @@
 package compnent.basic;
 
 public class Type {
-//    public static final Type Int = new Type("int", 0, true);
-//    public static final Type Bool = new Type("bool", 0, true);
-//    public static final Type Null = new Type("null", 0, true);
-//    public static final Type Void = new Type("void", 0, true);
-//    public static final Type Func = new Type("function", 0, true);
 
     public String id;
     public int dimension; // array dimension; 0 means scalar

@@ -1,5 +1,6 @@
 package compnent.scope;
 
+import ast.ASTNode;
 import compnent.basic.ClassType;
 import compnent.basic.Function;
 import exception.semantic.DuplicateSyntaxException;
@@ -15,16 +16,16 @@ public class ClassScope extends Scope{
         classType=cls;
     }
 
-    public void registerMethod(Function func) {
-        checkFunctionSyntax(func.id);
-        if (methodTable.containsKey(func.id) ) throw new DuplicateSyntaxException(func.id);
+    public void registerMethod(Function func,ASTNode node) {
+        checkFunctionSyntax(func.id,node);
+        if (methodTable.containsKey(func.id) ) throw new DuplicateSyntaxException(node,func.id);
         methodTable.put(func.id, func);
     }
     @Override
-    public Function getFunction(String func) {
+    public Function getFunction(String func, ASTNode node) {
         Function f;
         if ((f = methodTable.get(func)) != null) return f;
-        else return upstream.getFunction(func);
+        else return upstream.getFunction(func,node);
     }
 
 }

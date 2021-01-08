@@ -1,13 +1,18 @@
 package exception.semantic;
 
-public class UnsupportedBehavior extends SemanticException{
+import ast.ASTNode;
+
+public class UnsupportedBehavior extends SemanticException {
     private String info;
-    public UnsupportedBehavior(){this("");}
-    public UnsupportedBehavior(String s){this.info=s;}
+
+    public UnsupportedBehavior(String s, ASTNode node) {
+        super(node.coor);
+        this.info = s;
+    }
 
     @Override
     public String toString() {
-        return "UnsupportedBehavior{" +
+        return "UnsupportedBehavior{" + coor.toString() +
                 "info='" + info + '\'' +
                 '}';
     }

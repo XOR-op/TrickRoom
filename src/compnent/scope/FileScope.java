@@ -1,5 +1,6 @@
 package compnent.scope;
 
+import ast.ASTNode;
 import compnent.basic.*;
 import exception.semantic.*;
 
@@ -16,42 +17,42 @@ public class FileScope extends Scope {
     }
 
     public void registerFunction(Function func) {
-        if (functionTable.containsKey(func.id)) throw new DuplicateSyntaxException(func.id);
+        if (functionTable.containsKey(func.id)) throw new DuplicateSyntaxException(func.node,func.id);
         functionTable.put(func.id, func);
     }
 
     public void registerClass(ClassType cls) {
         if (classTable.containsKey(cls.id)  || syntaxTable.containsKey(cls.id)  ||
-                functionTable.containsKey(cls.id) ) throw new DuplicateSyntaxException(cls.id);
+                functionTable.containsKey(cls.id) ) throw new DuplicateSyntaxException(cls.node,cls.id);
         classTable.put(cls.id, cls);
     }
 
     @Override
-    public Function getFunction(String func) {
+    public Function getFunction(String func,ASTNode node) {
         Function f;
         if ((f = functionTable.get(func)) != null) return f;
-        else throw new MissingSyntaxException(func);
+        else throw new MissingSyntaxException(node,func);
     }
 
     @Override
-    public ClassType getClass(String cls) {
+    public ClassType getClass(String cls, ASTNode node) {
         ClassType c;
         if((c=classTable.get(cls))!=null)return c;
-        else throw new MissingSyntaxException(cls);
+        else throw new MissingSyntaxException(node,cls);
     }
 
     @Override
-    protected void checkClassCollision(String id) {
-        if(classTable.containsKey(id))throw new DuplicateSyntaxException(id);
+    protected void checkClassCollision(String id,ASTNode node) {
+        if(classTable.containsKey(id))throw new DuplicateSyntaxException(node,id);
     }
     @Override
-    protected void checkVarSyntax(String id) {
-        if(classTable.get(id)!=null)throw new DuplicateSyntaxException(id);
+    protected void checkVarSyntax(String id,ASTNode node) {
+        if(classTable.get(id)!=null)throw new DuplicateSyntaxException(node,id);
     }
 
     @Override
-    protected void checkFunctionSyntax(String id) {
+    protected void checkFunctionSyntax(String id,ASTNode node) {
         // method can have the same identifier with static function
-        if(classTable.containsKey(id))throw new DuplicateSyntaxException(id);
+        if(classTable.containsKey(id))throw new DuplicateSyntaxException(node,id);
     }
 }

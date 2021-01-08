@@ -20,7 +20,7 @@ public class TrickRoom {
             var parser=new MxStarParser(tokenStream);
             var builder=new ASTBuilder();
             RootNode rootNode=(RootNode) builder.visit(parser.code());
-            new ScopeBuilder(rootNode).build();
+            new ScopeBuilder(rootNode);
             new TypeChecker().visit(rootNode);
             ObjectDumper.dump(rootNode);
         }catch (SemanticException e){

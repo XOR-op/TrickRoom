@@ -1,5 +1,6 @@
 package compnent.scope;
 
+import ast.ASTNode;
 import compnent.basic.ClassType;
 import compnent.basic.Function;
 import compnent.basic.Symbol;
@@ -24,43 +25,43 @@ public class Scope {
         return upstream;
     }
 
-    public Type getType(String id){
+    public Type getType(String id, ASTNode node){
         var sym=syntaxTable.get(id);
         if(sym!=null) return sym.getType();
-        else if(upstream!=null)return upstream.getType(id);
-        else throw new MissingSyntaxException(id);
+        else if(upstream!=null)return upstream.getType(id,node);
+        else throw new MissingSyntaxException(node,id);
     }
 
-    public Function getFunction(String func){
+    public Function getFunction(String func,ASTNode node){
         if(upstream==null)throw new MissingOverrideException();
-        return upstream.getFunction(func);
+        return upstream.getFunction(func,node);
     }
 
-    public ClassType getClass(String cls){
+    public ClassType getClass(String cls,ASTNode node){
         if(upstream==null)throw new MissingOverrideException();
-        return upstream.getClass(cls);
+        return upstream.getClass(cls,node);
     }
 
 
-    public void registerVar(String id, Type tp){
-        registerVar(new Symbol(tp,id));
+    public void registerVar(String id, Type tp,ASTNode node){
+        registerVar(new Symbol(tp,id),node);
     }
 
-    public void registerVar(Symbol sym) {
-        checkVarSyntax(sym.getName());
-        if (syntaxTable.containsKey(sym.getName()) ) throw new DuplicateSyntaxException(sym.getName());
+    public void registerVar(Symbol sym,ASTNode node) {
+        checkVarSyntax(sym.getName(),node);
+        if (syntaxTable.containsKey(sym.getName()) ) throw new DuplicateSyntaxException(node,sym.getName());
         sym.setScope(this);
         syntaxTable.put(sym.getName(), sym);
     }
 
-    protected void checkClassCollision(String id){
-        upstream.checkClassCollision(id);
+    protected void checkClassCollision(String id,ASTNode node){
+        upstream.checkClassCollision(id,node);
     }
 
-    protected void checkVarSyntax(String id){
-        if(upstream!=null)upstream.checkVarSyntax(id);
+    protected void checkVarSyntax(String id,ASTNode node){
+        if(upstream!=null)upstream.checkVarSyntax(id,node);
     }
-    protected void checkFunctionSyntax(String id){
-        if(upstream!=null)upstream.checkVarSyntax(id);
+    protected void checkFunctionSyntax(String id,ASTNode node){
+        if(upstream!=null)upstream.checkVarSyntax(id,node);
     }
 }

@@ -3,10 +3,13 @@ package semantic;
 import ast.*;
 import compnent.basic.*;
 import compnent.scope.*;
+import exception.semantic.DuplicateSyntaxException;
+import exception.semantic.MissingSyntaxException;
 import exception.semantic.WrongControlFlowStatementException;
 import exception.semantic.WrongReturnException;
 import utils.L;
 
+import java.util.HashMap;
 import java.util.Stack;
 
 /*
@@ -16,12 +19,14 @@ import java.util.Stack;
 public class ScopeBuilder implements ASTVisitor {
     private RootNode root;
     private Scope currentScope;
+    private FileScope top;
     private FunctionNode currentFunction;
     private Stack<LoopNode> loopNodeStack;
+    private HashMap<String,Type> typeCollection;
 
     private void pushScope(Scope scope) {
         assert scope.getUpstream()==null||scope.getUpstream()==currentScope;
-        L.i(scope.toString());
+//        L.i(scope.toString());
         currentScope = scope;
     }
 
@@ -30,7 +35,7 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     private void popScope() {
-        L.i(currentScope.toString());
+//        L.i(currentScope.toString());
         currentScope = currentScope.getUpstream();
     }
 
@@ -38,14 +43,28 @@ public class ScopeBuilder implements ASTVisitor {
         ((FileScope)currentScope).registerFunction(Function.parse(s));
     }
 
+    private void registerType(Type tp,ASTNode node){
+        if(typeCollection.containsKey(tp.id))throw new DuplicateSyntaxException(node,tp.id);
+        typeCollection.put(tp.id,tp);
+    }
+
+    private Type recoverType(Type originType,ASTNode node){
+        if(!typeCollection.containsKey(originType.id))throw new MissingSyntaxException(node,originType.id);
+        return typeCollection.get(originType.id);
+    }
+
     public ScopeBuilder(RootNode tree) {
         root = tree;
         loopNodeStack=new Stack<>();
+        typeCollection=new HashMap<>();
+        build();
     }
 
-    public Scope build() {
+    public Scope getCompletedScope(){return top;}
+
+    private Scope build() {
         // global file scope
-        var top = new FileScope();
+        top = new FileScope();
         currentScope = top;
         // register builtin functions
         globalRegisterFunc("void print(string str);");
@@ -55,6 +74,15 @@ public class ScopeBuilder implements ASTVisitor {
         globalRegisterFunc("string getString();");
         globalRegisterFunc("int getInt();");
         globalRegisterFunc("string toString(int i);");
+        // preload types
+        typeCollection.put("int",TypeConst.Int);
+        typeCollection.put("string",TypeConst.String);
+        typeCollection.put("bool",TypeConst.Bool);
+        typeCollection.put("void",TypeConst.Void);
+        typeCollection.put("null",TypeConst.Null);
+        for (var cls : root.classes) {
+            preScanClass(cls);
+        }
         // scan class and function definition to support forwarding reference
         for (var fun : root.functions) {
             top.registerFunction(scanFunction(fun));
@@ -70,6 +98,7 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     private Symbol visitDecl(DeclarationNode node) {
+        node.type=recoverType(node.type,node);
         return new Symbol(node.type, node.id);
     }
 
@@ -78,31 +107,45 @@ public class ScopeBuilder implements ASTVisitor {
         node.scope = new FunctionScope(currentScope);
         var func = new Function(node);
         func.id = node.funcId;
-        func.returnType=func.node.returnType;
+        node.returnType=recoverType(node.returnType,node);
+        func.returnType=node.returnType;
         for (var para : node.parameters) {
             var re = visitDecl(para);
-            node.scope.registerVar(re);
+            node.scope.registerVar(re,node);
             func.parameters.add(re);
         }
         return func;
     }
 
+    private void preScanClass(ClassNode node){
+        registerType(node.cls,node);
+    }
+
     private ClassType scanClass(ClassNode node) {
         // will check names
-        var cls = new ClassType(node);
+        var cls=node.cls;
         var scp = new ClassScope(currentScope, cls);
         node.scope = scp;
         pushScope(node);
-        cls.id = node.className;
         for (var method : node.methods) {
             var func = scanFunction(method);
-            scp.registerMethod(func);
+            scp.registerMethod(func,node);
             cls.memberFuncs.put(func.id, func);
         }
         for (var member : node.members) {
-            scp.registerVar(visitDecl(member));
+            scp.registerVar(visitDecl(member),node);
         }
-        // todo constructor
+        for(var con:node.constructor){
+            var fn=scanFunction(con);
+            fn.returnType=cls;
+            cls.constructor.add(fn);
+        }
+        if(cls.constructor.isEmpty()){
+            var fn=new FunctionNode(cls.id);
+            fn.suite=new SuiteNode();
+            fn.returnType=cls;
+            cls.constructor.add(new Function(fn));
+        }
         popScope();
         return cls;
     }
@@ -115,7 +158,7 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public void visit(DeclarationNode node) {
-        currentScope.registerVar(visitDecl(node));
+        currentScope.registerVar(visitDecl(node),node);
     }
 
     @Override
@@ -179,19 +222,19 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public void visit(ReturnNode node) {
-        if(currentFunction==null)throw new WrongReturnException();
+        if(currentFunction==null)throw new WrongReturnException(node);
         node.correspondingFunction=currentFunction;
     }
 
     @Override
     public void visit(BreakNode node) {
-        if(loopNodeStack.empty())throw new WrongControlFlowStatementException();
+        if(loopNodeStack.empty())throw new WrongControlFlowStatementException(node);
         node.correspondingLoop=loopNodeStack.peek();
     }
 
     @Override
     public void visit(ContinueNode node) {
-        if(loopNodeStack.empty())throw new WrongControlFlowStatementException();
+        if(loopNodeStack.empty())throw new WrongControlFlowStatementException(node);
         node.correspondingLoop=loopNodeStack.peek();
     }
 

@@ -73,7 +73,7 @@ atomExp:
 
 expression:
 	atomExp												    # atomExpr
-	| NEW_KW (arrayLiteral | funcCall | Identifier)		    # newExpr
+	| NEW_KW (arrayLiteral | constructorCall | Identifier)		    # newExpr
 	| expression DOT Identifier							    # memberExpr
 	| expression L_BRACKET expression R_BRACKET			    # indexExpr
 	| expression L_PARENTNESS expressionList? R_PARENTNESS	# funcExpr
@@ -92,7 +92,7 @@ expression:
 	| <assoc = right> expression ASSIGNMENT expression	    # assignExpr;
 
 // Basic Compnent
-funcCall: Identifier L_PARENTNESS expressionList? R_PARENTNESS;
+constructorCall: Identifier L_PARENTNESS expressionList? R_PARENTNESS;
 exprOrDecl: expression | declExpr;
 declExpr: varType varDeclaration (COMMA varDeclaration)*;
 

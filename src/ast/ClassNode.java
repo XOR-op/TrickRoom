@@ -1,16 +1,18 @@
 package ast;
 
+import compnent.basic.ClassType;
 import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 
 public class ClassNode extends ASTNode {
-    public String className;
+    public ClassType cls;
     public ArrayList<DeclarationNode> members;
     public ArrayList<FunctionNode> methods;
     public ArrayList<FunctionNode> constructor;
     public ClassNode(String name){
-        className=name;
+        cls=new ClassType(this);
+        cls.id=name;
         constructor=new ArrayList<>();
         members=new ArrayList<>();
         methods=new ArrayList<>();

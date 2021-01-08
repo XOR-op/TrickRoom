@@ -175,11 +175,11 @@ public interface MxStarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAssignExpr(MxStarParser.AssignExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MxStarParser#funcCall}.
+	 * Visit a parse tree produced by {@link MxStarParser#constructorCall}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFuncCall(MxStarParser.FuncCallContext ctx);
+	T visitConstructorCall(MxStarParser.ConstructorCallContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MxStarParser#exprOrDecl}.
 	 * @param ctx the parse tree
