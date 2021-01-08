@@ -28,7 +28,7 @@ public class Function extends Type{
         return t;
     }
     public static Function parse(String s){
-        var slice=s.split(" |\\(|\\);");
+        var slice=s.split("[ ,]+|\\(|\\);");
         ArrayList<Symbol> ls=new ArrayList<>();
         for(int i=2;i<slice.length;i+=2){
             assert !slice[i].equals("");
@@ -40,6 +40,16 @@ public class Function extends Type{
     public Function(FunctionNode fn){
         super(null);
         node=fn;
+        returnType=fn.returnType;
         parameters=new ArrayList<>();
+    }
+
+    @Override
+    public Type copy() {
+        Function fn=new Function(node);
+        fn.returnType=returnType;
+        fn.parameters=parameters;
+        fn.id=id;
+        return fn;
     }
 }

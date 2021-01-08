@@ -43,6 +43,11 @@ public class ScopeBuilder implements ASTVisitor {
         ((FileScope)currentScope).registerFunction(Function.parse(s));
     }
 
+    private void stringRegisterMethod(String s){
+        Function f=Function.parse(s);
+        ((ClassType)TypeConst.String).memberFuncs.put(f.id,f);
+    }
+
     private void registerType(Type tp,ASTNode node){
         if(typeCollection.containsKey(tp.id))throw new DuplicateSyntaxException(node,tp.id);
         typeCollection.put(tp.id,tp);
@@ -50,7 +55,13 @@ public class ScopeBuilder implements ASTVisitor {
 
     private Type recoverType(Type originType,ASTNode node){
         if(!typeCollection.containsKey(originType.id))throw new MissingSyntaxException(node,originType.id);
-        return typeCollection.get(originType.id);
+        if(originType.dimension==0)
+            return typeCollection.get(originType.id);
+        else {
+            Type t=typeCollection.get(originType.id).copy();
+            t.dimension=originType.dimension;
+            return t;
+        }
     }
 
     public ScopeBuilder(RootNode tree) {
@@ -66,6 +77,7 @@ public class ScopeBuilder implements ASTVisitor {
         // global file scope
         top = new FileScope();
         currentScope = top;
+        root.scope=top;
         // register builtin functions
         globalRegisterFunc("void print(string str);");
         globalRegisterFunc("void println(string str);");
@@ -74,6 +86,10 @@ public class ScopeBuilder implements ASTVisitor {
         globalRegisterFunc("string getString();");
         globalRegisterFunc("int getInt();");
         globalRegisterFunc("string toString(int i);");
+        stringRegisterMethod("int length();");
+        stringRegisterMethod("string substring(int left, int right);");
+        stringRegisterMethod("int parseInt();");
+        stringRegisterMethod("int ord(int pos);");
         // preload types
         typeCollection.put("int",TypeConst.Int);
         typeCollection.put("string",TypeConst.String);
@@ -133,12 +149,15 @@ public class ScopeBuilder implements ASTVisitor {
             cls.memberFuncs.put(func.id, func);
         }
         for (var member : node.members) {
-            scp.registerVar(visitDecl(member),node);
+            var sym=visitDecl(member);
+            scp.registerVar(sym,node);
+            cls.memberVars.put(member.id,sym);
         }
         for(var con:node.constructor){
             var fn=scanFunction(con);
             fn.returnType=cls;
             cls.constructor.add(fn);
+            // todo check for duplicated constructor
         }
         if(cls.constructor.isEmpty()){
             var fn=new FunctionNode(cls.id);
