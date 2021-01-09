@@ -1,4 +1,3 @@
-import compnent.scope.*;
 import exception.semantic.*;
 import semantic.*;
 import ast.*;
@@ -12,7 +11,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 
 public class TrickRoom {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try {
             InputStream is = args.length > 0 ? new FileInputStream(args[0]):System.in;
             var lexer=new MxStarLexer(CharStreams.fromStream(is));
@@ -26,7 +25,7 @@ public class TrickRoom {
             var builder=new ASTBuilder();
             RootNode rootNode=(RootNode) builder.visit(parser.code());
             new ScopeBuilder(rootNode);
-            new TypeChecker().visit(rootNode);
+            new TypeCollector().visit(rootNode);
 //            ObjectDumper.dump(rootNode);
             System.out.println("Success");
         } catch (SemanticException e){

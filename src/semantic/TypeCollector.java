@@ -5,9 +5,8 @@ import compnent.basic.*;
 import compnent.scope.*;
 import exception.MissingOverrideException;
 import exception.semantic.*;
-import utils.L;
 
-public class TypeChecker implements ASTVisitor {
+public class TypeCollector implements ASTVisitor {
     private Scope currentScope;
 
     private boolean checkIn(ASTNode node) {
@@ -33,16 +32,23 @@ public class TypeChecker implements ASTVisitor {
             throw new TypeMismatchException(a, b, node);
     }
 
-    private void checkWithNull(Type a,Type b,ASTNode node){
-        if(TypeConst.Null.equals(b)){
-            if(a.equals(TypeConst.Void)||a.equals(TypeConst.Int)||a.equals(TypeConst.Bool))
-                throw new TypeMismatchException(a,b,node);
-        }else check(a,b,node);
+    private void checkWithNull(Type a, Type b, ASTNode node) {
+        if (TypeConst.Null.equals(b)) {
+            if ((a.equals(TypeConst.Void) || a.equals(TypeConst.Int) || a.equals(TypeConst.Bool)) && a.dimension == 0)
+                throw new TypeMismatchException(a, b, node);
+        } else if (TypeConst.Null.equals(a)) {
+            if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && b.dimension == 0)
+                throw new TypeMismatchException(a, b, node);
+        }else check(a, b, node);
     }
 
     @Override
     public void visit(RootNode node) {
-        boolean will=checkIn(node);
+        boolean will = checkIn(node);
+        Function main;
+        if (!((main = currentScope.getFunction("main", node)) != null
+                && main.returnType.equals(TypeConst.Int) && main.parameters.isEmpty()))
+            throw new MissingSyntaxException(node, "main function");
         for (var sub : node.nodeList)
             sub.accept(this);
         checkOut(will);
@@ -50,7 +56,7 @@ public class TypeChecker implements ASTVisitor {
 
     @Override
     public void visit(ClassNode node) {
-        boolean will=checkIn(node);
+        boolean will = checkIn(node);
         for (var sub : node.members) visit(sub);
         for (var sub : node.constructor) visit(sub);
         for (var sub : node.methods) visit(sub);
@@ -59,7 +65,7 @@ public class TypeChecker implements ASTVisitor {
 
     @Override
     public void visit(FunctionNode node) {
-        boolean will=checkIn(node);
+        boolean will = checkIn(node);
         visit(node.suite);
         checkOut(will);
     }
@@ -89,7 +95,7 @@ public class TypeChecker implements ASTVisitor {
 
     @Override
     public void visit(LoopNode node) {
-        boolean will=checkIn(node);
+        boolean will = checkIn(node);
         Type con;
         if (node.initDecl != null) node.initDecl.accept(this);
         if (node.initExpr != null) inferType(node.initExpr);
@@ -102,18 +108,18 @@ public class TypeChecker implements ASTVisitor {
 
     @Override
     public void visit(ReturnNode node) {
-        if(node.returnExpr == null){
-            if(!TypeConst.Void.equals(node.correspondingFunction.returnType))
-                throw new TypeMismatchException(TypeConst.Void,node.correspondingFunction.returnType,node);
+        if (node.returnExpr == null) {
+            if (!TypeConst.Void.equals(node.correspondingFunction.returnType))
+                throw new TypeMismatchException(TypeConst.Void, node.correspondingFunction.returnType, node);
             else return;
         }
-        check(inferType(node.returnExpr), node.correspondingFunction.returnType, node);
+        checkWithNull(inferType(node.returnExpr), node.correspondingFunction.returnType, node);
     }
 
     @Override
     public void visit(ExprStmtNode node) {
         boolean will = checkIn(node);
-        if(node.expr!=null)
+        if (node.expr != null)
             inferType(node.expr);
         checkOut(will);
     }
@@ -157,29 +163,35 @@ public class TypeChecker implements ASTVisitor {
         if (node instanceof UnaryExprNode) return calcType((UnaryExprNode) node);
         // if(node instanceof ArrayLiteralNode)
         if (node instanceof SubscriptionNode) return calcType((SubscriptionNode) node);
+        assert node instanceof ArrayLiteralNode;
         return calcType((ArrayLiteralNode) node);
+    }
+
+    private boolean isLeftValue(ASTNode node) {
+        return node instanceof IdentifierNode || node instanceof MemberNode || node instanceof SubscriptionNode;
     }
 
     private Type calcType(SubscriptionNode node) {
         Type indexType = inferType(node.rhs);
         if (!indexType.equals(TypeConst.Int)) throw new TypeMismatchException(indexType, TypeConst.Int, node);
         Type arrayType = inferType(node.lhs);
-        if (arrayType.dimension == 0) throw new NotSubscriptableException(node);
+        if (arrayType.dimension == 0)
+            throw new NotSubscriptableException(node);
         // return element type
         Type t = arrayType.copy();
         t.dimension -= 1;
+        node.type = t;
         return t;
     }
 
     private Type calcType(AssignmentNode node) {
         // check left value
-        if (node.lhs instanceof IdentifierNode
-                || node.lhs instanceof MemberNode || node.lhs instanceof SubscriptionNode) {
+        if (isLeftValue(node.lhs)) {
             Type l = inferType(node.lhs), r = inferType(node.rhs);
             checkWithNull(l, r, node);
             node.type = l;
             return l;
-        } else throw new AssignmentException(node);
+        } else throw new LeftValueException(node);
     }
 
     private ClassType getObjOfMemberNode(MemberNode node) {
@@ -203,14 +215,19 @@ public class TypeChecker implements ASTVisitor {
     private int checkParameters(Function func, FuncCallNode node) {
         if (func.parameters.size() != node.arguments.size()) return 1;
         for (int i = 0; i < func.parameters.size(); ++i) {
-            if (!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
+//            if (!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
+//                return 2;
+            try {
+                checkWithNull(func.parameters.get(i).getType(),inferType(node.arguments.get(i)),node);
+            }catch (TypeMismatchException e){
                 return 2;
+            }
         }
         return 0;
     }
 
     private Type calcType(FuncCallNode node) {
-        Function func=null;
+        Function func = null;
         if (node.isConstructor) {
             assert node.callee instanceof IdentifierNode;
             ClassType ct = currentScope.getClass(((IdentifierNode) node.callee).id, node);
@@ -225,13 +242,22 @@ public class TypeChecker implements ASTVisitor {
             if (node.callee instanceof IdentifierNode) {
                 // global function
                 func = currentScope.getFunction(((IdentifierNode) node.callee).id, node);
-            }
-            else {
+            } else {
                 // method
                 assert node.callee instanceof MemberNode;
-                ClassType ct = getObjOfMemberNode((MemberNode) node.callee);
-                if ((func = ct.memberFuncs.get(((MemberNode) node.callee).member)) == null)
-                    throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
+                // special judge for array.size()
+                Type type = inferType(((MemberNode) node.callee).object);
+                if (type instanceof ClassType) {
+                    // find if there exists such method
+                    ClassType ct = getObjOfMemberNode((MemberNode) node.callee);
+                    if ((func = ct.memberFuncs.get(((MemberNode) node.callee).member)) == null)
+                        throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
+                } else if (type.dimension != 0) {
+                    if (!((MemberNode) node.callee).member.equals("size"))
+                        throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
+                    else func = Function.arraySize;
+                } else
+                    throw new MemberMisuseException(node);
             }
             // check types of arguments
             switch (checkParameters(func, node)) {
@@ -251,11 +277,11 @@ public class TypeChecker implements ASTVisitor {
     }
 
     private Type calcType(IdentifierNode node) {
-        return currentScope.getType(node.id, node);
+        return node.type;
     }
 
     private Type calcType(ThisNode node) {
-        return currentScope.getType("this", node);
+        return node.type;
     }
 
     private Type calcType(NewExprNode node) {
@@ -264,14 +290,20 @@ public class TypeChecker implements ASTVisitor {
     }
 
     private Type calcType(BinaryExprNode node) {
-        assert node.lhs!=null&&node.rhs!=null;
+        assert node.lhs != null && node.rhs != null;
         Type lhs = inferType(node.lhs), rhs = inferType(node.rhs);
-        check(lhs, rhs, node);
+        if (node.lexerSign.equals("==") || node.lexerSign.equals("!=")) {
+            checkWithNull(lhs, rhs, node);
+        }
+        else {
+            check(lhs, rhs, node);
+            if (lhs instanceof ClassType && lhs != TypeConst.String)
+                throw new UnsupportedBehavior("binary operation on Class is undefined", node);
+            if (lhs instanceof Function)
+                throw new TypeMismatchException(lhs, rhs, node);
+        }
+        // lhs to avoid null
         node.type = lhs;
-        if (node.type instanceof Function)
-            throw new TypeMismatchException(lhs, rhs, node);
-        if (node.type instanceof ClassType && node.type != TypeConst.String)
-            throw new UnsupportedBehavior("binary operation on Class is undefined", node);
         switch (node.lexerSign) {
             case "-":
             case "*":
@@ -299,7 +331,7 @@ public class TypeChecker implements ASTVisitor {
             case "<=":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.String)))
                     throw new TypeMismatchException(lhs, rhs, node);
-                node.type=TypeConst.Bool;
+                node.type = TypeConst.Bool;
                 break;
             case "+":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.String)))
@@ -320,8 +352,6 @@ public class TypeChecker implements ASTVisitor {
         switch (node.lexerSign) {
             case "-":
             case "+":
-            case "++":
-            case "--":
             case "~":
                 if (!node.type.equals(TypeConst.Int))
                     throw new TypeMismatchException(node.type, TypeConst.Int, node);
@@ -329,6 +359,13 @@ public class TypeChecker implements ASTVisitor {
             case "!":
                 if (!node.type.equals(TypeConst.Bool))
                     throw new TypeMismatchException(node.type, TypeConst.Bool, node);
+                break;
+            case "++":
+            case "--":
+                if (!node.type.equals(TypeConst.Int))
+                    throw new TypeMismatchException(node.type, TypeConst.Int, node);
+                if (!node.isPrefix && !isLeftValue(node.expr))
+                    throw new LeftValueException(node);
                 break;
         }
         return node.type;

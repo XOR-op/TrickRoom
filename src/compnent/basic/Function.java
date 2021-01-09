@@ -9,11 +9,19 @@ public class Function extends Type{
     public ArrayList<Symbol> parameters;
     public FunctionNode node;
     public static final FunctionNode BUILTIN_FUNCTION=new FunctionNode("");
+    public static Function arraySize=getArraySize();
     private static Function parse(Type returnType, String identifier, ArrayList<Symbol> paraTypes){
         Function f=new Function(BUILTIN_FUNCTION);
         f.id=identifier;
         f.returnType=returnType;
         f.parameters=paraTypes;
+        return f;
+    }
+    private static Function getArraySize(){
+        Function f=new Function(BUILTIN_FUNCTION);
+        f.id="size";
+        f.returnType=TypeConst.Int;
+        f.parameters=new ArrayList<>();
         return f;
     }
     private static Type newType(String s){

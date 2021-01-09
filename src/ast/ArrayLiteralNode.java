@@ -7,7 +7,6 @@ import java.util.ArrayList;
 
 public class ArrayLiteralNode extends ExprNode {
     public Type type;
-    public int dimension;
     public ArrayList<ExprNode> dimArr;
     public ArrayLiteralNode(Type t){
         type=t;

@@ -25,10 +25,10 @@ public class Scope {
         return upstream;
     }
 
-    public Type getType(String id, ASTNode node){
+    public Type getVarType(String id, ASTNode node){
         var sym=syntaxTable.get(id);
         if(sym!=null) return sym.getType();
-        else if(upstream!=null)return upstream.getType(id,node);
+        else if(upstream!=null)return upstream.getVarType(id,node);
         else throw new MissingSyntaxException(node,id);
     }
 

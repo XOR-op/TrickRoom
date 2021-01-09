@@ -3,14 +3,14 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class AssignmentException extends SemanticException{
+public class LeftValueException extends SemanticException{
 
-    public AssignmentException(ASTNode node) {
+    public LeftValueException(ASTNode node) {
         super(node.coor);
     }
     @Override
     public String toString() {
-        return "AssignmentException{"+coor.toString() +
+        return "LeftValueException{"+coor.toString() +
                 '}';
     }
 }
