@@ -1,6 +1,6 @@
 package ast;
 
-import compnent.basic.Function;
+import compnent.basic.FunctionType;
 import semantic.ASTVisitor;
 
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class FuncCallNode extends ExprNode {
     public ExprNode callee;
     public ArrayList<ExprNode> arguments;
-    public Function correspondingFunc;
+    public FunctionType correspondingFunc;
     public boolean isConstructor;
     public FuncCallNode(ExprNode s,boolean isConstructor){
         callee =s;

@@ -4,21 +4,21 @@ import ast.FunctionNode;
 
 import java.util.ArrayList;
 
-public class Function extends Type{
+public class FunctionType extends Type{
     public Type returnType;
     public ArrayList<Symbol> parameters;
     public FunctionNode node;
     public static final FunctionNode BUILTIN_FUNCTION=new FunctionNode("");
-    public static Function arraySize=getArraySize();
-    private static Function parse(Type returnType, String identifier, ArrayList<Symbol> paraTypes){
-        Function f=new Function(BUILTIN_FUNCTION);
+    public static FunctionType arraySize=getArraySize();
+    private static FunctionType parse(Type returnType, String identifier, ArrayList<Symbol> paraTypes){
+        FunctionType f=new FunctionType(BUILTIN_FUNCTION);
         f.id=identifier;
         f.returnType=returnType;
         f.parameters=paraTypes;
         return f;
     }
-    private static Function getArraySize(){
-        Function f=new Function(BUILTIN_FUNCTION);
+    private static FunctionType getArraySize(){
+        FunctionType f=new FunctionType(BUILTIN_FUNCTION);
         f.id="size";
         f.returnType=TypeConst.Int;
         f.parameters=new ArrayList<>();
@@ -35,7 +35,7 @@ public class Function extends Type{
         }
         return t;
     }
-    public static Function parse(String s){
+    public static FunctionType parse(String s){
         var slice=s.split("[ ,]+|\\(|\\);");
         ArrayList<Symbol> ls=new ArrayList<>();
         for(int i=2;i<slice.length;i+=2){
@@ -45,7 +45,7 @@ public class Function extends Type{
         }
         return parse(newType(slice[0]),slice[1],ls);
     }
-    public Function(FunctionNode fn){
+    public FunctionType(FunctionNode fn){
         super(null);
         node=fn;
         returnType=fn.returnType;
@@ -54,7 +54,7 @@ public class Function extends Type{
 
     @Override
     public Type copy() {
-        Function fn=new Function(node);
+        FunctionType fn=new FunctionType(node);
         fn.returnType=returnType;
         fn.parameters=parameters;
         fn.id=id;

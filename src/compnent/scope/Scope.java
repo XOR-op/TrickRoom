@@ -2,7 +2,7 @@ package compnent.scope;
 
 import ast.ASTNode;
 import compnent.basic.ClassType;
-import compnent.basic.Function;
+import compnent.basic.FunctionType;
 import compnent.basic.Symbol;
 import compnent.basic.Type;
 import exception.MissingOverrideException;
@@ -32,7 +32,7 @@ public class Scope {
         else throw new MissingSyntaxException(node,id);
     }
 
-    public Function getFunction(String func,ASTNode node){
+    public FunctionType getFunction(String func, ASTNode node){
         if(upstream==null)throw new MissingOverrideException();
         return upstream.getFunction(func,node);
     }

@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ClassType extends Type{
-    public HashMap<String,Function> memberFuncs;
+    public HashMap<String, FunctionType> memberFuncs;
     public HashMap<String,Symbol> memberVars;
-    public ArrayList<Function> constructor;
+    public ArrayList<FunctionType> constructor;
     public ClassNode node;
     private static final ClassNode BUILTIN_CLASS=new ClassNode("BUILTIN");
     public ClassType(ClassNode cn){
@@ -19,7 +19,7 @@ public class ClassType extends Type{
         constructor=new ArrayList<>();
     }
     private ClassType(int forstring){
-        super("string",0);
+        super("string");
         node=BUILTIN_CLASS;
         memberFuncs=new HashMap<>();
         memberVars=new HashMap<>();
@@ -33,7 +33,6 @@ public class ClassType extends Type{
     public Type copy() {
         ClassType ct=new ClassType(node);
         ct.id=id;
-        ct.dimension=dimension;
         ct.memberFuncs=memberFuncs;
         ct.memberVars=memberVars;
         ct.constructor=constructor;

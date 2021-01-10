@@ -11,7 +11,7 @@ public class TypeCollector implements ASTVisitor {
 
     private boolean checkIn(ASTNode node) {
         if (node.scope != null) {
-            assert node.scope.getUpstream() == currentScope;
+//            assert node.scope.getUpstream() == currentScope; not necessary
             currentScope = node.scope;
 //            L.i(currentScope.toString());
             return true;
@@ -34,10 +34,10 @@ public class TypeCollector implements ASTVisitor {
 
     private void checkWithNull(Type a, Type b, ASTNode node) {
         if (TypeConst.Null.equals(b)) {
-            if ((a.equals(TypeConst.Void) || a.equals(TypeConst.Int) || a.equals(TypeConst.Bool)) && a.dimension == 0)
+            if ((a.equals(TypeConst.Void) || a.equals(TypeConst.Int) || a.equals(TypeConst.Bool)) && !a.isArray())
                 throw new TypeMismatchException(a, b, node);
         } else if (TypeConst.Null.equals(a)) {
-            if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && b.dimension == 0)
+            if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && !a.isArray())
                 throw new TypeMismatchException(a, b, node);
         }else check(a, b, node);
     }
@@ -45,7 +45,7 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public void visit(RootNode node) {
         boolean will = checkIn(node);
-        Function main;
+        FunctionType main;
         if (!((main = currentScope.getFunction("main", node)) != null
                 && main.returnType.equals(TypeConst.Int) && main.parameters.isEmpty()))
             throw new MissingSyntaxException(node, "main function");
@@ -81,15 +81,11 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public void visit(ConditionalNode node) {
         Type con;
-        if ((con = inferType(node.condExpr)) != TypeConst.Bool)
+        if (!(con = inferType(node.condExpr)).equals(TypeConst.Bool))
             throw new TypeMismatchException(con, TypeConst.Bool, node);
-//        boolean will = checkIn(node.trueStat);
         node.trueStat.accept(this);
-//        checkOut(will);
         if (node.falseStat != null) {
-//            will = checkIn(node.falseStat);
             node.falseStat.accept(this);
-//            checkOut(will);
         }
     }
 
@@ -175,13 +171,11 @@ public class TypeCollector implements ASTVisitor {
         Type indexType = inferType(node.rhs);
         if (!indexType.equals(TypeConst.Int)) throw new TypeMismatchException(indexType, TypeConst.Int, node);
         Type arrayType = inferType(node.lhs);
-        if (arrayType.dimension == 0)
+        if (!arrayType.isArray())
             throw new NotSubscriptableException(node);
         // return element type
-        Type t = arrayType.copy();
-        t.dimension -= 1;
-        node.type = t;
-        return t;
+        node.type= ((ArrayType)arrayType).subType();
+        return node.type;
     }
 
     private Type calcType(AssignmentNode node) {
@@ -212,7 +206,7 @@ public class TypeCollector implements ASTVisitor {
         return node.type;
     }
 
-    private int checkParameters(Function func, FuncCallNode node) {
+    private int checkParameters(FunctionType func, FuncCallNode node) {
         if (func.parameters.size() != node.arguments.size()) return 1;
         for (int i = 0; i < func.parameters.size(); ++i) {
 //            if (!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
@@ -227,7 +221,7 @@ public class TypeCollector implements ASTVisitor {
     }
 
     private Type calcType(FuncCallNode node) {
-        Function func = null;
+        FunctionType func = null;
         if (node.isConstructor) {
             assert node.callee instanceof IdentifierNode;
             ClassType ct = currentScope.getClass(((IdentifierNode) node.callee).id, node);
@@ -252,10 +246,10 @@ public class TypeCollector implements ASTVisitor {
                     ClassType ct = getObjOfMemberNode((MemberNode) node.callee);
                     if ((func = ct.memberFuncs.get(((MemberNode) node.callee).member)) == null)
                         throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
-                } else if (type.dimension != 0) {
+                } else if (type.isArray()) {
                     if (!((MemberNode) node.callee).member.equals("size"))
                         throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
-                    else func = Function.arraySize;
+                    else func = FunctionType.arraySize;
                 } else
                     throw new MemberMisuseException(node);
             }
@@ -297,9 +291,9 @@ public class TypeCollector implements ASTVisitor {
         }
         else {
             check(lhs, rhs, node);
-            if (lhs instanceof ClassType && lhs != TypeConst.String)
+            if (lhs instanceof ClassType && !lhs.equals( TypeConst.String))
                 throw new UnsupportedBehavior("binary operation on Class is undefined", node);
-            if (lhs instanceof Function)
+            if (lhs instanceof FunctionType)
                 throw new TypeMismatchException(lhs, rhs, node);
         }
         // lhs to avoid null
@@ -372,6 +366,12 @@ public class TypeCollector implements ASTVisitor {
     }
 
     private Type calcType(ArrayLiteralNode node) {
+        Type tp;
+        for(var sub:node.dimArr){
+            tp=inferType(sub);
+            if(!tp.equals(TypeConst.Int))
+                throw new TypeMismatchException(tp,TypeConst.Int,sub);
+        }
         return node.type;
     }
 }

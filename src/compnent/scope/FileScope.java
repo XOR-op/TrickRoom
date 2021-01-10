@@ -7,7 +7,7 @@ import exception.semantic.*;
 import java.util.HashMap;
 
 public class FileScope extends Scope {
-    private HashMap<String, Function> functionTable;
+    private HashMap<String, FunctionType> functionTable;
     private HashMap<String, ClassType> classTable;
 
     public FileScope() {
@@ -16,7 +16,7 @@ public class FileScope extends Scope {
         classTable=new HashMap<>();
     }
 
-    public void registerFunction(Function func) {
+    public void registerFunction(FunctionType func) {
         if (functionTable.containsKey(func.id)) throw new DuplicateSyntaxException(func.node,func.id);
         functionTable.put(func.id, func);
     }
@@ -28,8 +28,8 @@ public class FileScope extends Scope {
     }
 
     @Override
-    public Function getFunction(String func,ASTNode node) {
-        Function f;
+    public FunctionType getFunction(String func, ASTNode node) {
+        FunctionType f;
         if ((f = functionTable.get(func)) != null) return f;
         else throw new MissingSyntaxException(node,func);
     }

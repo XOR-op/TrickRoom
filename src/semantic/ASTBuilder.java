@@ -1,10 +1,14 @@
 package semantic;
 
 import ast.*;
+import compnent.basic.ArrayType;
 import compnent.basic.ClassType;
 import compnent.basic.Type;
 import compnent.basic.TypeConst;
+import compnent.info.CodePosition;
 import exception.MissingOverrideException;
+import exception.semantic.ParsingException;
+import exception.semantic.SemanticException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import parser.MxStarParser;
 import parser.MxStarVisitor;
@@ -197,6 +201,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitNewExpr(MxStarParser.NewExprContext ctx) {
+        if(ctx.arraySemanticError()!=null)throw new ParsingException(new CodePosition(ctx));
         var nn = new NewExprNode(ctx.arrayLiteral() == null);
         nn.setPos(ctx);
         if (nn.isConstruct) {
@@ -334,7 +339,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             // type will be converted to ClassType later
             type = new Type(ctx.Identifier().getText());
         }
-        var aln = new ArrayLiteralNode(new Type(type.id, ctx.L_BRACKET().size()));
+        var aln = new ArrayLiteralNode(new ArrayType(new Type(type.id), ctx.L_BRACKET().size()));
         aln.setPos(ctx);
         if (ctx.expression() != null)
             for (var exp : ctx.expression())
@@ -353,9 +358,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     private Type iterateVarType(MxStarParser.VarTypeContext ctx) {
         if (ctx.varType() != null) {
-            Type tp = iterateVarType(ctx.varType()).copy();
-            tp.dimension = ctx.L_BRACKET().size();
-            return tp;
+            return new ArrayType(iterateVarType(ctx.varType()),ctx.L_BRACKET().size());
         } else if (ctx.builtinType() != null) {
             if (ctx.builtinType().INT_KW() != null) return TypeConst.Int;
             else if (ctx.builtinType().STRING_KW() != null) return TypeConst.String;
@@ -402,6 +405,11 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitDeclExpr(MxStarParser.DeclExprContext ctx) {
+        return notImplemented();
+    }
+
+    @Override
+    public ASTNode visitArraySemanticError(MxStarParser.ArraySemanticErrorContext ctx) {
         return notImplemented();
     }
 

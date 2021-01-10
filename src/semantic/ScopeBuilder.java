@@ -3,10 +3,7 @@ package semantic;
 import ast.*;
 import compnent.basic.*;
 import compnent.scope.*;
-import exception.semantic.DuplicateSyntaxException;
-import exception.semantic.MissingSyntaxException;
-import exception.semantic.WrongControlFlowStatementException;
-import exception.semantic.WrongReturnException;
+import exception.semantic.*;
 
 import java.util.HashMap;
 import java.util.Stack;
@@ -41,11 +38,11 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     private void globalRegisterFunc(String s) {
-        ((FileScope) currentScope).registerFunction(Function.parse(s));
+        ((FileScope) currentScope).registerFunction(FunctionType.parse(s));
     }
 
     private void stringRegisterMethod(String s) {
-        Function f = Function.parse(s);
+        FunctionType f = FunctionType.parse(s);
         ((ClassType) TypeConst.String).memberFuncs.put(f.id, f);
     }
 
@@ -54,14 +51,14 @@ public class ScopeBuilder implements ASTVisitor {
         typeCollection.put(tp.id, tp);
     }
 
+    // used for recover type with class specification
+    // e.g. class will be Type instead of ClassType in ASTBuilder
     private Type recoverType(Type originType, ASTNode node) {
         if (!typeCollection.containsKey(originType.id)) throw new MissingSyntaxException(node, originType.id);
-        if (originType.dimension == 0)
+        if (!originType.isArray())
             return typeCollection.get(originType.id);
         else {
-            Type t = typeCollection.get(originType.id).copy();
-            t.dimension = originType.dimension;
-            return t;
+            return new ArrayType(typeCollection.get(originType.id).copy(),((ArrayType)originType).dimension);
         }
     }
 
@@ -121,10 +118,10 @@ public class ScopeBuilder implements ASTVisitor {
         return new Symbol(node.type, node.id);
     }
 
-    private Function scanFunction(FunctionNode node) {
+    private FunctionType scanFunction(FunctionNode node) {
         // will check parameters
         node.scope = new FunctionScope(currentScope);
-        var func = new Function(node);
+        var func = new FunctionType(node);
         func.id = node.funcId;
         node.returnType = recoverType(node.returnType, node);
         func.returnType = node.returnType;
@@ -154,11 +151,18 @@ public class ScopeBuilder implements ASTVisitor {
         }
         for (var method : node.methods) {
             var func = scanFunction(method);
+            if(func.id.equals(cls.id)){
+                throw new NoMatchedFunctionException(method,"invalid name for method");
+            }
             scp.registerMethod(func, node);
             cls.memberFuncs.put(func.id, func);
         }
         for (var con : node.constructor) {
             var fn = scanFunction(con);
+            if(!fn.id.equals(cls.id)){
+                // mismatched constructor
+                throw new NoMatchedFunctionException(con,"constructor mismatched");
+            }
             fn.returnType = cls;
             cls.constructor.add(fn);
             // todo check for duplicated constructor
@@ -167,7 +171,7 @@ public class ScopeBuilder implements ASTVisitor {
             var fn = new FunctionNode(cls.id);
             fn.suite = new SuiteNode();
             fn.returnType = cls;
-            cls.constructor.add(new Function(fn));
+            cls.constructor.add(new FunctionType(fn));
         }
         popScope();
         return cls;
@@ -326,9 +330,9 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public void visit(ArrayLiteralNode node) {
-        Type ntp=recoverType(node.type,node).copy();
-        ntp.dimension=node.type.dimension;
-        node.type=ntp;
+        node.type=recoverType(node.type,node);
+        for(var sub:node.dimArr)
+            sub.accept(this);
     }
 
     @Override

@@ -193,6 +193,12 @@ public interface MxStarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitDeclExpr(MxStarParser.DeclExprContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MxStarParser#arraySemanticError}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArraySemanticError(MxStarParser.ArraySemanticErrorContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MxStarParser#arrayLiteral}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

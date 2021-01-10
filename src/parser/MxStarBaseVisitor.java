@@ -219,6 +219,13 @@ public class MxStarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitArraySemanticError(MxStarParser.ArraySemanticErrorContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitArrayLiteral(MxStarParser.ArrayLiteralContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
