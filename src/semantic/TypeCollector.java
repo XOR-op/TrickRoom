@@ -267,10 +267,9 @@ public class TypeCollector implements ASTVisitor {
             }
             // check types of arguments
             switch (checkParameters(func, node)) {
-                case 1 -> throw new WrongParameterSize(node);
-                case 2 -> throw new NoMatchedFunction(node);
-                default -> {
-                }
+                case 1:throw new WrongParameterSize(node);
+                case 2 : throw new NoMatchedFunction(node);
+                default:
             }
         }
         node.type = func.returnType;
