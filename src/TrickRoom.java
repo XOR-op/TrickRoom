@@ -117,6 +117,7 @@ public class TrickRoom {
                 logln("Success");
         } catch (SemanticException e) {
             logln(ANSI_PURPLE + e.toString() + ANSI_RESET);
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -150,7 +151,6 @@ public class TrickRoom {
         } catch (SemanticException e) {
             logln(ANSI_PURPLE + e.toString() + ANSI_RESET);
             throw e;
-
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
