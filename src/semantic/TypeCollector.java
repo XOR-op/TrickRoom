@@ -3,7 +3,7 @@ package semantic;
 import ast.*;
 import compnent.basic.*;
 import compnent.scope.*;
-import exception.MissingOverrideException;
+import exception.UnimplementedError;
 import exception.semantic.*;
 
 public class TypeCollector implements ASTVisitor {
@@ -29,16 +29,16 @@ public class TypeCollector implements ASTVisitor {
     private void check(Type a, Type b, ASTNode node) {
         // check for binary expression
         if (!a.equals(b) || a.equals(TypeConst.Void))
-            throw new TypeMismatchException(a, b, node);
+            throw new TypeMismatch(a, b, node);
     }
 
     private void checkWithNull(Type a, Type b, ASTNode node) {
         if (TypeConst.Null.equals(b)) {
             if ((a.equals(TypeConst.Void) || a.equals(TypeConst.Int) || a.equals(TypeConst.Bool)) && !a.isArray())
-                throw new TypeMismatchException(a, b, node);
+                throw new TypeMismatch(a, b, node);
         } else if (TypeConst.Null.equals(a)) {
             if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && !a.isArray())
-                throw new TypeMismatchException(a, b, node);
+                throw new TypeMismatch(a, b, node);
         }else check(a, b, node);
     }
 
@@ -48,7 +48,7 @@ public class TypeCollector implements ASTVisitor {
         FunctionType main;
         if (!((main = currentScope.getFunction("main", node)) != null
                 && main.returnType.equals(TypeConst.Int) && main.parameters.isEmpty()))
-            throw new MissingSyntaxException(node, "main function");
+            throw new MissingSyntax(node, "main function");
         for (var sub : node.nodeList)
             sub.accept(this);
         checkOut(will);
@@ -82,7 +82,7 @@ public class TypeCollector implements ASTVisitor {
     public void visit(ConditionalNode node) {
         Type con;
         if (!(con = inferType(node.condExpr)).equals(TypeConst.Bool))
-            throw new TypeMismatchException(con, TypeConst.Bool, node);
+            throw new TypeMismatch(con, TypeConst.Bool, node);
         node.trueStat.accept(this);
         if (node.falseStat != null) {
             node.falseStat.accept(this);
@@ -96,7 +96,7 @@ public class TypeCollector implements ASTVisitor {
         if (node.initDecl != null) node.initDecl.accept(this);
         if (node.initExpr != null) inferType(node.initExpr);
         if (node.condExpr != null && !(con = inferType(node.condExpr)).equals(TypeConst.Bool))
-            throw new TypeMismatchException(con, TypeConst.Bool, node);
+            throw new TypeMismatch(con, TypeConst.Bool, node);
         if (node.updateExpr != null) inferType(node.updateExpr);
         node.loopBody.accept(this);
         checkOut(will);
@@ -106,7 +106,7 @@ public class TypeCollector implements ASTVisitor {
     public void visit(ReturnNode node) {
         if (node.returnExpr == null) {
             if (!TypeConst.Void.equals(node.correspondingFunction.returnType))
-                throw new TypeMismatchException(TypeConst.Void, node.correspondingFunction.returnType, node);
+                throw new TypeMismatch(TypeConst.Void, node.correspondingFunction.returnType, node);
             else return;
         }
         checkWithNull(inferType(node.returnExpr), node.correspondingFunction.returnType, node);
@@ -159,20 +159,32 @@ public class TypeCollector implements ASTVisitor {
         if (node instanceof UnaryExprNode) return calcType((UnaryExprNode) node);
         // if(node instanceof ArrayLiteralNode)
         if (node instanceof SubscriptionNode) return calcType((SubscriptionNode) node);
+        if (node instanceof PrefixLeftValueNode)return calcType((PrefixLeftValueNode)node);
         assert node instanceof ArrayLiteralNode;
         return calcType((ArrayLiteralNode) node);
     }
 
+
     private boolean isLeftValue(ASTNode node) {
-        return node instanceof IdentifierNode || node instanceof MemberNode || node instanceof SubscriptionNode;
+        return node instanceof IdentifierNode || node instanceof MemberNode || node instanceof SubscriptionNode||node instanceof PrefixLeftValueNode;
+    }
+
+    private Type calcType(PrefixLeftValueNode node) {
+        if(!isLeftValue(node.expr))
+            throw new LeftValueRequired(node.expr);
+        Type tp=inferType(node.expr);
+        if (!tp.equals(TypeConst.Int))
+            throw new TypeMismatch(tp, TypeConst.Int, node);
+        node.type=tp;
+        return tp;
     }
 
     private Type calcType(SubscriptionNode node) {
         Type indexType = inferType(node.rhs);
-        if (!indexType.equals(TypeConst.Int)) throw new TypeMismatchException(indexType, TypeConst.Int, node);
+        if (!indexType.equals(TypeConst.Int)) throw new TypeMismatch(indexType, TypeConst.Int, node);
         Type arrayType = inferType(node.lhs);
         if (!arrayType.isArray())
-            throw new NotSubscriptableException(node);
+            throw new NotSubscriptable(node);
         // return element type
         node.type= ((ArrayType)arrayType).subType();
         return node.type;
@@ -185,13 +197,13 @@ public class TypeCollector implements ASTVisitor {
             checkWithNull(l, r, node);
             node.type = l;
             return l;
-        } else throw new LeftValueException(node);
+        } else throw new LeftValueRequired(node);
     }
 
     private ClassType getObjOfMemberNode(MemberNode node) {
         Type type = inferType(node.object);
         if (!(type instanceof ClassType))
-            throw new MemberMisuseException(node);
+            throw new MemberMisuse(node);
         return (ClassType) type;
     }
 
@@ -201,7 +213,7 @@ public class TypeCollector implements ASTVisitor {
         ClassType ct = getObjOfMemberNode(node);
         Symbol sym;
         if ((sym = ct.memberVars.get(node.member)) == null)
-            throw new MissingSyntaxException(node, node.member);
+            throw new MissingSyntax(node, node.member);
         node.type = sym.getType();
         return node.type;
     }
@@ -213,7 +225,7 @@ public class TypeCollector implements ASTVisitor {
 //                return 2;
             try {
                 checkWithNull(func.parameters.get(i).getType(),inferType(node.arguments.get(i)),node);
-            }catch (TypeMismatchException e){
+            }catch (TypeMismatch e){
                 return 2;
             }
         }
@@ -231,7 +243,7 @@ public class TypeCollector implements ASTVisitor {
                     break;
                 }
             }
-            if (func == null) throw new NoMatchedFunctionException(node);
+            if (func == null) throw new NoMatchedFunction(node);
         } else {
             if (node.callee instanceof IdentifierNode) {
                 // global function
@@ -245,18 +257,18 @@ public class TypeCollector implements ASTVisitor {
                     // find if there exists such method
                     ClassType ct = getObjOfMemberNode((MemberNode) node.callee);
                     if ((func = ct.memberFuncs.get(((MemberNode) node.callee).member)) == null)
-                        throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
+                        throw new MissingSyntax(node, ((MemberNode) node.callee).member);
                 } else if (type.isArray()) {
                     if (!((MemberNode) node.callee).member.equals("size"))
-                        throw new MissingSyntaxException(node, ((MemberNode) node.callee).member);
+                        throw new MissingSyntax(node, ((MemberNode) node.callee).member);
                     else func = FunctionType.arraySize;
                 } else
-                    throw new MemberMisuseException(node);
+                    throw new MemberMisuse(node);
             }
             // check types of arguments
             switch (checkParameters(func, node)) {
-                case 1 -> throw new WrongParameterSizeException(node);
-                case 2 -> throw new NoMatchedFunctionException(node);
+                case 1 -> throw new WrongParameterSize(node);
+                case 2 -> throw new NoMatchedFunction(node);
                 default -> {
                 }
             }
@@ -294,7 +306,7 @@ public class TypeCollector implements ASTVisitor {
             if (lhs instanceof ClassType && !lhs.equals( TypeConst.String))
                 throw new UnsupportedBehavior("binary operation on Class is undefined", node);
             if (lhs instanceof FunctionType)
-                throw new TypeMismatchException(lhs, rhs, node);
+                throw new TypeMismatch(lhs, rhs, node);
         }
         // lhs to avoid null
         node.type = lhs;
@@ -308,35 +320,35 @@ public class TypeCollector implements ASTVisitor {
             case "&":
             case "|":
                 if (!node.type.equals(TypeConst.Int))
-                    throw new TypeMismatchException(lhs, rhs, node);
+                    throw new TypeMismatch(lhs, rhs, node);
                 break;
             case "&&":
             case "||":
                 if (!node.type.equals(TypeConst.Bool))
-                    throw new TypeMismatchException(lhs, rhs, node);
+                    throw new TypeMismatch(lhs, rhs, node);
                 break;
             case "^":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.Bool)))
-                    throw new TypeMismatchException(lhs, rhs, node);
+                    throw new TypeMismatch(lhs, rhs, node);
                 break;
             case ">":
             case "<":
             case ">=":
             case "<=":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.String)))
-                    throw new TypeMismatchException(lhs, rhs, node);
+                    throw new TypeMismatch(lhs, rhs, node);
                 node.type = TypeConst.Bool;
                 break;
             case "+":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.String)))
-                    throw new TypeMismatchException(lhs, rhs, node);
+                    throw new TypeMismatch(lhs, rhs, node);
                 break;
             case "==":
             case "!=":
                 node.type = TypeConst.Bool;
                 break;
             default:
-                throw new MissingOverrideException(node.lexerSign);
+                throw new UnimplementedError(node.lexerSign);
         }
         return node.type;
     }
@@ -348,18 +360,19 @@ public class TypeCollector implements ASTVisitor {
             case "+":
             case "~":
                 if (!node.type.equals(TypeConst.Int))
-                    throw new TypeMismatchException(node.type, TypeConst.Int, node);
+                    throw new TypeMismatch(node.type, TypeConst.Int, node);
                 break;
             case "!":
                 if (!node.type.equals(TypeConst.Bool))
-                    throw new TypeMismatchException(node.type, TypeConst.Bool, node);
+                    throw new TypeMismatch(node.type, TypeConst.Bool, node);
                 break;
             case "++":
             case "--":
+                // suffix ++/--
                 if (!node.type.equals(TypeConst.Int))
-                    throw new TypeMismatchException(node.type, TypeConst.Int, node);
-                if (!node.isPrefix && !isLeftValue(node.expr))
-                    throw new LeftValueException(node);
+                    throw new TypeMismatch(node.type, TypeConst.Int, node);
+                if (!isLeftValue(node.expr))
+                    throw new LeftValueRequired(node);
                 break;
         }
         return node.type;
@@ -370,7 +383,7 @@ public class TypeCollector implements ASTVisitor {
         for(var sub:node.dimArr){
             tp=inferType(sub);
             if(!tp.equals(TypeConst.Int))
-                throw new TypeMismatchException(tp,TypeConst.Int,sub);
+                throw new TypeMismatch(tp,TypeConst.Int,sub);
         }
         return node.type;
     }

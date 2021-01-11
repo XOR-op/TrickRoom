@@ -3,7 +3,7 @@ package compnent.scope;
 import ast.ASTNode;
 import compnent.basic.ClassType;
 import compnent.basic.FunctionType;
-import exception.semantic.DuplicateSyntaxException;
+import exception.semantic.DuplicateSyntax;
 
 import java.util.HashMap;
 
@@ -18,7 +18,7 @@ public class ClassScope extends Scope{
 
     public void registerMethod(FunctionType func, ASTNode node) {
         checkFunctionSyntax(func.id,node);
-        if (methodTable.containsKey(func.id) ) throw new DuplicateSyntaxException(node,func.id);
+        if (methodTable.containsKey(func.id) ) throw new DuplicateSyntax(node,func.id);
         methodTable.put(func.id, func);
     }
     @Override

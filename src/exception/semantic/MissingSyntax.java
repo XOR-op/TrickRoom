@@ -2,9 +2,9 @@ package exception.semantic;
 
 import ast.ASTNode;
 
-public class MissingSyntaxException extends SemanticException{
+public class MissingSyntax extends SemanticException{
     private String syntax;
-    public MissingSyntaxException(ASTNode node,String id){
+    public MissingSyntax(ASTNode node, String id){
         super(node.coor);
         syntax=id;
     }

@@ -5,9 +5,9 @@ import compnent.basic.ClassType;
 import compnent.basic.FunctionType;
 import compnent.basic.Symbol;
 import compnent.basic.Type;
-import exception.MissingOverrideException;
-import exception.semantic.DuplicateSyntaxException;
-import exception.semantic.MissingSyntaxException;
+import exception.UnimplementedError;
+import exception.semantic.DuplicateSyntax;
+import exception.semantic.MissingSyntax;
 
 import java.util.HashMap;
 
@@ -29,16 +29,16 @@ public class Scope {
         var sym=syntaxTable.get(id);
         if(sym!=null) return sym.getType();
         else if(upstream!=null)return upstream.getVarType(id,node);
-        else throw new MissingSyntaxException(node,id);
+        else throw new MissingSyntax(node,id);
     }
 
     public FunctionType getFunction(String func, ASTNode node){
-        if(upstream==null)throw new MissingOverrideException();
+        if(upstream==null)throw new UnimplementedError();
         return upstream.getFunction(func,node);
     }
 
     public ClassType getClass(String cls,ASTNode node){
-        if(upstream==null)throw new MissingOverrideException();
+        if(upstream==null)throw new UnimplementedError();
         return upstream.getClass(cls,node);
     }
 
@@ -49,7 +49,7 @@ public class Scope {
 
     public void registerVar(Symbol sym,ASTNode node) {
         checkVarSyntax(sym.getName(),node);
-        if (syntaxTable.containsKey(sym.getName()) ) throw new DuplicateSyntaxException(node,sym.getName());
+        if (syntaxTable.containsKey(sym.getName()) ) throw new DuplicateSyntax(node,sym.getName());
         sym.setScope(this);
         syntaxTable.put(sym.getName(), sym);
     }

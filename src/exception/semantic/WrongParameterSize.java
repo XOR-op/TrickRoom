@@ -2,9 +2,9 @@ package exception.semantic;
 
 import ast.ASTNode;
 
-public class WrongParameterSizeException extends NoMatchedFunctionException {
+public class WrongParameterSize extends NoMatchedFunction {
 
-    public WrongParameterSizeException(ASTNode n) {
+    public WrongParameterSize(ASTNode n) {
         super(n);
     }
     @Override

@@ -1,11 +1,11 @@
 package semantic;
 
 import ast.*;
-import exception.MissingOverrideException;
+import exception.UnimplementedError;
 
 public interface ASTVisitor  {
     private void notImplemented() {
-        throw new MissingOverrideException();
+        throw new UnimplementedError();
     }
     default void visit(ArrayLiteralNode node) {
         notImplemented();
@@ -64,6 +64,10 @@ public interface ASTVisitor  {
     }
 
     default void visit(LoopNode node) {
+        notImplemented();
+    }
+
+    default void visit(PrefixLeftValueNode node) {
         notImplemented();
     }
 

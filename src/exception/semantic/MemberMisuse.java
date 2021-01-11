@@ -3,12 +3,13 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class WrongReturnException extends SemanticException{
-    public WrongReturnException(ASTNode node) {
+public class MemberMisuse extends SemanticException{
+    public MemberMisuse(ASTNode node) {
         super(node.coor);
     }
+
     @Override
     public String toString() {
-        return "WrongReturnException{"+coor.toString()+"}";
+        return "MemberMisuseException{"+coor.toString()+"}";
     }
 }

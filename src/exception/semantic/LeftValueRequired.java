@@ -3,9 +3,9 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class LeftValueException extends SemanticException{
+public class LeftValueRequired extends SemanticException{
 
-    public LeftValueException(ASTNode node) {
+    public LeftValueRequired(ASTNode node) {
         super(node.coor);
     }
     @Override

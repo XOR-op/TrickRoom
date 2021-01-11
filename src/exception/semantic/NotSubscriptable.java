@@ -3,9 +3,9 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class NotSubscriptableException extends SemanticException{
+public class NotSubscriptable extends SemanticException{
 
-    public NotSubscriptableException(ASTNode node) {
+    public NotSubscriptable(ASTNode node) {
         super(node.coor);
     }
 

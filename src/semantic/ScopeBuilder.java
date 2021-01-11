@@ -47,14 +47,14 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     private void registerType(Type tp, ASTNode node) {
-        if (typeCollection.containsKey(tp.id)) throw new DuplicateSyntaxException(node, tp.id);
+        if (typeCollection.containsKey(tp.id)) throw new DuplicateSyntax(node, tp.id);
         typeCollection.put(tp.id, tp);
     }
 
     // used for recover type with class specification
     // e.g. class will be Type instead of ClassType in ASTBuilder
     private Type recoverType(Type originType, ASTNode node) {
-        if (!typeCollection.containsKey(originType.id)) throw new MissingSyntaxException(node, originType.id);
+        if (!typeCollection.containsKey(originType.id)) throw new MissingSyntax(node, originType.id);
         if (!originType.isArray())
             return typeCollection.get(originType.id);
         else {
@@ -152,7 +152,7 @@ public class ScopeBuilder implements ASTVisitor {
         for (var method : node.methods) {
             var func = scanFunction(method);
             if(func.id.equals(cls.id)){
-                throw new NoMatchedFunctionException(method,"invalid name for method");
+                throw new NoMatchedFunction(method,"invalid name for method");
             }
             scp.registerMethod(func, node);
             cls.memberFuncs.put(func.id, func);
@@ -161,7 +161,7 @@ public class ScopeBuilder implements ASTVisitor {
             var fn = scanFunction(con);
             if(!fn.id.equals(cls.id)){
                 // mismatched constructor
-                throw new NoMatchedFunctionException(con,"constructor mismatched");
+                throw new NoMatchedFunction(con,"constructor mismatched");
             }
             fn.returnType = cls;
             cls.constructor.add(fn);
@@ -254,20 +254,20 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public void visit(ReturnNode node) {
-        if (currentFunction == null) throw new WrongReturnException(node);
+        if (currentFunction == null) throw new WrongReturn(node);
         if(node.returnExpr!=null)node.returnExpr.accept(this);
         node.correspondingFunction = currentFunction;
     }
 
     @Override
     public void visit(BreakNode node) {
-        if (loopNodeStack.empty()) throw new WrongControlFlowStatementException(node);
+        if (loopNodeStack.empty()) throw new WrongControlStatement(node);
         node.correspondingLoop = loopNodeStack.peek();
     }
 
     @Override
     public void visit(ContinueNode node) {
-        if (loopNodeStack.empty()) throw new WrongControlFlowStatementException(node);
+        if (loopNodeStack.empty()) throw new WrongControlStatement(node);
         node.correspondingLoop = loopNodeStack.peek();
     }
 
@@ -339,6 +339,11 @@ public class ScopeBuilder implements ASTVisitor {
     public void visit(SubscriptionNode node) {
         node.lhs.accept(this);
         node.rhs.accept(this);
+    }
+
+    @Override
+    public void visit(PrefixLeftValueNode node) {
+        node.expr.accept(this);
     }
 }
 

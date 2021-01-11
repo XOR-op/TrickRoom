@@ -1,3 +1,4 @@
+import exception.UnimplementedError;
 import exception.semantic.*;
 import semantic.*;
 import ast.*;
@@ -5,36 +6,153 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
-import utils.ObjectDumper;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 public class TrickRoom {
+    private enum Verbose {
+        SILENT, INFO
+    }
+
+    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String SYNTAX = "-fsyntax-only";
+    private static final String OPTIMIZATION = "-O2";
+    private static final String LLVM = "-llvm";
+    private static final String INPUT_FILE = "-i";
+    private static final String VERBOSE = "-v";
+
+    private Verbose verb;
+    private InputStream is;
+    private Boolean llvmGenFlag;
+    private Boolean assemblyGenFlag;
+    private Boolean optimizationFlag;
+
+    private void logln(String s) {
+        System.out.println(s);
+    }
+
+    private void error(String s) {
+        logln(s);
+        throw new RuntimeException();
+    }
+
     public static void main(String[] args) {
+        new TrickRoom(args).run();
+    }
+
+    private TrickRoom(String[] args) {
+        is = System.in;
+        verb = Verbose.SILENT;
+        llvmGenFlag = false;
+        assemblyGenFlag = true;
+        optimizationFlag = false;
+        boolean specification = false;
+        for (int i = 0; i < args.length; ++i) {
+            if (args[i].charAt(0) == '-') {
+                // options
+                switch (args[i]) {
+                    case SYNTAX:
+                    case LLVM:
+                    case OPTIMIZATION:
+                        if (!specification) specification = true;
+                        else error("duplicated specification");
+                }
+                switch (args[i]) {
+                    case SYNTAX -> {
+                        llvmGenFlag = false;
+                        assemblyGenFlag = false;
+                        optimizationFlag = false;
+                    }
+                    case LLVM -> {
+                        llvmGenFlag = true;
+                        assemblyGenFlag = false;
+                        optimizationFlag = false;
+                    }
+                    case OPTIMIZATION -> {
+                        llvmGenFlag = false;
+                        assemblyGenFlag = true;
+                        optimizationFlag = true;
+                    }
+                    case INPUT_FILE -> {
+                        if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no file input");
+                        try {
+                            is = new FileInputStream(args[i + 1]);
+                            i++;
+                        } catch (FileNotFoundException e) {
+                            error("file not found:" + args[i + 1]);
+                        }
+                    }
+                    case VERBOSE -> verb = Verbose.INFO;
+
+                }
+            } else
+                error("wrong argument:" + args[i]);
+
+        }
+    }
+
+    private void run() {
         try {
-            InputStream is = args.length > 0 ? new FileInputStream(args[0]):System.in;
-            var lexer=new MxStarLexer(CharStreams.fromStream(is));
-            lexer.removeErrorListeners();
-            lexer.addErrorListener(new ParsingErrorHandler());
-            var tokenStream=new CommonTokenStream(lexer);
-            tokenStream.fill();
-            var parser=new MxStarParser(tokenStream);
-            parser.removeErrorListeners();
-            parser.addErrorListener(new ParsingErrorHandler());
-            var builder=new ASTBuilder();
-            RootNode rootNode=(RootNode) builder.visit(parser.code());
+            RootNode rootNode = astGen();
+            collectType(rootNode);
+            if (llvmGenFlag) llvmGen(rootNode);
+            if (assemblyGenFlag) assemblyGen(rootNode);
+            if (optimizationFlag) optimize(rootNode);
+        }catch (SemanticException e){
+            System.exit(-1);
+        }catch (Exception e){
+            throw e;
+        }
+    }
+
+    private void collectType(RootNode rootNode) {
+        try {
             new ScopeBuilder(rootNode);
             new TypeCollector().visit(rootNode);
-//            ObjectDumper.dump(rootNode);
-            System.out.println("Success");
-        } catch (SemanticException e){
-//            e.printStackTrace();
-            System.out.println(ObjectDumper.ANSI_PURPLE+e.toString()+ObjectDumper.ANSI_RESET);
-        }
-        catch (Exception e){
+            if (verb == Verbose.INFO)
+                logln("Success");
+        } catch (SemanticException e) {
+            logln(ANSI_PURPLE + e.toString() + ANSI_RESET);
+        } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void llvmGen(RootNode rootNode) {
+        throw new UnimplementedError();
+    }
+
+    private void assemblyGen(RootNode rootNode) {
+        throw new UnimplementedError();
+    }
+
+    private void optimize(RootNode rootNode) {
+        throw new UnimplementedError();
+    }
+
+    private RootNode astGen() {
+        try {
+            var lexer = new MxStarLexer(CharStreams.fromStream(is));
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(new ParsingErrorHandler());
+            var tokenStream = new CommonTokenStream(lexer);
+            tokenStream.fill();
+            var parser = new MxStarParser(tokenStream);
+            parser.removeErrorListeners();
+            parser.addErrorListener(new ParsingErrorHandler());
+            var builder = new ASTBuilder();
+            return (RootNode) builder.visit(parser.code());
+        } catch (SemanticException e) {
+            logln(ANSI_PURPLE + e.toString() + ANSI_RESET);
+            throw e;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

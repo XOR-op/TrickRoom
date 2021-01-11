@@ -1,9 +1,9 @@
 package exception;
 
-public class MissingOverrideException extends RuntimeException{
+public class UnimplementedError extends RuntimeException{
     String info;
-    public MissingOverrideException(){this("DEFAULT");}
-    public MissingOverrideException(String s){
+    public UnimplementedError(){this("DEFAULT");}
+    public UnimplementedError(String s){
         info=s;
     }
 

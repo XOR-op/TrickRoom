@@ -3,9 +3,9 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class DuplicateSyntaxException extends SemanticException{
+public class DuplicateSyntax extends SemanticException{
     private final String info;
-    public DuplicateSyntaxException(ASTNode node,String s){
+    public DuplicateSyntax(ASTNode node, String s){
         super(node.coor);
         info=s;
     }

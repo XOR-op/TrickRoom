@@ -3,8 +3,8 @@ package exception.semantic;
 import ast.ASTNode;
 import compnent.info.CodePosition;
 
-public class WrongControlFlowStatementException extends SemanticException{
-    public WrongControlFlowStatementException(ASTNode node) {
+public class WrongControlStatement extends SemanticException{
+    public WrongControlStatement(ASTNode node) {
         super(node.coor);
     }
     @Override

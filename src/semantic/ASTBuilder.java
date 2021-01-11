@@ -2,13 +2,11 @@ package semantic;
 
 import ast.*;
 import compnent.basic.ArrayType;
-import compnent.basic.ClassType;
 import compnent.basic.Type;
 import compnent.basic.TypeConst;
 import compnent.info.CodePosition;
-import exception.MissingOverrideException;
+import exception.UnimplementedError;
 import exception.semantic.ParsingException;
-import exception.semantic.SemanticException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import parser.MxStarParser;
 import parser.MxStarVisitor;
@@ -226,7 +224,13 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     @Override
     public ASTNode visitPrefixExpr(MxStarParser.PrefixExprContext ctx) {
-        var node = new UnaryExprNode(true, ctx.prefix.getText(), (ExprNode) visit(ctx.expression()));
+        ExprNode node;
+        String op=ctx.prefix.getText();
+        if(op.equals("++")||op.equals("--")){
+            node= new PrefixLeftValueNode(op, (ExprNode) visit(ctx.expression()));
+        }else {
+            node = new UnaryExprNode(true, op, (ExprNode) visit(ctx.expression()));
+        }
         node.setPos(ctx);
         return node;
     }
@@ -283,7 +287,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             sign = ctx.AND_LOGIC().getText();
         else if (ctx.OR_LOGIC() != null)
             sign = ctx.OR_LOGIC().getText();
-        else throw new MissingOverrideException();
+        else throw new UnimplementedError();
         var node = new BinaryExprNode(sign, (ExprNode) visit(ctx.expression(0)), (ExprNode) visit(ctx.expression(1)));
         node.setPos(ctx);
         return node;
@@ -395,7 +399,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
      * */
 
     private ASTNode notImplemented() {
-        throw new MissingOverrideException();
+        throw new UnimplementedError();
     }
 
     @Override

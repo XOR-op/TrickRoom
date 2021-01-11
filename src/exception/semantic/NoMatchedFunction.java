@@ -1,15 +1,14 @@
 package exception.semantic;
 
 import ast.ASTNode;
-import compnent.info.CodePosition;
 
-public class NoMatchedFunctionException extends SemanticException{
+public class NoMatchedFunction extends SemanticException{
     private String info;
-    public NoMatchedFunctionException(ASTNode n) {
+    public NoMatchedFunction(ASTNode n) {
         this(n,"");
     }
 
-    public NoMatchedFunctionException(ASTNode n,String info){
+    public NoMatchedFunction(ASTNode n, String info){
         super(n.coor);
         this.info=info;
     }
