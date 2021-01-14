@@ -25,14 +25,13 @@ public class FunctionType extends Type{
         return f;
     }
     private static Type newType(String s){
-        Type t;
-        switch (s){
-            case "string":t=TypeConst.String;break;
-            case "int":t=TypeConst.Int;break;
-            case "bool":t=TypeConst.Bool;break;
-            case "void":t=TypeConst.Void;break;
-            default:t=new Type(s);break;
-        }
+        Type t = switch (s) {
+            case "string" -> TypeConst.String;
+            case "int" -> TypeConst.Int;
+            case "bool" -> TypeConst.Bool;
+            case "void" -> TypeConst.Void;
+            default -> new Type(s);
+        };
         return t;
     }
     public static FunctionType parse(String s){

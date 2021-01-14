@@ -61,22 +61,22 @@ public class TrickRoom {
                         else error("duplicated specification");
                 }
                 switch (args[i]) {
-                    case SYNTAX: {
+                    case SYNTAX -> {
                         llvmGenFlag = false;
                         assemblyGenFlag = false;
                         optimizationFlag = false;
-                    }break;
-                    case LLVM :{
+                    }
+                    case LLVM -> {
                         llvmGenFlag = true;
                         assemblyGenFlag = false;
                         optimizationFlag = false;
-                    }break;
-                    case OPTIMIZATION : {
+                    }
+                    case OPTIMIZATION -> {
                         llvmGenFlag = false;
                         assemblyGenFlag = true;
                         optimizationFlag = true;
-                    }break;
-                    case INPUT_FILE:{
+                    }
+                    case INPUT_FILE -> {
                         if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no file input");
                         try {
                             is = new FileInputStream(args[i + 1]);
@@ -84,10 +84,8 @@ public class TrickRoom {
                         } catch (FileNotFoundException e) {
                             error("file not found:" + args[i + 1]);
                         }
-                    }break;
-                    case VERBOSE:
-                        verb = Verbose.INFO;
-                        break;
+                    }
+                    case VERBOSE -> verb = Verbose.INFO;
                 }
             } else
                 error("wrong argument:" + args[i]);

@@ -11,9 +11,7 @@ public class TypeCollector implements ASTVisitor {
 
     private boolean checkIn(ASTNode node) {
         if (node.scope != null) {
-//            assert node.scope.getUpstream() == currentScope; not necessary
             currentScope = node.scope;
-//            L.i(currentScope.toString());
             return true;
         } else return false;
     }
@@ -21,7 +19,6 @@ public class TypeCollector implements ASTVisitor {
     private void checkOut(boolean will) {
         if (will) {
             assert currentScope != null;
-//            L.i(currentScope.toString());
             currentScope = currentScope.getUpstream();
         }
     }
@@ -39,7 +36,7 @@ public class TypeCollector implements ASTVisitor {
         } else if (TypeConst.Null.equals(a)) {
             if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && !a.isArray())
                 throw new TypeMismatch(a, b, node);
-        }else check(a, b, node);
+        } else check(a, b, node);
     }
 
     @Override
@@ -57,9 +54,9 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public void visit(ClassNode node) {
         boolean will = checkIn(node);
-        for (var sub : node.members) visit(sub);
-        for (var sub : node.constructor) visit(sub);
-        for (var sub : node.methods) visit(sub);
+        node.members.forEach(this::visit);
+        node.constructor.forEach(this::visit);
+        node.methods.forEach(this::visit);
         checkOut(will);
     }
 
@@ -123,9 +120,7 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public void visit(SuiteNode node) {
         boolean will = checkIn(node);
-        for (var sub : node.statements) {
-            sub.accept(this);
-        }
+        node.statements.forEach(sub -> sub.accept(this));
         checkOut(will);
     }
 
@@ -142,8 +137,7 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public void visit(DeclarationBlockNode node) {
         boolean will = checkIn(node);
-        for (var sub : node.decls)
-            sub.accept(this);
+        node.decls.forEach(sub -> sub.accept(this));
         checkOut(will);
     }
 
@@ -159,23 +153,23 @@ public class TypeCollector implements ASTVisitor {
         if (node instanceof UnaryExprNode) return calcType((UnaryExprNode) node);
         // if(node instanceof ArrayLiteralNode)
         if (node instanceof SubscriptionNode) return calcType((SubscriptionNode) node);
-        if (node instanceof PrefixLeftValueNode)return calcType((PrefixLeftValueNode)node);
+        if (node instanceof PrefixLeftValueNode) return calcType((PrefixLeftValueNode) node);
         assert node instanceof ArrayLiteralNode;
         return calcType((ArrayLiteralNode) node);
     }
 
 
     private boolean isLeftValue(ASTNode node) {
-        return node instanceof IdentifierNode || node instanceof MemberNode || node instanceof SubscriptionNode||node instanceof PrefixLeftValueNode;
+        return node instanceof IdentifierNode || node instanceof MemberNode || node instanceof SubscriptionNode || node instanceof PrefixLeftValueNode;
     }
 
     private Type calcType(PrefixLeftValueNode node) {
-        if(!isLeftValue(node.expr))
+        if (!isLeftValue(node.expr))
             throw new LeftValueRequired(node.expr);
-        Type tp=inferType(node.expr);
+        Type tp = inferType(node.expr);
         if (!tp.equals(TypeConst.Int))
             throw new TypeMismatch(tp, TypeConst.Int, node);
-        node.type=tp;
+        node.type = tp;
         return tp;
     }
 
@@ -186,7 +180,7 @@ public class TypeCollector implements ASTVisitor {
         if (!arrayType.isArray())
             throw new NotSubscriptable(node);
         // return element type
-        node.type= ((ArrayType)arrayType).subType();
+        node.type = ((ArrayType) arrayType).subType();
         return node.type;
     }
 
@@ -221,11 +215,9 @@ public class TypeCollector implements ASTVisitor {
     private int checkParameters(FunctionType func, FuncCallNode node) {
         if (func.parameters.size() != node.arguments.size()) return 1;
         for (int i = 0; i < func.parameters.size(); ++i) {
-//            if (!func.parameters.get(i).getType().equals(inferType(node.arguments.get(i))))
-//                return 2;
             try {
-                checkWithNull(func.parameters.get(i).getType(),inferType(node.arguments.get(i)),node);
-            }catch (TypeMismatch e){
+                checkWithNull(func.parameters.get(i).getType(), inferType(node.arguments.get(i)), node);
+            } catch (TypeMismatch e) {
                 return 2;
             }
         }
@@ -267,8 +259,10 @@ public class TypeCollector implements ASTVisitor {
             }
             // check types of arguments
             switch (checkParameters(func, node)) {
-                case 1:throw new WrongParameterSize(node);
-                case 2 : throw new NoMatchedFunction(node);
+                case 1:
+                    throw new WrongParameterSize(node);
+                case 2:
+                    throw new NoMatchedFunction(node);
                 default:
             }
         }
@@ -299,10 +293,9 @@ public class TypeCollector implements ASTVisitor {
         Type lhs = inferType(node.lhs), rhs = inferType(node.rhs);
         if (node.lexerSign.equals("==") || node.lexerSign.equals("!=")) {
             checkWithNull(lhs, rhs, node);
-        }
-        else {
+        } else {
             check(lhs, rhs, node);
-            if (lhs instanceof ClassType && !lhs.equals( TypeConst.String))
+            if (lhs instanceof ClassType && !lhs.equals(TypeConst.String))
                 throw new UnsupportedBehavior("binary operation on Class is undefined", node);
             if (lhs instanceof FunctionType)
                 throw new TypeMismatch(lhs, rhs, node);
@@ -379,10 +372,10 @@ public class TypeCollector implements ASTVisitor {
 
     private Type calcType(ArrayLiteralNode node) {
         Type tp;
-        for(var sub:node.dimArr){
-            tp=inferType(sub);
-            if(!tp.equals(TypeConst.Int))
-                throw new TypeMismatch(tp,TypeConst.Int,sub);
+        for (var sub : node.dimArr) {
+            tp = inferType(sub);
+            if (!tp.equals(TypeConst.Int))
+                throw new TypeMismatch(tp, TypeConst.Int, sub);
         }
         return node.type;
     }

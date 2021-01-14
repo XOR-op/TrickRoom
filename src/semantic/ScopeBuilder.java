@@ -100,16 +100,10 @@ public class ScopeBuilder implements ASTVisitor {
             preScanClass(cls);
         }
         // scan class and function definition to support forwarding reference
-        for (var fun : root.functions) {
-            top.registerFunction(scanFunction(fun));
-        }
-        for (var cls : root.classes) {
-            top.registerClass(scanClass(cls));
-        }
+        root.functions.forEach(fun->top.registerFunction(scanFunction(fun)));
+        root.classes.forEach(cls->top.registerClass(scanClass(cls)));
         // sequentially visit variable declarations and functions
-        for (var node : root.nodeList) {
-            node.accept(this);
-        }
+        root.nodeList.forEach(node -> node.accept(this));
         return top;
     }
 
@@ -192,10 +186,8 @@ public class ScopeBuilder implements ASTVisitor {
     @Override
     public void visit(ClassNode node) {
         pushScope(node);
-        for (var con : node.constructor)
-            visit(con);
-        for (var method : node.methods)
-            visit(method);
+        node.constructor.forEach(this::visit);
+        node.methods.forEach(this::visit);
         popScope();
     }
 
@@ -331,8 +323,7 @@ public class ScopeBuilder implements ASTVisitor {
     @Override
     public void visit(ArrayLiteralNode node) {
         node.type=recoverType(node.type,node);
-        for(var sub:node.dimArr)
-            sub.accept(this);
+        node.dimArr.forEach(sub-> sub.accept(this));
     }
 
     @Override
