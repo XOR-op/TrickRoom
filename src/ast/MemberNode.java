@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class MemberNode extends ExprNode{
     public ExprNode object;
     public String member;

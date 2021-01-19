@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class BreakNode extends StmtNode {
     public LoopNode correspondingLoop;
     @Override

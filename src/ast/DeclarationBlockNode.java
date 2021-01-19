@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 import java.util.ArrayList;
 
 public class DeclarationBlockNode extends StmtNode {

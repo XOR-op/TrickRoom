@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class ReturnNode extends StmtNode {
     public ExprNode returnExpr;
     public FunctionNode correspondingFunction;

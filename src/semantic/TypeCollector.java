@@ -6,7 +6,7 @@ import compnent.scope.*;
 import exception.UnimplementedError;
 import exception.semantic.*;
 
-public class TypeCollector implements ASTVisitor {
+public class TypeCollector implements ASTVisitor<Void> {
     private Scope currentScope;
 
     private boolean checkIn(ASTNode node) {
@@ -40,7 +40,7 @@ public class TypeCollector implements ASTVisitor {
     }
 
     @Override
-    public void visit(RootNode node) {
+    public Void visit(RootNode node) {
         boolean will = checkIn(node);
         FunctionType main;
         if (!((main = currentScope.getFunction("main", node)) != null
@@ -49,34 +49,38 @@ public class TypeCollector implements ASTVisitor {
         for (var sub : node.nodeList)
             sub.accept(this);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(ClassNode node) {
+    public Void visit(ClassNode node) {
         boolean will = checkIn(node);
         node.members.forEach(this::visit);
         node.constructor.forEach(this::visit);
         node.methods.forEach(this::visit);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(FunctionNode node) {
+    public Void visit(FunctionNode node) {
         boolean will = checkIn(node);
         visit(node.suite);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(DeclarationNode node) {
+    public Void visit(DeclarationNode node) {
         boolean will = checkIn(node);
         if (node.expr != null)
             checkWithNull(node.type, inferType(node.expr), node);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(ConditionalNode node) {
+    public Void visit(ConditionalNode node) {
         Type con;
         if (!(con = inferType(node.condExpr)).equals(TypeConst.Bool))
             throw new TypeMismatch(con, TypeConst.Bool, node);
@@ -84,10 +88,11 @@ public class TypeCollector implements ASTVisitor {
         if (node.falseStat != null) {
             node.falseStat.accept(this);
         }
+        return null;
     }
 
     @Override
-    public void visit(LoopNode node) {
+    public Void visit(LoopNode node) {
         boolean will = checkIn(node);
         Type con;
         if (node.initDecl != null) node.initDecl.accept(this);
@@ -97,48 +102,55 @@ public class TypeCollector implements ASTVisitor {
         if (node.updateExpr != null) inferType(node.updateExpr);
         node.loopBody.accept(this);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(ReturnNode node) {
+    public Void visit(ReturnNode node) {
         if (node.returnExpr == null) {
             if (!TypeConst.Void.equals(node.correspondingFunction.returnType))
                 throw new TypeMismatch(TypeConst.Void, node.correspondingFunction.returnType, node);
-            else return;
+            else return null;
         }
         checkWithNull(inferType(node.returnExpr), node.correspondingFunction.returnType, node);
+        return null;
     }
 
     @Override
-    public void visit(ExprStmtNode node) {
+    public Void visit(ExprStmtNode node) {
         boolean will = checkIn(node);
         if (node.expr != null)
             inferType(node.expr);
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(SuiteNode node) {
+    public Void visit(SuiteNode node) {
         boolean will = checkIn(node);
         node.statements.forEach(sub -> sub.accept(this));
         checkOut(will);
+        return null;
     }
 
     @Override
-    public void visit(BreakNode node) {
+    public Void visit(BreakNode node) {
         // do nothing
+        return null;
     }
 
     @Override
-    public void visit(ContinueNode node) {
+    public Void visit(ContinueNode node) {
         // do nothing
+        return null;
     }
 
     @Override
-    public void visit(DeclarationBlockNode node) {
+    public Void visit(DeclarationBlockNode node) {
         boolean will = checkIn(node);
         node.decls.forEach(sub -> sub.accept(this));
         checkOut(will);
+        return null;
     }
 
     private Type inferType(ExprNode node) {

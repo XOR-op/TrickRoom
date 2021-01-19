@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class IdentifierNode extends ExprNode {
     public String id;
     public IdentifierNode(String name){

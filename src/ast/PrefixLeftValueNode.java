@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class PrefixLeftValueNode extends ExprNode{
     public String sign;
     public ExprNode expr;

@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class AssignmentNode extends ExprNode{
 
     public ExprNode lhs,rhs;

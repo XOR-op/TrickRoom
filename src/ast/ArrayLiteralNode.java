@@ -1,7 +1,6 @@
 package ast;
 
 import compnent.basic.Type;
-import semantic.ASTVisitor;
 
 import java.util.ArrayList;
 

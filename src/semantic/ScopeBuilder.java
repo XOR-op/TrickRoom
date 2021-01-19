@@ -14,7 +14,7 @@ import java.util.Stack;
  *    members will be checked in TypeCollector
  *  - check break, continue and return statements
  */
-public class ScopeBuilder implements ASTVisitor {
+public class ScopeBuilder implements ASTVisitor<Void> {
     private RootNode root;
     private Scope currentScope;
     private FileScope top;
@@ -172,36 +172,40 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     @Override
-    public void visit(DeclarationBlockNode node) {
+    public Void visit(DeclarationBlockNode node) {
         for (var sub : node.decls)
             visit(sub);
+        return null;
     }
 
     @Override
-    public void visit(DeclarationNode node) {
+    public Void visit(DeclarationNode node) {
         if (node.expr != null) node.expr.accept(this);
         currentScope.registerVar(scanDecl(node), node);
+        return null;
     }
 
     @Override
-    public void visit(ClassNode node) {
+    public Void visit(ClassNode node) {
         pushScope(node);
         node.constructor.forEach(this::visit);
         node.methods.forEach(this::visit);
         popScope();
+        return null;
     }
 
     @Override
-    public void visit(FunctionNode node) {
+    public Void visit(FunctionNode node) {
         pushScope(node);
         currentFunction = node;
         visit(node.suite);
         currentFunction = null;
         popScope();
+        return null;
     }
 
     @Override
-    public void visit(SuiteNode node) {
+    public Void visit(SuiteNode node) {
         // node.scope will be built ahead
         // suite will have corresponding scope except those belonging to function
         for (var sub : node.statements) {
@@ -213,10 +217,11 @@ public class ScopeBuilder implements ASTVisitor {
             } else
                 sub.accept(this);
         }
+        return null;
     }
 
     @Override
-    public void visit(ConditionalNode node) {
+    public Void visit(ConditionalNode node) {
         node.condExpr.accept(this);
         node.trueStat.scope = new Scope(currentScope);
         pushScope(node.trueStat);
@@ -228,10 +233,11 @@ public class ScopeBuilder implements ASTVisitor {
             node.falseStat.accept(this);
             popScope();
         }
+        return null;
     }
 
     @Override
-    public void visit(LoopNode node) {
+    public Void visit(LoopNode node) {
         node.scope = new LoopScope(currentScope);
         pushScope(node);
         loopNodeStack.push(node);
@@ -242,99 +248,116 @@ public class ScopeBuilder implements ASTVisitor {
         node.loopBody.accept(this);
         loopNodeStack.pop();
         popScope();
+        return null;
     }
 
     @Override
-    public void visit(ReturnNode node) {
+    public Void visit(ReturnNode node) {
         if (currentFunction == null) throw new WrongReturn(node);
         if(node.returnExpr!=null)node.returnExpr.accept(this);
         node.correspondingFunction = currentFunction;
+        return null;
     }
 
     @Override
-    public void visit(BreakNode node) {
+    public Void visit(BreakNode node) {
         if (loopNodeStack.empty()) throw new WrongControlStatement(node);
         node.correspondingLoop = loopNodeStack.peek();
+        return null;
     }
 
     @Override
-    public void visit(ContinueNode node) {
+    public Void visit(ContinueNode node) {
         if (loopNodeStack.empty()) throw new WrongControlStatement(node);
         node.correspondingLoop = loopNodeStack.peek();
+        return null;
     }
 
     @Override
-    public void visit(ExprStmtNode node) {
+    public Void visit(ExprStmtNode node) {
         if (node.expr != null)
             node.expr.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(IdentifierNode node) {
+    public Void visit(IdentifierNode node) {
         node.type = currentScope.getVarType(node.id, node);
+        return null;
     }
 
     @Override
-    public void visit(BinaryExprNode node) {
+    public Void visit(BinaryExprNode node) {
         node.lhs.accept(this);
         node.rhs.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(UnaryExprNode node) {
+    public Void visit(UnaryExprNode node) {
         node.expr.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(ThisNode node) {
+    public Void visit(ThisNode node) {
         node.type = currentScope.getVarType("this", node);
+        return null;
     }
 
     @Override
-    public void visit(MemberNode node) {
+    public Void visit(MemberNode node) {
         node.object.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(NewExprNode node) {
+    public Void visit(NewExprNode node) {
         // fix type
         if(node.arrNew!=null)visit(node.arrNew);
+        return null;
     }
 
     @Override
-    public void visit(LiteralNode node) {
+    public Void visit(LiteralNode node) {
         // do nothing
+        return null;
     }
 
     @Override
-    public void visit(FuncCallNode node) {
+    public Void visit(FuncCallNode node) {
         // check global function later
         if (!(node.callee instanceof IdentifierNode))
             node.callee.accept(this);
         for (var arg : node.arguments) arg.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(AssignmentNode node) {
+    public Void visit(AssignmentNode node) {
         node.rhs.accept(this);
         node.lhs.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(ArrayLiteralNode node) {
+    public Void visit(ArrayLiteralNode node) {
         node.type=recoverType(node.type,node);
         node.dimArr.forEach(sub-> sub.accept(this));
+        return null;
     }
 
     @Override
-    public void visit(SubscriptionNode node) {
+    public Void visit(SubscriptionNode node) {
         node.lhs.accept(this);
         node.rhs.accept(this);
+        return null;
     }
 
     @Override
-    public void visit(PrefixLeftValueNode node) {
+    public Void visit(PrefixLeftValueNode node) {
         node.expr.accept(this);
+        return null;
     }
 }
 

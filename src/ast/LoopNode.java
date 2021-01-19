@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class LoopNode extends StmtNode {
     public ExprNode initExpr,condExpr,updateExpr;
     public DeclarationBlockNode initDecl;

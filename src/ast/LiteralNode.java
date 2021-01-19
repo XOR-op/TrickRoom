@@ -1,7 +1,6 @@
 package ast;
 
 import compnent.basic.Type;
-import semantic.ASTVisitor;
 
 public class LiteralNode extends ExprNode {
     public String content;

@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class SubscriptionNode extends ExprNode{
     public ExprNode lhs,rhs;
     public SubscriptionNode(ExprNode l,ExprNode r){

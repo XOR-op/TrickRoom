@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class ConditionalNode extends StmtNode {
     public ExprNode condExpr;
     public StmtNode trueStat,falseStat;

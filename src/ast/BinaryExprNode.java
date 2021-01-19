@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class BinaryExprNode extends ExprNode {
     public ExprNode lhs,rhs;
     public String lexerSign; // signs in lexer

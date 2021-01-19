@@ -1,7 +1,5 @@
 package ast;
 
-import semantic.ASTVisitor;
-
 public class NewExprNode extends ExprNode {
     public FuncCallNode classNew;
     public ArrayLiteralNode arrNew;
