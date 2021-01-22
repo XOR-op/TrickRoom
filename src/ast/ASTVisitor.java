@@ -3,102 +3,102 @@ package ast;
 import ast.*;
 import exception.UnimplementedError;
 
-public interface ASTVisitor<T>  {
-    private T notImplemented() {
+public interface ASTVisitor  {
+    private Object notImplemented() {
         throw new UnimplementedError();
     }
-    default T visit(ArrayLiteralNode node) {
+    default Object visit(ArrayLiteralNode node) {
         return notImplemented();
     }
 
-    default T visit(AssignmentNode node) {
+    default Object visit(AssignmentNode node) {
         return notImplemented();
     }
 
-    default T visit(BinaryExprNode node) {
+    default Object visit(BinaryExprNode node) {
         return notImplemented();
     }
 
-    default T visit(BreakNode node) {
+    default Object visit(BreakNode node) {
         return notImplemented();
     }
 
-    default T visit(ClassNode node) {
+    default Object visit(ClassNode node) {
         return notImplemented();
     }
 
-    default T visit(ConditionalNode node) {
+    default Object visit(ConditionalNode node) {
         return notImplemented();
     }
 
-    default T visit(ContinueNode node) {
+    default Object visit(ContinueNode node) {
         return notImplemented();
     }
 
-    default T visit(DeclarationBlockNode node) {
+    default Object visit(DeclarationBlockNode node) {
         return notImplemented();
     }
 
-    default T visit(DeclarationNode node) {
+    default Object visit(DeclarationNode node) {
         return notImplemented();
     }
 
-    default T visit(ExprStmtNode node) {
+    default Object visit(ExprStmtNode node) {
         return notImplemented();
     }
 
-    default T visit(FuncCallNode node) {
+    default Object visit(FuncCallNode node) {
         return notImplemented();
     }
 
-    default T visit(FunctionNode node) {
+    default Object visit(FunctionNode node) {
         return notImplemented();
     }
 
-    default T visit(IdentifierNode node) {
+    default Object visit(IdentifierNode node) {
         return notImplemented();
     }
 
-    default T visit(LiteralNode node) {
+    default Object visit(LiteralNode node) {
         return notImplemented();
     }
 
-    default T visit(LoopNode node) {
+    default Object visit(LoopNode node) {
         return notImplemented();
     }
 
-    default T visit(PrefixLeftValueNode node) {
+    default Object visit(PrefixLeftValueNode node) {
         return notImplemented();
     }
 
-    default T visit(MemberNode node) {
+    default Object visit(MemberNode node) {
         return notImplemented();
     }
 
-    default T visit(NewExprNode node) {
+    default Object visit(NewExprNode node) {
         return notImplemented();
     }
 
-    default T visit(ReturnNode node) {
+    default Object visit(ReturnNode node) {
         return notImplemented();
     }
 
-    default T visit(RootNode node) {
+    default Object visit(RootNode node) {
         return notImplemented();
     }
 
-    default T visit(SuiteNode node) {
+    default Object visit(SuiteNode node) {
         return notImplemented();
     }
-    default T visit(SubscriptionNode node) {
-        return notImplemented();
-    }
-
-    default T visit(ThisNode node) {
+    default Object visit(SubscriptionNode node) {
         return notImplemented();
     }
 
-    default T visit(UnaryExprNode node) {
+    default Object visit(ThisNode node) {
+        return notImplemented();
+    }
+
+    default Object visit(UnaryExprNode node) {
         return notImplemented();
     }
 

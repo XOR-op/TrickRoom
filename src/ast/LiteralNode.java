@@ -9,7 +9,7 @@ public class LiteralNode extends ExprNode {
         this.content=content;
     }
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

@@ -1,10 +1,11 @@
 package ast;
 
 public class ThisNode extends ExprNode {
-    public ThisNode(){}
+    public ThisNode() {
+    }
 
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

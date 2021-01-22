@@ -4,7 +4,7 @@ public class ConditionalNode extends StmtNode {
     public ExprNode condExpr;
     public StmtNode trueStat,falseStat;
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

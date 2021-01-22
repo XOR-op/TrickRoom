@@ -8,7 +8,7 @@ public class SuiteNode extends StmtNode {
         statements=new ArrayList<>();
     }
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

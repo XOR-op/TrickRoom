@@ -10,7 +10,7 @@ public class NewExprNode extends ExprNode {
         else classNew=null;
     }
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

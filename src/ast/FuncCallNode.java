@@ -16,7 +16,7 @@ public class FuncCallNode extends ExprNode {
     }
     public FuncCallNode(ExprNode s){this(s,false);}
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
 }

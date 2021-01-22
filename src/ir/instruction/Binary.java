@@ -1,7 +1,56 @@
 package ir.instruction;
 
-public class Binary extends IRInst{
-    public enum BinInst{ADD,SUB,MUL,UDIV,SDIV,UREM,SREM,SHL,LSHR,ASHR,AND,OR,XOR}
-    public BinInst inst;
+import ir.operand.IROperand;
 
+public class Binary extends IRInst{
+    public enum BinInstEnum {add,sub,mul,sdiv,srem,shl,ashr,and,or,xor}
+    public BinInstEnum inst;
+    public IROperand operand1,operand2,dest;
+
+    @Override
+    public String tell() {
+        return dest+" = "+dest.type+' '+operand1+", "+operand2;
+    }
+
+    public Binary(BinInstEnum inst,IROperand op1,IROperand op2,IROperand dest){
+        this.inst=inst;
+        this.dest=dest;
+        operand1=op1;
+        operand2=op2;
+    }
+    public static Binary.BinInstEnum getIntBinOpEnum(String s) {
+        switch (s) {
+            case "+" -> {
+                return Binary.BinInstEnum.add;
+            }
+            case "-" -> {
+                return Binary.BinInstEnum.sub;
+            }
+            case "*" -> {
+                return Binary.BinInstEnum.mul;
+            }
+            case "/" -> {
+                return Binary.BinInstEnum.sdiv;
+            }
+            case "<<" -> {
+                return Binary.BinInstEnum.shl;
+            }
+            case ">>" -> {
+                return Binary.BinInstEnum.ashr;
+            }
+            case "&", "&&" -> {
+                return Binary.BinInstEnum.and;
+            }
+            case "|", "||" -> {
+                return Binary.BinInstEnum.or;
+            }
+            case "^" -> {
+                return Binary.BinInstEnum.xor;
+            }
+            default -> {
+                // compare
+                return null;
+            }
+        }
+    }
 }

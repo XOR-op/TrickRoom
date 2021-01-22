@@ -4,8 +4,8 @@ public class PrefixLeftValueNode extends ExprNode{
     public String sign;
     public ExprNode expr;
     @Override
-    public void accept(ASTVisitor visitor) {
-        visitor.visit(this);
+    public Object accept(ASTVisitor visitor) {
+        return visitor.visit(this);
     }
     public PrefixLeftValueNode(String sign,ExprNode expr){
         this.sign=sign;

@@ -14,7 +14,7 @@ import java.util.Stack;
  *    members will be checked in TypeCollector
  *  - check break, continue and return statements
  */
-public class ScopeBuilder implements ASTVisitor<Void> {
+public class ScopeBuilder implements ASTVisitor {
     private RootNode root;
     private Scope currentScope;
     private FileScope top;

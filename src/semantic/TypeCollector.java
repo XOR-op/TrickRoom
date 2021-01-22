@@ -6,7 +6,7 @@ import compnent.scope.*;
 import exception.UnimplementedError;
 import exception.semantic.*;
 
-public class TypeCollector implements ASTVisitor<Void> {
+public class TypeCollector implements ASTVisitor {
     private Scope currentScope;
 
     private boolean checkIn(ASTNode node) {
