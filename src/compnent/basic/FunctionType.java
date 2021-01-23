@@ -8,6 +8,7 @@ public class FunctionType extends Type{
     public Type returnType;
     public ArrayList<Symbol> parameters;
     public FunctionNode node;
+    public ClassType parentClass;
     public static final FunctionNode BUILTIN_FUNCTION=new FunctionNode("");
     public static FunctionType arraySize=getArraySize();
     private static FunctionType parse(Type returnType, String identifier, ArrayList<Symbol> paraTypes){
@@ -58,5 +59,9 @@ public class FunctionType extends Type{
         fn.parameters=parameters;
         fn.id=id;
         return fn;
+    }
+
+    public boolean isGlobal(){
+        return parentClass==null;
     }
 }

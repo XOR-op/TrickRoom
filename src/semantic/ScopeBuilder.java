@@ -148,6 +148,7 @@ public class ScopeBuilder implements ASTVisitor {
             if(func.id.equals(cls.id)){
                 throw new NoMatchedFunction(method,"invalid name for method");
             }
+            func.parentClass=cls;
             scp.registerMethod(func, node);
             cls.memberFuncs.put(func.id, func);
         }
@@ -158,6 +159,7 @@ public class ScopeBuilder implements ASTVisitor {
                 throw new NoMatchedFunction(con,"constructor mismatched");
             }
             fn.returnType = cls;
+            fn.parentClass=cls;
             cls.constructor.add(fn);
             // todo check for duplicated constructor
         }

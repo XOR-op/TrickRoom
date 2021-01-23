@@ -5,6 +5,7 @@ import ir.instruction.IRInst;
 import java.util.ArrayList;
 
 public class BasicBlock {
+    public String blockName;
     public ArrayList<BasicBlock> prevs,nexts;
     public ArrayList<IRInst> insts;
 

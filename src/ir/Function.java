@@ -8,4 +8,5 @@ public class Function {
     public String name;
     public IRType retTy;
     public ArrayList<BasicBlock> blocks;
+
 }

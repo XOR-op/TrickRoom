@@ -279,7 +279,7 @@ public class TypeCollector implements ASTVisitor {
             }
         }
         node.type = func.returnType;
-        node.correspondingFunc = func;
+        node.func = func;
         return node.type;
     }
 

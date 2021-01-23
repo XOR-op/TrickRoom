@@ -14,4 +14,9 @@ public class Register extends IROperand{
         this.name=name;
         type=ty;
     }
+
+    @Override
+    public String tell() {
+        return "#"+name;
+    }
 }

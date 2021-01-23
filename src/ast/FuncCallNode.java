@@ -7,7 +7,7 @@ import java.util.ArrayList;
 public class FuncCallNode extends ExprNode {
     public ExprNode callee;
     public ArrayList<ExprNode> arguments;
-    public FunctionType correspondingFunc;
+    public FunctionType func;
     public boolean isConstructor;
     public FuncCallNode(ExprNode s,boolean isConstructor){
         callee =s;
@@ -18,5 +18,9 @@ public class FuncCallNode extends ExprNode {
     @Override
     public Object accept(ASTVisitor visitor) {
         return visitor.visit(this);
+    }
+
+    public boolean isGlobal(){
+        return (callee instanceof IdentifierNode)&&!isConstructor;
     }
 }
