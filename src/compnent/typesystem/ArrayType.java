@@ -24,4 +24,14 @@ public class ArrayType extends Type{
     public int dim() {
         return dimension;
     }
+    
+    @Override
+    public int size() {
+        return elementType.size()*length;
+    }
+
+    @Override
+    public String tell() {
+        return "[ "+ length +" x "+elementType+"]";
+    }
 }

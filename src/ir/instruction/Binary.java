@@ -1,18 +1,20 @@
 package ir.instruction;
 
 import ir.operand.IROperand;
+import ir.operand.Register;
 
 public class Binary extends IRInst{
     public enum BinInstEnum {add,sub,mul,sdiv,srem,shl,ashr,and,or,xor}
     public BinInstEnum inst;
-    public IROperand operand1,operand2,dest;
+    public IROperand operand1,operand2;
+    public Register dest;
 
     @Override
     public String tell() {
         return dest+" = "+dest.type+' '+operand1+", "+operand2;
     }
 
-    public Binary(BinInstEnum inst,IROperand op1,IROperand op2,IROperand dest){
+    public Binary(BinInstEnum inst,Register dest,IROperand op1,IROperand op2){
         this.inst=inst;
         this.dest=dest;
         operand1=op1;

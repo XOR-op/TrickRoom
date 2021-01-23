@@ -1,11 +1,12 @@
 package ir.instruction;
 
 import ir.operand.IROperand;
+import ir.operand.Register;
 
 public class Load extends IRInst{
-    private IROperand dest;
+    private Register dest;
     private IROperand address;
-    public Load(IROperand dst,IROperand addr){
+    public Load(Register dst,IROperand addr){
         dest=dst;
         address=addr;
     }

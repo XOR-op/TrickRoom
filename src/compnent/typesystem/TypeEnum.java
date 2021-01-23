@@ -1,4 +1,4 @@
-package compnent.basic;
+package compnent.typesystem;
 
 public class TypeConst {
     public static final Type Int = new Type("int");
