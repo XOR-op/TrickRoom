@@ -25,13 +25,4 @@ public class ArrayType extends Type{
         return dimension;
     }
     
-    @Override
-    public int size() {
-        return elementType.size()*length;
-    }
-
-    @Override
-    public String tell() {
-        return "[ "+ length +" x "+elementType+"]";
-    }
 }

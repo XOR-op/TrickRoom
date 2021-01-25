@@ -13,6 +13,10 @@ public class PointerType extends IRType{
 
     @Override
     public String tell() {
-        return baseType.tell()+"*";
+        return baseType==null?"nullptr*":(baseType+"*");
+    }
+
+    public static PointerType nullptr(){
+        return new PointerType(null);
     }
 }

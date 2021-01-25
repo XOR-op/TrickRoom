@@ -1,6 +1,6 @@
 package compnent.basic;
 
-public abstract class Type {
+public class Type {
 
     public String id;
 
@@ -16,11 +16,5 @@ public abstract class Type {
     }
     public int dim(){return 0;}
     public boolean isArray(){return this.dim()!=0;}
-    public abstract String tell();
-    public abstract int size();
 
-    @Override
-    public String toString() {
-        return tell();
-    }
 }

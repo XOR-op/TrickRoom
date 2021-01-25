@@ -7,8 +7,8 @@ import exception.semantic.*;
 import java.util.HashMap;
 
 public class FileScope extends Scope {
-    private HashMap<String, FunctionType> functionTable;
-    private HashMap<String, ClassType> classTable;
+    public HashMap<String, FunctionType> functionTable;
+    public HashMap<String, ClassType> classTable;
 
     public FileScope() {
         super(null);

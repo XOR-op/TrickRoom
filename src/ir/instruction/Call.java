@@ -2,16 +2,19 @@ package ir.instruction;
 
 import ir.Function;
 import ir.operand.IROperand;
+import ir.operand.Register;
 
 import java.util.ArrayList;
 import java.util.StringJoiner;
 
 public class Call extends IRInst{
-    private Function function;
-    private ArrayList<IROperand> args;
-    public Call(Function func){
+    public Function function;
+    public ArrayList<IROperand> args;
+    public Register dest;
+    public Call(Register dst, Function func){
         function=func;
         args=new ArrayList<>();
+        dest=dst;
     }
     public Call push(IROperand irOperand){
         args.add(irOperand);
@@ -22,6 +25,6 @@ public class Call extends IRInst{
     public String tell() {
         StringJoiner sj=new StringJoiner(", ","(",")");
         args.forEach(arg->sj.add(arg.tell()));
-        return "call "+function.retTy+" "+function.name+sj.toString();
+        return dest+" = call "+function.retTy+" "+function.name+sj.toString();
     }
 }

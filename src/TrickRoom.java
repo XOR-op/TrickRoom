@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 public class TrickRoom {
     private enum Verbose {
-        SILENT, INFO
+        SILENT, INFO, DEBUG
     }
 
     private static final String ANSI_PURPLE = "\u001B[35m";
@@ -23,6 +23,7 @@ public class TrickRoom {
     private static final String LLVM = "-llvm";
     private static final String INPUT_FILE = "-i";
     private static final String VERBOSE = "-v";
+    private static final String DEBUG = "-debug";
 
     private Verbose verb;
     private InputStream is;
@@ -86,6 +87,7 @@ public class TrickRoom {
                         }
                     }
                     case VERBOSE -> verb = Verbose.INFO;
+                    case DEBUG -> verb=Verbose.DEBUG;
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -101,6 +103,9 @@ public class TrickRoom {
             if (assemblyGenFlag) assemblyGen(rootNode);
             if (optimizationFlag) optimize(rootNode);
         }catch (SemanticException e){
+            if (verb==Verbose.DEBUG){
+                e.printStackTrace();
+            }
             System.exit(-1);
         }catch (Exception e){
             throw e;
