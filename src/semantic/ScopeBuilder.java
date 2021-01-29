@@ -58,7 +58,7 @@ public class ScopeBuilder implements ASTVisitor {
         if (!originType.isArray())
             return typeCollection.get(originType.id);
         else {
-            return new ArrayType(typeCollection.get(originType.id).copy(),((ArrayType)originType).dimension);
+            return new ArrayObjectType(typeCollection.get(originType.id).copy(),((ArrayObjectType)originType).dimension);
         }
     }
 

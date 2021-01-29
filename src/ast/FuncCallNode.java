@@ -5,7 +5,7 @@ import compnent.basic.FunctionType;
 import java.util.ArrayList;
 
 public class FuncCallNode extends ExprNode {
-    public ExprNode callee;
+    public ExprNode callee; // anything before (
     public ArrayList<ExprNode> arguments;
     public FunctionType func;
     public boolean isConstructor;

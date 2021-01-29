@@ -1,9 +1,9 @@
 package compnent.basic;
 
-public class ArrayType extends Type{
+public class ArrayObjectType extends Type{
     public int dimension;
     public Type elementType;
-    public ArrayType(Type ele, int dimension) {
+    public ArrayObjectType(Type ele, int dimension) {
         super(ele.id);
         elementType=ele;
         this.dimension=dimension;
@@ -11,12 +11,12 @@ public class ArrayType extends Type{
 
     @Override
     public Type copy() {
-        ArrayType at=new ArrayType(elementType,dimension);
+        ArrayObjectType at=new ArrayObjectType(elementType,dimension);
         return at;
     }
 
     public Type subType(){
-        if(dimension>1)return new ArrayType(elementType,dimension-1);
+        if(dimension>1)return new ArrayObjectType(elementType,dimension-1);
         else return elementType;
     }
 

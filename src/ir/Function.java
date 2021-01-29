@@ -14,8 +14,13 @@ public class Function {
         this.name=name;
         retTy=returnType;
     }
-    public void addParam(Register reg){
+    public Function addParam(Register reg){
         parameters.add(reg);
+        return this;
+    }
+    public Function addParam(IRType ty,String name){
+        parameters.add(new Register(ty,name));
+        return this;
     }
 
 }

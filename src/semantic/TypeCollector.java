@@ -192,7 +192,7 @@ public class TypeCollector implements ASTVisitor {
         if (!arrayType.isArray())
             throw new NotSubscriptable(node);
         // return element type
-        node.type = ((ArrayType) arrayType).subType();
+        node.type = ((ArrayObjectType) arrayType).subType();
         return node.type;
     }
 

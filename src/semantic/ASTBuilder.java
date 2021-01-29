@@ -1,7 +1,7 @@
 package semantic;
 
 import ast.*;
-import compnent.basic.ArrayType;
+import compnent.basic.ArrayObjectType;
 import compnent.basic.Type;
 import compnent.basic.TypeConst;
 import compnent.info.CodePosition;
@@ -343,7 +343,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
             // type will be converted to ClassType later
             type = new Type(ctx.Identifier().getText());
         }
-        var aln = new ArrayLiteralNode(new ArrayType(new Type(type.id), ctx.L_BRACKET().size()));
+        var aln = new ArrayLiteralNode(new ArrayObjectType(new Type(type.id), ctx.L_BRACKET().size()));
         aln.setPos(ctx);
         if (ctx.expression() != null)
             for (var exp : ctx.expression())
@@ -362,7 +362,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
 
     private Type iterateVarType(MxStarParser.VarTypeContext ctx) {
         if (ctx.varType() != null) {
-            return new ArrayType(iterateVarType(ctx.varType()),ctx.L_BRACKET().size());
+            return new ArrayObjectType(iterateVarType(ctx.varType()),ctx.L_BRACKET().size());
         } else if (ctx.builtinType() != null) {
             if (ctx.builtinType().INT_KW() != null) return TypeConst.Int;
             else if (ctx.builtinType().STRING_KW() != null) return TypeConst.String;
