@@ -7,4 +7,6 @@ public abstract class IRInst {
     public String toString() {
         return tell();
     }
+
+    public boolean isTerminal(){return false;}
 }

@@ -6,6 +6,7 @@ import compnent.basic.Type;
 import compnent.basic.TypeConst;
 import compnent.scope.FileScope;
 import exception.UnimplementedError;
+import ir.operand.GlobalVar;
 import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.IRType;
@@ -20,6 +21,7 @@ public class IRInfo {
     private HashMap<String, StructureType> types=new HashMap<>();
     private HashMap<String, StringConstant> strLiterals=new HashMap<>();
     private HashMap<String,String> stringMethods=new HashMap<>();
+    private HashMap<String, GlobalVar> globalVars=new HashMap<>();
     private int strCounter=0;
     public IRInfo(FileScope scope){
         // no array.size() here
@@ -106,7 +108,7 @@ public class IRInfo {
             return new PointerType(types.get(tp.id));
         }else throw new UnimplementedError();
     }
-    public Function getFunction(FunctionType ft){
+    public Function getFunction(String ft){
         return functions.get(ft);
     }
     public Function getArraySize(){

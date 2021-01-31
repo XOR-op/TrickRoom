@@ -19,13 +19,15 @@ public class ScopeBuilder implements ASTVisitor {
     private Scope currentScope;
     private FileScope top;
     private FunctionNode currentFunction;
-    private Stack<LoopNode> loopNodeStack;
-    private HashMap<String, Type> typeCollection;
+    private Stack<LoopNode> loopNodeStack = new Stack<>();
+    private HashMap<String, Type> typeCollection = new HashMap<>();
+    private int scopeLevel = 0;
+    private ClassType currentClass = null;
 
     private void pushScope(Scope scope) {
         assert scope.getUpstream() == null || scope.getUpstream() == currentScope;
-//        L.i(scope.toString());
         currentScope = scope;
+        scopeLevel++;
     }
 
     private void pushScope(ASTNode node) {
@@ -33,8 +35,8 @@ public class ScopeBuilder implements ASTVisitor {
     }
 
     private void popScope() {
-//        L.i(currentScope.toString());
         currentScope = currentScope.getUpstream();
+        scopeLevel--;
     }
 
     private void globalRegisterFunc(String s) {
@@ -58,14 +60,12 @@ public class ScopeBuilder implements ASTVisitor {
         if (!originType.isArray())
             return typeCollection.get(originType.id);
         else {
-            return new ArrayObjectType(typeCollection.get(originType.id).copy(),((ArrayObjectType)originType).dimension);
+            return new ArrayObjectType(typeCollection.get(originType.id).copy(), ((ArrayObjectType) originType).dimension);
         }
     }
 
     public ScopeBuilder(RootNode tree) {
         root = tree;
-        loopNodeStack = new Stack<>();
-        typeCollection = new HashMap<>();
         build();
     }
 
@@ -100,8 +100,8 @@ public class ScopeBuilder implements ASTVisitor {
             preScanClass(cls);
         }
         // scan class and function definition to support forwarding reference
-        root.functions.forEach(fun->top.registerFunction(scanFunction(fun)));
-        root.classes.forEach(cls->top.registerClass(scanClass(cls)));
+        root.functions.forEach(fun -> top.registerFunction(scanFunction(fun)));
+        root.classes.forEach(cls -> top.registerClass(scanClass(cls)));
         // sequentially visit variable declarations and functions
         root.nodeList.forEach(node -> node.accept(this));
         return top;
@@ -109,7 +109,9 @@ public class ScopeBuilder implements ASTVisitor {
 
     private Symbol scanDecl(DeclarationNode node) {
         node.type = recoverType(node.type, node);
-        return new Symbol(node.type, node.id);
+        String prefix=currentClass==null?(currentFunction==null?"@":"%"):(currentFunction==null?"%struct.":"%");
+        node.sym= new Symbol(node.type, node.id,prefix+node.id);
+        return node.sym;
     }
 
     private FunctionType scanFunction(FunctionNode node) {
@@ -136,7 +138,7 @@ public class ScopeBuilder implements ASTVisitor {
         var cls = node.cls;
         var scp = new ClassScope(currentScope, cls);
         node.scope = scp;
-        scp.registerVar("this",cls,node);
+        scp.registerVar("this", cls, "this",node);
         pushScope(node);
         for (var member : node.members) {
             var sym = scanDecl(member);
@@ -145,21 +147,21 @@ public class ScopeBuilder implements ASTVisitor {
         }
         for (var method : node.methods) {
             var func = scanFunction(method);
-            if(func.id.equals(cls.id)){
-                throw new NoMatchedFunction(method,"invalid name for method");
+            if (func.id.equals(cls.id)) {
+                throw new NoMatchedFunction(method, "invalid name for method");
             }
-            func.parentClass=cls;
+            func.parentClass = cls;
             scp.registerMethod(func, node);
             cls.memberFuncs.put(func.id, func);
         }
         for (var con : node.constructor) {
             var fn = scanFunction(con);
-            if(!fn.id.equals(cls.id)){
+            if (!fn.id.equals(cls.id)) {
                 // mismatched constructor
-                throw new NoMatchedFunction(con,"constructor mismatched");
+                throw new NoMatchedFunction(con, "constructor mismatched");
             }
             fn.returnType = cls;
-            fn.parentClass=cls;
+            fn.parentClass = cls;
             cls.constructor.add(fn);
             // todo check for duplicated constructor
         }
@@ -256,7 +258,7 @@ public class ScopeBuilder implements ASTVisitor {
     @Override
     public Void visit(ReturnNode node) {
         if (currentFunction == null) throw new WrongReturn(node);
-        if(node.returnExpr!=null)node.returnExpr.accept(this);
+        if (node.returnExpr != null) node.returnExpr.accept(this);
         node.correspondingFunction = currentFunction;
         return null;
     }
@@ -284,7 +286,8 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public Void visit(IdentifierNode node) {
-        node.type = currentScope.getVarType(node.id, node);
+        node.sym = currentScope.getVarSymbol(node.id, node);
+        node.type = node.sym.getType();
         return null;
     }
 
@@ -316,7 +319,7 @@ public class ScopeBuilder implements ASTVisitor {
     @Override
     public Void visit(NewExprNode node) {
         // fix type
-        if(node.arrNew!=null)visit(node.arrNew);
+        if (node.arrNew != null) visit(node.arrNew);
         return null;
     }
 
@@ -344,8 +347,8 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public Void visit(ArrayLiteralNode node) {
-        node.type=recoverType(node.type,node);
-        node.dimArr.forEach(sub-> sub.accept(this));
+        node.type = recoverType(node.type, node);
+        node.dimArr.forEach(sub -> sub.accept(this));
         return null;
     }
 

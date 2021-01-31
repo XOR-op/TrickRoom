@@ -17,4 +17,9 @@ public class Ret extends IRInst{
     public String tell() {
         return "ret "+(value==null?"void":(value.type+" "+value));
     }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
 }

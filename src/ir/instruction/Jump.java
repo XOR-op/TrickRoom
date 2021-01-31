@@ -11,6 +11,11 @@ public class Jump extends IRInst{
 
     @Override
     public String tell() {
-        return "br label "+target.blockName;
+        return "br label "+target.getBlockName();
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
     }
 }

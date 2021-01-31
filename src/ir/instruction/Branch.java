@@ -14,6 +14,11 @@ public class Branch extends IRInst{
 
     @Override
     public String tell() {
-        return "br i1 "+condition+", label "+ trueBranch.blockName+", label "+falseBranch.blockName;
+        return "br i1 "+condition+", label "+ trueBranch.getBlockName()+", label "+falseBranch.getBlockName();
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
     }
 }

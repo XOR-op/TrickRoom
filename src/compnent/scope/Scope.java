@@ -26,9 +26,12 @@ public class Scope {
     }
 
     public Type getVarType(String id, ASTNode node){
+        return getVarSymbol(id,node).getType();
+    }
+    public Symbol getVarSymbol(String id,ASTNode node){
         var sym=syntaxTable.get(id);
-        if(sym!=null) return sym.getType();
-        else if(upstream!=null)return upstream.getVarType(id,node);
+        if(sym!=null) return sym;
+        else if(upstream!=null)return upstream.getVarSymbol(id,node);
         else throw new MissingSyntax(node,id);
     }
 
@@ -43,8 +46,8 @@ public class Scope {
     }
 
 
-    public void registerVar(String id, Type tp,ASTNode node){
-        registerVar(new Symbol(tp,id),node);
+    public void registerVar(String id, Type tp,String nameAsReg,ASTNode node){
+        registerVar(new Symbol(tp,id,nameAsReg),node);
     }
 
     public void registerVar(Symbol sym,ASTNode node) {

@@ -6,10 +6,12 @@ public class Symbol {
     private String name;
     private Type type;
     private Scope scope;
+    public String nameAsReg;
 
-    public Symbol(Type type, String name) {
+    public Symbol(Type type, String name,String nameAsReg) {
         this.type = type;
         this.name = name;
+        this.nameAsReg=nameAsReg;
     }
 
     public boolean matches(Type rhs) {

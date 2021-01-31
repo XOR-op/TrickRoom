@@ -12,22 +12,33 @@ import ir.instruction.*;
 import ir.operand.*;
 import ir.typesystem.*;
 
-public class IRBuilder implements ASTVisitor {
-    private Function currentFunction;
-    private BasicBlock currentBlock;
-    private IRInfo info;
-    private int scopeLevel=0;
+import java.util.Stack;
 
-    private String translateIdentifier(String name){
+public class IRBuilder implements ASTVisitor {
+    private Function currentFunction = null;
+    private BasicBlock currentBlock = null;
+    private Stack<BasicBlock> currentLoopUpdBlock = new Stack<>();
+    private Stack<BasicBlock> currentAfterLoopBlock = new Stack<>();
+    private IRInfo info;
+    private int scopeLevel = 0;
+    private int counter = 0;
+
+    private String translateIdentifier(String name) {
 //        return currentFunction.name+"."+scopeLevel+"."+name;
-        return "var."+scopeLevel+"."+name;
+        return "var." + scopeLevel + "." + name;
+    }
+
+    private String generateBlockName() {
+        return Integer.toString(counter++);
     }
 
     @Override
     public Object visit(RootNode node) {
+        node.globalVars.forEach(var -> {
+            //todo
+        });
         node.classes.forEach(cls -> cls.accept(this));
         node.functions.forEach(func -> func.accept(this));
-        // todo
         return null;
     }
 
@@ -125,19 +136,19 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(FuncCallNode node) {
         Call call;
         if (node.func.isGlobal()) {
-            call = new Call(new Register(info.resolveType(node.func.returnType)), info.getFunction(node.func));
+            call = new Call(new Register(info.resolveType(node.func.returnType)), info.getFunction(node.func.id));
             node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
         } else {
             // method where callee is MemberNode
             assert node.callee instanceof MemberNode;
             if (node.callee.type instanceof ArrayObjectType) {
                 // todo array.size()
-                call=new Call(new Register(TypeEnum.int32),info.getArraySize());
+                call = new Call(new Register(TypeEnum.int32), info.getArraySize());
                 call.push((IROperand) node.callee.accept(this));
             } else {
                 Function f = node.callee.type.equals(TypeConst.String) ?
                         info.getStringMethod(((MemberNode) node.callee).member) :
-                        info.getClassMethod((ClassType) ((MemberNode) node.callee).object.type,node.func);
+                        info.getClassMethod((ClassType) ((MemberNode) node.callee).object.type, node.func);
                 call = new Call(new Register(f.retTy), f);
                 call.push((IROperand) node.callee.accept(this));
                 node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
@@ -202,6 +213,7 @@ public class IRBuilder implements ASTVisitor {
         } else {
             return new NullptrConstant();
         }
+        // todo
     }
 
     @Override
@@ -223,14 +235,77 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(FunctionNode node) {
         Register.reset();
+        counter = 1;
+        currentFunction = info.getFunction(node.funcId);
+        currentBlock = currentFunction.blocks.get(0);
         node.suite.accept(this);
         return null;
     }
 
     @Override
     public Object visit(LoopNode node) {
-        if(node.initExpr!=null)node.initExpr.accept(this);
-        currentBlock=currentBlock.appendBlock()
+        if (node.initExpr != null) node.initExpr.accept(this);
+        else if (node.initDecl != null) node.initDecl.accept(this);
+        boolean hasCond = node.condExpr != null;
+        boolean hasUpdate = node.updateExpr != null;
+        // blocks
+        var beforeLoop = currentBlock;
+        var conditionBlock = beforeLoop.split(generateBlockName());
+        var loopBody = conditionBlock.split(generateBlockName());
+        var updateBlock = loopBody.split(generateBlockName());
+        var afterLoop = updateBlock.split(generateBlockName());
+        currentAfterLoopBlock.push(afterLoop);
+        currentLoopUpdBlock.push(updateBlock);
+        beforeLoop.setTerminator(new Jump(conditionBlock));
+        // condition block
+        currentBlock = conditionBlock;
+        if (hasCond) {
+            Register cond = (Register) node.condExpr.accept(this);
+            currentBlock.setTerminator(new Branch(cond, loopBody, afterLoop));
+        } else {
+            currentBlock.setTerminator(new Jump(loopBody));
+        }
+        // body
+        currentBlock = loopBody;
+        node.loopBody.accept(this);
+        if (!currentBlock.hasTerminal())
+            currentBlock.setTerminator(new Jump(updateBlock));
+        // update
+        currentBlock = updateBlock;
+        if (hasUpdate) {
+            node.updateExpr.accept(this);
+        }
+        currentBlock.setTerminator(new Jump(conditionBlock));
+        // done
+        currentBlock = afterLoop;
+        currentLoopUpdBlock.pop();
+        currentAfterLoopBlock.pop();
+        return null;
+    }
+
+    @Override
+    public Object visit(ConditionalNode node) {
+        // process branch and generate blocks
+        Register cond = (Register) node.condExpr.accept(this);
+        var beforeBranch = currentBlock;
+        var trueBlock = currentBlock.split(generateBlockName());
+        var afterBranch = trueBlock.split(generateBlockName());
+        boolean hasFalse = node.falseStat != null;
+        var falseBlock = hasFalse ? trueBlock.split(generateBlockName()) : null;
+        beforeBranch.setTerminator(new Branch(cond, trueBlock, hasFalse ? falseBlock : afterBranch));
+        // visit instructions
+        currentBlock = trueBlock;
+        node.trueStat.accept(this);
+        if (!currentBlock.hasTerminal())
+            currentBlock.setTerminator(new Jump(afterBranch));
+        if (hasFalse) {
+            currentBlock = falseBlock;
+            node.falseStat.accept(this);
+            if (!currentBlock.hasTerminal())
+                currentBlock.setTerminator(new Jump(afterBranch));
+        }
+        currentBlock = afterBranch;
+        return null;
     }
 
     @Override
@@ -238,6 +313,37 @@ public class IRBuilder implements ASTVisitor {
         node.expr.accept(this);
         return null;
     }
+
+    @Override
+    public Object visit(BreakNode node) {
+        currentBlock.setTerminator(new Jump(currentAfterLoopBlock.peek()));
+        return null;
+    }
+
+    @Override
+    public Object visit(ContinueNode node) {
+        currentBlock.setTerminator(new Jump(currentLoopUpdBlock.peek()));
+        return null;
+    }
+
+    @Override
+    public Object visit(DeclarationBlockNode node) {
+        node.decls.forEach(d->d.accept(this));
+        return null;
+    }
+
+    @Override
+    public Object visit(DeclarationNode node) {
+        if(node.expr!=null){
+            var varReg=new Register(info.resolveType(node.sym.getType()),translateIdentifier(node.id));
+            var inst = new Binary(Binary.BinInstEnum.add, varReg, (IROperand) node.expr.accept(this), new IntConstant(0));
+            currentBlock.appendInst(inst);
+            return inst.dest;
+        }
+        return null;
+    }
+
+
 }
 
 
