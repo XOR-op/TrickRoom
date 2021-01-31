@@ -100,7 +100,7 @@ public class IRBuilder implements ASTVisitor {
                 var cinst = Compare.getCmpOpEnum(node.lexerSign);
                 assert cinst != null;
                 var inst = new Compare(cinst, new Register(TypeEnum.bool),
-                        (IROperand) node.lhs.accept(this), (Register) node.rhs.accept(this));
+                        (IROperand) node.lhs.accept(this), (IROperand) node.rhs.accept(this));
                 currentBlock.appendInst(inst);
                 return (Register) inst.dest;
             }
@@ -162,11 +162,12 @@ public class IRBuilder implements ASTVisitor {
                 call = new Call(new Register(TypeEnum.int32), info.getArraySize());
                 call.push((IROperand) node.callee.accept(this));
             } else {
-                Function f = node.callee.type.equals(TypeConst.String) ?
+                ExprNode object=((MemberNode) node.callee).object;
+                Function f = object.type.equals(TypeConst.String) ?
                         info.getStringMethod(((MemberNode) node.callee).member) :
-                        info.getClassMethod((ClassType) ((MemberNode) node.callee).object.type, node.func);
+                        info.getClassMethod(object.type.id, node.func.id);
                 call = new Call(new Register(f.retTy), f);
-                call.push((IROperand) node.callee.accept(this));
+                call.push((IROperand) object.accept(this));
                 node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
             }
         }
@@ -224,7 +225,7 @@ public class IRBuilder implements ASTVisitor {
                 default -> throw new IllegalStateException();
             }
         } else if (TypeConst.Int.equals(node.type)) {
-            return new IntConstant(Integer.getInteger(node.content));
+            return new IntConstant(Integer.valueOf(node.content));
         } else if (TypeConst.String.equals(node.type)) {
             return new Register(TypeEnum.str, info.registerStrLiteral(node.content));
         } else {
@@ -250,12 +251,18 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Object visit(FunctionNode node) {
-        Register.reset();
+        Register.reset(1);
         counter = 1;
-        currentFunction = info.getFunction(node.funcId);
+        currentFunction = currentClass==null?info.getFunction(node.funcId): info.getClassMethod(currentClass.id,node.funcId);
         assert currentFunction!=null;
-        currentBlock = currentFunction.blocks.get(0);
+        currentFunction.returnValue=new Register(currentFunction.retTy);
+        currentFunction.exitBlock.setTerminator(new Ret(currentFunction.returnValue));
+        currentBlock = currentFunction.entryBlock;
         node.suite.accept(this);
+        if(!currentBlock.hasTerminal()){
+            // constructor
+            currentBlock.setTerminator(new Jump(currentFunction.exitBlock));
+        }
         return null;
     }
 

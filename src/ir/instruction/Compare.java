@@ -8,7 +8,7 @@ public class Compare extends IRInst{
     public IROperand operand1,operand2;
     public Register dest;
     public CmpEnum type;
-    public Compare(CmpEnum inst,IROperand op1,IROperand op2,Register dst){
+    public Compare(CmpEnum inst,Register dst,IROperand op1,IROperand op2){
         dest=dst;
         type=inst;
         operand1=op1;

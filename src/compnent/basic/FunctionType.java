@@ -9,6 +9,7 @@ public class FunctionType extends Type{
     public ArrayList<Symbol> parameters;
     public FunctionNode node;
     public ClassType parentClass;
+    public boolean isBuiltin=false;
     public static final FunctionNode BUILTIN_FUNCTION=new FunctionNode("");
     public static FunctionType arraySize=getArraySize();
     private static FunctionType parse(Type returnType, String identifier, ArrayList<Symbol> paraTypes){
@@ -16,6 +17,7 @@ public class FunctionType extends Type{
         f.id=identifier;
         f.returnType=returnType;
         f.parameters=paraTypes;
+        f.isBuiltin=true;
         return f;
     }
     private static FunctionType getArraySize(){

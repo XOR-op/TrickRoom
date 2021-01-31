@@ -3,12 +3,14 @@ package ir;
 import compnent.basic.*;
 import compnent.scope.FileScope;
 import exception.UnimplementedError;
+import ir.instruction.Ret;
 import ir.operand.GlobalVar;
 import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
 
 import java.util.HashMap;
+import java.util.StringJoiner;
 
 public class IRInfo {
     private HashMap<String, Function> functions = new HashMap<>();
@@ -41,7 +43,7 @@ public class IRInfo {
         addStrCmp("gt");
         addStrCmp("ge");
         // array size
-        addBuiltinFunction(TypeEnum.int32, "array$size").addParam(PointerType.baseArrayType(), "arr");
+        addBuiltinFunction(TypeEnum.int32, ".array$size").addParam(PointerType.baseArrayType(), "arr");
 
         scopeScan(scope);
     }
@@ -51,7 +53,7 @@ public class IRInfo {
     }
 
     private Function addStringMethod(IRType ret, String name) {
-        var f = new Function(name, ret);
+        var f = new Function(name, ret,true);
         f.addParam(TypeEnum.str, "lhs");
         functions.put(".str$" + name, f);
         stringMethods.put(name, ".str$" + name);
@@ -59,22 +61,22 @@ public class IRInfo {
     }
 
     private Function addBuiltinFunction(IRType ret, String name) {
-        var f = new Function(name, ret);
+        var f = new Function(name, ret,true);
         functions.put(name, f);
         return f;
     }
 
-    private String classMethodInterpretation(ClassType cls, FunctionType fty) {
+    private String classMethodInterpretation(String className, String functionName) {
         // translation
-        return "$" + cls.id + "." + fty.id;
+        return "$" + className + "." + functionName;
     }
 
     public Function getStringMethod(String name) {
         return functions.get(stringMethods.get(name));
     }
 
-    public Function getClassMethod(ClassType cls, FunctionType fty) {
-        return functions.get(classMethodInterpretation(cls, fty));
+    public Function getClassMethod(String cls, String func) {
+        return functions.get(classMethodInterpretation(cls, func));
     }
 
     public void scopeScan(FileScope scope) {
@@ -84,16 +86,27 @@ public class IRInfo {
             types.put(s, new StructureType(s));
         });
         scope.classTable.forEach((s, cls) -> addClass(cls));
-        scope.functionTable.forEach((f, func) -> addFunction(func));
+        scope.functionTable.forEach((f, func) -> {
+            if(!func.isBuiltin)
+                addFunction(func);
+        });
 
     }
 
+    private Function addMethod(ClassType cls,FunctionType func){
+        var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
+        f.addParam(new Register(resolveType(cls), "this"));
+        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
+        functions.put(f.name, f);
+        return f;
+    }
+
     public void addClass(ClassType cls) {
-        cls.memberFuncs.forEach((name, func) -> {
-            var f = new Function(classMethodInterpretation(cls, func), resolveType(func.returnType));
-            f.addParam(new Register(resolveType(cls), "this"));
-            func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
-            functions.put(f.name, f);
+        cls.memberFuncs.forEach((name, func) -> addMethod(cls,func));
+        cls.constructor.forEach(func -> addMethod(cls,func));
+        var struct=types.get(cls.id);
+        cls.memberVars.forEach((k,v)->{
+            struct.addMember(new Register(resolveType(v.getType()),k));
         });
     }
 
@@ -140,8 +153,17 @@ public class IRInfo {
     public String toLLVMir(){
         StringBuilder builder=new StringBuilder();
         strLiterals.forEach((k,v)->{builder.append(v.tell()).append('\n');});
-        types.forEach((k,v)->{builder.append(v.tell()).append('\n');});
-        functions.forEach((k,v)->{builder.append(v.tell()).append('\n');});
+        builder.append('\n');
+        types.forEach((k,v)->{
+            var joiner=new StringJoiner(", ","{","}");
+            v.members.forEach(m->joiner.add(m.type.tell()));
+            builder.append(v.tell()).append(" = ").append(joiner.toString()).append("\n");
+        });
+        builder.append('\n');
+        functions.forEach((k,v)->{
+            if(!v.isBuiltin())
+                builder.append(v.tell()).append('\n');
+        });
         return builder.toString();
     }
 }

@@ -14,15 +14,18 @@ public class Function {
     public ArrayList<Register> parameters=new ArrayList<>();
     public BasicBlock entryBlock,exitBlock;
     public Register returnValue;
-    public Function(String name,IRType returnType){
-        this.name=name;
-        retTy=returnType;
-        entryBlock=new BasicBlock("entry");
-        exitBlock=new BasicBlock("exit");
+    private boolean isBuiltin;
+    public Function(String name,IRType returnType,boolean isBuiltin) {
+        this.name = name;
+        this.isBuiltin = isBuiltin;
+        retTy = returnType;
+        entryBlock = new BasicBlock("entry");
+        exitBlock = new BasicBlock("exit");
         blocks.add(entryBlock);
         blocks.add(exitBlock);
-        returnValue=new Register(retTy);
-        exitBlock.appendInst(new Ret(returnValue));
+    }
+    public Function(String name,IRType returnType){
+        this(name,returnType,false);
     }
     public Function addParam(Register reg){
         parameters.add(reg);
@@ -35,10 +38,13 @@ public class Function {
     public String tell(){
         var builder=new StringBuilder();
         var argJoiner=new StringJoiner(",","(",")");
-        parameters.forEach(p->argJoiner.add(p.type+" "+p.name));
-        builder.append("define ").append(retTy).append('@').append(name).append(argJoiner.toString()).append(" #0 {\n");
+        parameters.forEach(p->argJoiner.add(p.type.tell()+" "+p.name));
+        builder.append("define ").append(retTy.tell()).append(" @").append(name).append(argJoiner.toString()).append(" #0 {\n");
         blocks.forEach(b->builder.append(b.tell()));
-        return builder.append("}").toString();
+        return builder.append("}\n").toString();
     }
 
+    public boolean isBuiltin(){
+        return isBuiltin;
+    }
 }
