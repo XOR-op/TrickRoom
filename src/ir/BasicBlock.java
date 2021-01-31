@@ -41,4 +41,14 @@ public class BasicBlock {
     }
 
     public boolean hasTerminal(){return terminatorInst!=null;}
+
+    public String tell(){
+        var builder=new StringBuilder();
+        builder.append(blockName).append(":\t\t\t\t\t");
+        prevs.forEach(pre->builder.append(pre.blockName).append(','));
+        builder.deleteCharAt(builder.length()-1).append('\n');
+        insts.forEach(i->builder.append('\t').append(i.tell()).append('\n'));
+        builder.append('\t').append(terminatorInst.tell()).append("\n");
+        return builder.toString();
+    }
 }

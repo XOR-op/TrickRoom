@@ -19,4 +19,8 @@ public class PointerType extends IRType{
     public static PointerType nullptr(){
         return new PointerType(null);
     }
+
+    public static PointerType baseArrayType(){
+        return new PointerType(TypeEnum.int32);
+    }
 }

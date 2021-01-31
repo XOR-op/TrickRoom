@@ -1,5 +1,7 @@
+import codegen.IRBuilder;
 import exception.UnimplementedError;
 import exception.semantic.*;
+import ir.IRInfo;
 import semantic.*;
 import ast.*;
 import org.antlr.v4.runtime.CharStreams;
@@ -20,7 +22,7 @@ public class TrickRoom {
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String SYNTAX = "-fsyntax-only";
     private static final String OPTIMIZATION = "-O2";
-    private static final String LLVM = "-llvm";
+    private static final String LLVM = "-emit-llvm";
     private static final String INPUT_FILE = "-i";
     private static final String VERBOSE = "-v";
     private static final String DEBUG = "-debug";
@@ -91,7 +93,6 @@ public class TrickRoom {
                 }
             } else
                 error("wrong argument:" + args[i]);
-
         }
     }
 
@@ -101,7 +102,7 @@ public class TrickRoom {
             collectType(rootNode);
             if (llvmGenFlag) llvmGen(rootNode);
             if (assemblyGenFlag) assemblyGen(rootNode);
-            if (optimizationFlag) optimize(rootNode);
+            if (optimizationFlag) optimize();
         }catch (SemanticException e){
             if (verb==Verbose.DEBUG){
                 e.printStackTrace();
@@ -127,15 +128,18 @@ public class TrickRoom {
         }
     }
 
-    private void llvmGen(RootNode rootNode) {
-        throw new UnimplementedError();
+    private IRInfo llvmGen(RootNode rootNode) {
+        IRBuilder builder=new IRBuilder(rootNode);
+        IRInfo info =builder.constructIR();
+        logln(info.toLLVMir());
+        return info;
     }
 
     private void assemblyGen(RootNode rootNode) {
         throw new UnimplementedError();
     }
 
-    private void optimize(RootNode rootNode) {
+    private void optimize() {
         throw new UnimplementedError();
     }
 
