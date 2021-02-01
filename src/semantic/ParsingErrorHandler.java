@@ -1,6 +1,6 @@
 package semantic;
 
-import compnent.info.CodePosition;
+import ast.info.CodePosition;
 import exception.semantic.ParsingException;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;

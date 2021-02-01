@@ -1,9 +1,7 @@
 package ir;
 
-import compnent.basic.*;
-import compnent.scope.FileScope;
-import exception.UnimplementedError;
-import ir.instruction.Ret;
+import ast.type.*;
+import ast.scope.FileScope;
 import ir.operand.GlobalVar;
 import ir.operand.Register;
 import ir.operand.StringConstant;
@@ -53,7 +51,7 @@ public class IRInfo {
     }
 
     private Function addStringMethod(IRType ret, String name) {
-        var f = new Function(name, ret,true);
+        var f = new Function(name, ret, true);
         f.addParam(TypeEnum.str, "lhs");
         functions.put(".str$" + name, f);
         stringMethods.put(name, ".str$" + name);
@@ -61,7 +59,7 @@ public class IRInfo {
     }
 
     private Function addBuiltinFunction(IRType ret, String name) {
-        var f = new Function(name, ret,true);
+        var f = new Function(name, ret, true);
         functions.put(name, f);
         return f;
     }
@@ -87,13 +85,21 @@ public class IRInfo {
         });
         scope.classTable.forEach((s, cls) -> addClass(cls));
         scope.functionTable.forEach((f, func) -> {
-            if(!func.isBuiltin)
+            if (!func.isBuiltin)
                 addFunction(func);
         });
-
+        scope.globalVarTable.forEach((s,v)->{
+            //todo
+//            var glo= v.initExpr==null?
+//                    new GlobalVar(resolveType(v.getType()),v.nameAsReg):
+//                    new GlobalVar(resolveType(v.getType()),v.nameAsReg,ConstantEvaluator.evaluate(v.initExpr));
+            var glo=new GlobalVar(resolveType(v.getType()),v.nameAsReg);
+            globalVars.put(s,glo);
+        });
     }
 
-    private Function addMethod(ClassType cls,FunctionType func){
+
+    private Function addMethod(ClassType cls, FunctionType func) {
         var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
         f.addParam(new Register(resolveType(cls), "this"));
         func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
@@ -102,11 +108,11 @@ public class IRInfo {
     }
 
     public void addClass(ClassType cls) {
-        cls.memberFuncs.forEach((name, func) -> addMethod(cls,func));
-        cls.constructor.forEach(func -> addMethod(cls,func));
-        var struct=types.get(cls.id);
-        cls.memberVars.forEach((k,v)->{
-            struct.addMember(new Register(resolveType(v.getType()),k));
+        cls.memberFuncs.forEach((name, func) -> addMethod(cls, func));
+        cls.constructor.forEach(func -> addMethod(cls, func));
+        var struct = types.get(cls.id);
+        cls.memberVars.forEach((k, v) -> {
+            struct.addMember(new Register(resolveType(v.getType()), k));
         });
     }
 
@@ -150,18 +156,27 @@ public class IRInfo {
         }
     }
 
-    public String toLLVMir(){
-        StringBuilder builder=new StringBuilder();
-        strLiterals.forEach((k,v)->{builder.append(v.tell()).append('\n');});
+    public String toLLVMir() {
+        StringBuilder builder = new StringBuilder();
+        strLiterals.forEach((k, v) -> {
+            builder.append(v.tell()).append('\n');
+        });
         builder.append('\n');
-        types.forEach((k,v)->{
-            var joiner=new StringJoiner(", ","{","}");
-            v.members.forEach(m->joiner.add(m.type.tell()));
+
+        types.forEach((k, v) -> {
+            var joiner = new StringJoiner(", ", "{", "}");
+            v.members.forEach(m -> joiner.add(m.type.tell()));
             builder.append(v.tell()).append(" = ").append(joiner.toString()).append("\n");
         });
         builder.append('\n');
-        functions.forEach((k,v)->{
-            if(!v.isBuiltin())
+
+        globalVars.forEach((k,v)->{
+            builder.append(v.tell()).append(" = ").append(v.type).append(" ").append(v.initValue).append('\n');
+        });
+        builder.append('\n');
+
+        functions.forEach((k, v) -> {
+            if (!v.isBuiltin())
                 builder.append(v.tell()).append('\n');
         });
         return builder.toString();

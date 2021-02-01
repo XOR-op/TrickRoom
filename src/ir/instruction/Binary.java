@@ -11,7 +11,7 @@ public class Binary extends IRInst{
 
     @Override
     public String tell() {
-        return dest+" = "+dest.type+' '+operand1+", "+operand2;
+        return dest+" = "+inst+" "+dest.type+' '+operand1+", "+operand2;
     }
 
     public Binary(BinInstEnum inst,Register dest,IROperand op1,IROperand op2){
@@ -33,6 +33,9 @@ public class Binary extends IRInst{
             }
             case "/" -> {
                 return Binary.BinInstEnum.sdiv;
+            }
+            case "%" ->{
+                return BinInstEnum.srem;
             }
             case "<<" -> {
                 return Binary.BinInstEnum.shl;

@@ -1,7 +1,6 @@
 package exception.semantic;
 
-import ast.ASTNode;
-import compnent.info.CodePosition;
+import ast.struct.ASTNode;
 
 public class MemberMisuse extends SemanticException{
     public MemberMisuse(ASTNode node) {

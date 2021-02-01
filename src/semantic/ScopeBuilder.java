@@ -1,8 +1,10 @@
 package semantic;
 
-import ast.*;
-import compnent.basic.*;
-import compnent.scope.*;
+import ast.ASTVisitor;
+import ast.Symbol;
+import ast.struct.*;
+import ast.type.*;
+import ast.scope.*;
 import exception.semantic.*;
 
 import java.util.HashMap;
@@ -69,10 +71,6 @@ public class ScopeBuilder implements ASTVisitor {
         build();
     }
 
-    public Scope getCompletedScope() {
-        return top;
-    }
-
     private Scope build() {
         // global file scope
         top = new FileScope();
@@ -109,8 +107,11 @@ public class ScopeBuilder implements ASTVisitor {
 
     private Symbol scanDecl(DeclarationNode node) {
         node.type = recoverType(node.type, node);
-        String prefix=currentClass==null?(currentFunction==null?"@":"%"):(currentFunction==null?"%struct.":"%");
-        node.sym= new Symbol(node.type, node.id,prefix+node.id);
+        String prefix = (currentClass != null && currentFunction == null )?("struct."+currentClass.id+".") : "";
+        node.sym = new Symbol(node.type, node.id, prefix + node.id,currentClass==null&&currentFunction==null,node.expr);
+        if(currentFunction==null&&currentClass==null){
+            top.globalVarTable.put(node.sym.nameAsReg,node.sym);
+        }
         return node.sym;
     }
 
@@ -136,9 +137,10 @@ public class ScopeBuilder implements ASTVisitor {
     private ClassType scanClass(ClassNode node) {
         // will check names
         var cls = node.cls;
+        currentClass=cls;
         var scp = new ClassScope(currentScope, cls);
         node.scope = scp;
-        scp.registerVar("this", cls, "this",node);
+        scp.registerVar("this", cls, "this", node);
         pushScope(node);
         for (var member : node.members) {
             var sym = scanDecl(member);
@@ -172,6 +174,7 @@ public class ScopeBuilder implements ASTVisitor {
             cls.constructor.add(new FunctionType(fn));
         }
         popScope();
+        currentClass=null;
         return cls;
     }
 

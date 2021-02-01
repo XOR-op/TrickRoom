@@ -1,8 +1,10 @@
 package semantic;
 
-import ast.*;
-import compnent.basic.*;
-import compnent.scope.*;
+import ast.ASTVisitor;
+import ast.Symbol;
+import ast.struct.*;
+import ast.type.*;
+import ast.scope.*;
 import exception.UnimplementedError;
 import exception.semantic.*;
 

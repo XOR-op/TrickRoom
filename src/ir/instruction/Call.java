@@ -24,7 +24,7 @@ public class Call extends IRInst{
     @Override
     public String tell() {
         StringJoiner sj=new StringJoiner(", ","(",")");
-        args.forEach(arg->sj.add(arg.tell()));
+        args.forEach(arg->sj.add(arg.type.tell()+" "+arg.tell()));
         return dest+" = call "+function.retTy+" "+function.name+sj.toString();
     }
 }

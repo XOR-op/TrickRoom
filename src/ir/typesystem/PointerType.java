@@ -1,5 +1,8 @@
 package ir.typesystem;
 
+import ir.operand.IROperand;
+import ir.operand.NullptrConstant;
+
 public class PointerType extends IRType{
     public IRType baseType;
     public PointerType(IRType base){
@@ -14,6 +17,11 @@ public class PointerType extends IRType{
     @Override
     public String tell() {
         return baseType==null?"nullptr*":(baseType+"*");
+    }
+
+    @Override
+    public IROperand defaultValue() {
+        return new NullptrConstant();
     }
 
     public static PointerType nullptr(){

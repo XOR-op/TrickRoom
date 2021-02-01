@@ -2,11 +2,14 @@ package ir.operand;
 
 import ir.typesystem.IRType;
 
-public class GlobalVar extends IROperand{
-    public String name;
+public class GlobalVar extends Register{
+    public IROperand initValue;
+    public GlobalVar(IRType ty,String name,IROperand init){
+        super(ty,name);
+        initValue=init;
+    }
     public GlobalVar(IRType ty,String name){
-        this.name=name;
-        type=ty;
+        this(ty,name,ty.defaultValue());
     }
 
     @Override

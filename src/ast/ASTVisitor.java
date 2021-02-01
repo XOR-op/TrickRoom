@@ -1,6 +1,6 @@
 package ast;
 
-import ast.*;
+import ast.struct.*;
 import exception.UnimplementedError;
 
 public interface ASTVisitor  {

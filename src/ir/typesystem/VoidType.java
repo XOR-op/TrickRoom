@@ -1,15 +1,20 @@
 package ir.typesystem;
 
-import exception.UnimplementedError;
+import ir.operand.IROperand;
 
 public class VoidType extends IRType{
     @Override
     public int size() {
-        throw new UnimplementedError();
+        throw new IllegalStateException();
     }
 
     @Override
     public String tell() {
         return "void";
+    }
+
+    @Override
+    public IROperand defaultValue() {
+        throw new IllegalStateException();
     }
 }

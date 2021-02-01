@@ -1,5 +1,7 @@
 package ir.typesystem;
 
+import ir.operand.IROperand;
+
 public class ArrayType extends IRType{
     public IRType baseType;
     private int length;
@@ -16,5 +18,10 @@ public class ArrayType extends IRType{
     @Override
     public String tell() {
         return "[ "+ length +" x "+baseType.tell()+"]";
+    }
+
+    @Override
+    public IROperand defaultValue() {
+        throw new IllegalStateException();
     }
 }

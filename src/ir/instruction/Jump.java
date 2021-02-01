@@ -11,7 +11,7 @@ public class Jump extends IRInst{
 
     @Override
     public String tell() {
-        return "br label "+target.getBlockName();
+        return "br label %"+target.getBlockName();
     }
 
     @Override

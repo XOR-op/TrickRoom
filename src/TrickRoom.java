@@ -1,17 +1,16 @@
+import ast.struct.RootNode;
 import codegen.IRBuilder;
 import exception.UnimplementedError;
 import exception.semantic.*;
 import ir.IRInfo;
 import semantic.*;
-import ast.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class TrickRoom {
     private enum Verbose {
@@ -26,9 +25,11 @@ public class TrickRoom {
     private static final String INPUT_FILE = "-i";
     private static final String VERBOSE = "-v";
     private static final String DEBUG = "-debug";
+    private static final String OUTPUT_FILE = "-o";
 
     private Verbose verb;
     private InputStream is;
+    private OutputStream os;
     private Boolean llvmGenFlag;
     private Boolean assemblyGenFlag;
     private Boolean optimizationFlag;
@@ -48,6 +49,7 @@ public class TrickRoom {
 
     private TrickRoom(String[] args) {
         is = System.in;
+        os = System.out;
         verb = Verbose.SILENT;
         llvmGenFlag = false;
         assemblyGenFlag = true;
@@ -88,8 +90,17 @@ public class TrickRoom {
                             error("file not found:" + args[i + 1]);
                         }
                     }
+                    case OUTPUT_FILE -> {
+                        if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no output file specified");
+                        try {
+                            os = new FileOutputStream(args[i + 1]);
+                            i++;
+                        } catch (FileNotFoundException e) {
+                            error("cannot write file:" + args[i + 1]);
+                        }
+                    }
                     case VERBOSE -> verb = Verbose.INFO;
-                    case DEBUG -> verb=Verbose.DEBUG;
+                    case DEBUG -> verb = Verbose.DEBUG;
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -103,12 +114,12 @@ public class TrickRoom {
             if (llvmGenFlag) llvmGen(rootNode);
             if (assemblyGenFlag) assemblyGen(rootNode);
             if (optimizationFlag) optimize();
-        }catch (SemanticException e){
-            if (verb==Verbose.DEBUG){
+        } catch (SemanticException e) {
+            if (verb == Verbose.DEBUG) {
                 e.printStackTrace();
             }
             System.exit(-1);
-        }catch (Exception e){
+        } catch (Exception e) {
             throw e;
         }
     }
@@ -129,9 +140,13 @@ public class TrickRoom {
     }
 
     private IRInfo llvmGen(RootNode rootNode) {
-        IRBuilder builder=new IRBuilder(rootNode);
-        IRInfo info =builder.constructIR();
-        logln(info.toLLVMir());
+        IRBuilder builder = new IRBuilder(rootNode);
+        IRInfo info = builder.constructIR();
+        try {
+            os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            System.err.println(e);
+        }
         return info;
     }
 

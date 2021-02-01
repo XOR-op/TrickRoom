@@ -1,6 +1,6 @@
 package exception.semantic;
 
-import ast.ASTNode;
+import ast.struct.ASTNode;
 
 public class UnsupportedBehavior extends SemanticException {
     private String info;

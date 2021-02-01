@@ -17,6 +17,6 @@ public class Register extends IROperand{
 
     @Override
     public String tell() {
-        return "#"+name;
+        return "%"+name;
     }
 }

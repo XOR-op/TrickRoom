@@ -1,5 +1,8 @@
 package ir.typesystem;
 
+import ir.operand.IROperand;
+import ir.operand.IntConstant;
+
 public class IntegerType extends IRType{
     private int width;
 
@@ -17,5 +20,10 @@ public class IntegerType extends IRType{
     @Override
     public String tell() {
         return "i"+width;
+    }
+
+    @Override
+    public IROperand defaultValue() {
+        return new IntConstant(0,width);
     }
 }

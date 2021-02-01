@@ -1,6 +1,6 @@
 package exception.semantic;
-import ast.ASTNode;
-import compnent.basic.Type;
+import ast.struct.ASTNode;
+import ast.type.Type;
 
 public class TypeMismatch extends SemanticException{
     private String a,b;

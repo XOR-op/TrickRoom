@@ -1,10 +1,10 @@
 package semantic;
 
-import ast.*;
-import compnent.basic.ArrayObjectType;
-import compnent.basic.Type;
-import compnent.basic.TypeConst;
-import compnent.info.CodePosition;
+import ast.struct.*;
+import ast.type.ArrayObjectType;
+import ast.type.Type;
+import ast.type.TypeConst;
+import ast.info.CodePosition;
 import exception.UnimplementedError;
 import exception.semantic.ParsingException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;

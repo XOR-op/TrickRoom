@@ -4,6 +4,8 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 
 public class Mov extends IRInst{
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_RESET = "\u001B[0m";
     public Register dest;
     public IROperand src;
     public Mov(Register dst, IROperand src){
@@ -13,6 +15,6 @@ public class Mov extends IRInst{
 
     @Override
     public String tell() {
-        return " ; "+dest.type+" "+dest+ " pseudo mv from "+src.type+" "+src;
+        return ANSI_CYAN+dest.type+" "+dest+ " = pseudo mv from "+src.type+" "+src+ANSI_RESET;
     }
 }

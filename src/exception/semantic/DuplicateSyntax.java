@@ -1,7 +1,6 @@
 package exception.semantic;
 
-import ast.ASTNode;
-import compnent.info.CodePosition;
+import ast.struct.ASTNode;
 
 public class DuplicateSyntax extends SemanticException{
     private final String info;
