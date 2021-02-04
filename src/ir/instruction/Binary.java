@@ -3,11 +3,10 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
-public class Binary extends IRInst{
+public class Binary extends IRDestedInst{
     public enum BinInstEnum {add,sub,mul,sdiv,srem,shl,ashr,and,or,xor}
     public BinInstEnum inst;
     public IROperand operand1,operand2;
-    public Register dest;
 
     @Override
     public String tell() {

@@ -1,20 +1,19 @@
 package ir;
 
 import ir.instruction.Branch;
+import ir.instruction.IRDestedInst;
 import ir.instruction.IRInst;
 import ir.instruction.Jump;
 import ir.operand.Register;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class BasicBlock {
     private String blockName;
-    private Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
+    public Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
     private ArrayList<IRInst> insts = new ArrayList<>();
     private IRInst terminatorInst = null;
+    public List<BasicBlock> dominanceFrontier=new ArrayList<>();
 
     public BasicBlock(String name) {
         blockName = "l."+name;
@@ -42,6 +41,11 @@ public class BasicBlock {
     public void setJumpTerminator(BasicBlock dst){
         setTerminator(new Jump(dst));
         appendNext(dst);
+    }
+
+    public void modifyLastInstDest(Register reg){
+        assert insts.size()!=0&&insts.get(insts.size()-1) instanceof IRDestedInst&&((IRDestedInst) insts.get(insts.size()-1)).dest.isAnonymous();
+        ((IRDestedInst) insts.get(insts.size()-1)).dest=reg;
     }
 
     public BasicBlock split(String name) {

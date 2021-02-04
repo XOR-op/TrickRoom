@@ -4,9 +4,8 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 import ir.typesystem.IRType;
 
-public class BitCast extends IRInst {
+public class BitCast extends IRDestedInst {
 
-    public Register dest;
     private IROperand from;
     private IRType to;
 

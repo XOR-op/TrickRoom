@@ -3,10 +3,9 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
-public class Mov extends IRInst{
+public class Mov extends IRDestedInst{
     private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_RESET = "\u001B[0m";
-    public Register dest;
     public IROperand src;
     public Mov(Register dst, IROperand src){
         this.dest=dst;

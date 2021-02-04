@@ -3,8 +3,7 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
-public class Load extends IRInst{
-    private Register dest;
+public class Load extends IRDestedInst{
     private IROperand address;
     public Load(Register dst,IROperand addr){
         dest=dst;

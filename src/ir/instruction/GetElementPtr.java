@@ -3,8 +3,7 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
-public class GetElementPtr extends IRInst{
-    public Register dest;
+public class GetElementPtr extends IRDestedInst{
     public IROperand base;
     public IROperand offset;
     public GetElementPtr(Register dst,IROperand src,IROperand off){

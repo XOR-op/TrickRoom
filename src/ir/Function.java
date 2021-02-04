@@ -1,17 +1,18 @@
 package ir;
 
 import ir.instruction.Ret;
+import ir.operand.Parameter;
 import ir.operand.Register;
 import ir.typesystem.IRType;
 
-import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.*;
 
 public class Function {
     public String name;
     public IRType retTy;
     public ArrayList<BasicBlock> blocks = new ArrayList<>();
-    public ArrayList<Register> parameters = new ArrayList<>();
+    public ArrayList<Parameter> parameters = new ArrayList<>();
+    public Set<Register> variables=new HashSet<>();
     public BasicBlock entryBlock, exitBlock;
     public Register returnValue;
     private boolean isBuiltin;
@@ -29,15 +30,17 @@ public class Function {
         this(name, returnType, false);
     }
 
-    public Function addParam(Register reg) {
+    public Function addParam(Parameter reg) {
         parameters.add(reg);
         return this;
     }
 
     public Function addParam(IRType ty, String name) {
-        parameters.add(new Register(ty, name));
+        parameters.add(new Parameter(ty, name));
         return this;
     }
+
+    public void addVariable(Register reg){variables.add(reg);}
 
     public void done(){
         blocks.add(exitBlock);
@@ -60,4 +63,6 @@ public class Function {
     public boolean isBuiltin() {
         return isBuiltin;
     }
+
+
 }

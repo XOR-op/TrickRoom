@@ -7,10 +7,9 @@ import ir.operand.Register;
 import java.util.ArrayList;
 import java.util.StringJoiner;
 
-public class Call extends IRInst{
+public class Call extends IRDestedInst{
     public Function function;
     public ArrayList<IROperand> args;
-    public Register dest;
     public Call(Register dst, Function func){
         function=func;
         args=new ArrayList<>();

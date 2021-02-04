@@ -3,6 +3,7 @@ package ir;
 import ast.type.*;
 import ast.scope.FileScope;
 import ir.operand.GlobalVar;
+import ir.operand.Parameter;
 import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
@@ -101,8 +102,8 @@ public class IRInfo {
 
     private Function addMethod(ClassType cls, FunctionType func) {
         var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
-        f.addParam(new Register(resolveType(cls), "this"));
-        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
+        f.addParam(new Parameter(resolveType(cls), "this"));
+        func.parameters.forEach(param -> f.addParam(new Parameter(resolveType(param.getType()), param.getName())));
         functions.put(f.name, f);
         return f;
     }
@@ -118,7 +119,7 @@ public class IRInfo {
 
     public void addFunction(FunctionType func) {
         var f = new Function(func.id, resolveType(func.returnType));
-        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
+        func.parameters.forEach(param -> f.addParam(new Parameter(resolveType(param.getType()), param.getName())));
         functions.put(f.name, f);
     }
 

@@ -3,10 +3,9 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
-public class Compare extends IRInst{
+public class Compare extends IRDestedInst{
     public enum CmpEnum{eq,ne,sgt,sge,slt,sle}
     public IROperand operand1,operand2;
-    public Register dest;
     public CmpEnum type;
     public Compare(CmpEnum inst,Register dst,IROperand op1,IROperand op2){
         dest=dst;

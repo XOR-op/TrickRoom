@@ -210,10 +210,11 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Register visit(IdentifierNode node) {
         // only standalone identifier, member identifier will not be called
-        if (node.sym.isGlobal())
-            return new GlobalVar(info.resolveType(node.type), node.sym.nameAsReg);
-        else
-            return new Register(info.resolveType(node.type), node.sym.nameAsReg);
+        Register reg = node.sym.isGlobal() ?
+                new GlobalVar(info.resolveType(node.type), node.sym.nameAsReg) :
+                new Register(info.resolveType(node.type), node.sym.nameAsReg);
+        currentFunction.addVariable(reg);
+        return reg;
     }
 
     @Override
@@ -239,18 +240,16 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Register visit(AssignmentNode node) {
-        if (node.lhs instanceof IdentifierNode) {
-            // register
-            var inst = new Mov((Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this));
-            currentBlock.appendInst(inst);
-            return inst.dest;
-        } else {
-            // in memory
-            var inst = new Store((IROperand) node.rhs.accept(this), (Register) node.lhs.accept(this));
-            currentBlock.appendInst(inst);
-            // there should be no successive instruction
-            return null;
-        }
+        IROperand rhs = (IROperand) node.rhs.accept(this);
+        Register lhs = (Register) node.lhs.accept(this);
+//        if(rhs instanceof Register&& ((Register) rhs).isAnonymous()){
+//            currentBlock.modifyLastInstDest(lhs);
+//            return lhs;
+//        }
+        // todo not eliminate redundant anonymous register
+        var inst = new Mov(lhs, rhs);
+        currentBlock.appendInst(inst);
+        return inst.dest;
     }
 
     @Override
@@ -268,12 +267,15 @@ public class IRBuilder implements ASTVisitor {
             currentBlock.setJumpTerminator(currentFunction.exitBlock);
         }
         currentFunction.done();
-        currentFunction=null;
+        currentFunction = null;
         return null;
     }
 
     @Override
     public Object visit(LoopNode node) {
+        /*
+         * todo loop CFG can be further optimized
+         */
         if (node.initExpr != null) node.initExpr.accept(this);
         else if (node.initDecl != null) node.initDecl.accept(this);
         boolean hasCond = node.condExpr != null;
@@ -292,7 +294,7 @@ public class IRBuilder implements ASTVisitor {
         currentBlock = conditionBlock;
         if (hasCond) {
             Register cond = (Register) node.condExpr.accept(this);
-            currentBlock.setBranchTerminator(cond,loopBody,afterLoop);
+            currentBlock.setBranchTerminator(cond, loopBody, afterLoop);
         } else {
             currentBlock.setJumpTerminator(loopBody);
         }
@@ -327,7 +329,7 @@ public class IRBuilder implements ASTVisitor {
         beforeBranch.setBranchTerminator(cond, trueBlock, hasFalse ? falseBlock : afterBranch);
 
         currentFunction.addBlock(trueBlock);
-        if(hasFalse)currentFunction.addBlock(falseBlock);
+        if (hasFalse) currentFunction.addBlock(falseBlock);
         currentFunction.addBlock(afterBranch);
         // visit instructions
         currentBlock = trueBlock;
