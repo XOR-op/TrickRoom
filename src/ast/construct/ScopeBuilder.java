@@ -1,4 +1,4 @@
-package semantic;
+package ast.construct;
 
 import ast.ASTVisitor;
 import ast.Symbol;
@@ -108,7 +108,9 @@ public class ScopeBuilder implements ASTVisitor {
     private Symbol scanDecl(DeclarationNode node) {
         node.type = recoverType(node.type, node);
         String prefix = (currentClass != null && currentFunction == null )?("struct."+currentClass.id+".") : "";
-        node.sym = new Symbol(node.type, node.id, prefix + node.id,currentClass==null&&currentFunction==null,node.expr);
+        boolean isGlobal=currentClass==null&&currentFunction==null;
+        node.sym = new Symbol(node.type, node.id, prefix + node.id,
+                isGlobal,!isGlobal&&currentFunction==null,node.expr);
         if(currentFunction==null&&currentClass==null){
             top.globalVarTable.put(node.sym.nameAsReg,node.sym);
         }

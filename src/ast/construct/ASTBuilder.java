@@ -1,4 +1,4 @@
-package semantic;
+package ast.construct;
 
 import ast.struct.*;
 import ast.type.ArrayObjectType;
@@ -202,7 +202,7 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         if(ctx.arraySemanticError()!=null)throw new ParsingException(new CodePosition(ctx));
         var nn = new NewExprNode(ctx.arrayLiteral() == null);
         nn.setPos(ctx);
-        if (nn.isConstruct) {
+        if (nn.isClass) {
             // implicitly-invoked constructor or the opposite
             nn.classNew = ctx.Identifier() != null ?
                     new FuncCallNode(new IdentifierNode(ctx.Identifier().getText()), true) :

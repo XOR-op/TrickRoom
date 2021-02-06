@@ -21,20 +21,21 @@ public class IRInfo {
 
     public IRInfo(FileScope scope) {
         // global functions
-        addBuiltinFunction(TypeEnum.void_t, "print").addParam(TypeEnum.str, "str");
-        addBuiltinFunction(TypeEnum.void_t, "println").addParam(TypeEnum.str, "str");
-        addBuiltinFunction(TypeEnum.void_t, "printInt").addParam(TypeEnum.int32, "n");
-        addBuiltinFunction(TypeEnum.void_t, "printlnInt").addParam(TypeEnum.int32, "n");
-        addBuiltinFunction(TypeEnum.str, "getString");
-        addBuiltinFunction(TypeEnum.int32, "getInt");
-        addBuiltinFunction(TypeEnum.str, "toString").addParam(TypeEnum.int32, "i");
+        addBuiltinFunction(Cst.void_t, "print").addParam(Cst.str, "str");
+        addBuiltinFunction(Cst.void_t, "println").addParam(Cst.str, "str");
+        addBuiltinFunction(Cst.void_t, "printInt").addParam(Cst.int32, "n");
+        addBuiltinFunction(Cst.void_t, "printlnInt").addParam(Cst.int32, "n");
+        addBuiltinFunction(Cst.str, "getString");
+        addBuiltinFunction(Cst.int32, "getInt");
+        addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
+        addBuiltinFunction(new PointerType(Cst.byte_t),Cst.MALLOC).addParam(Cst.int32,"len");
         // string methods
-        addStringMethod(TypeEnum.int32, "length");
-        addStringMethod(TypeEnum.int32, "parseInt");
-        addStringMethod(TypeEnum.int32, "ord").addParam(TypeEnum.int32, "pos");
-        addStringMethod(TypeEnum.str, "substring").addParam(TypeEnum.int32, "left").addParam(TypeEnum.int32, "right");
+        addStringMethod(Cst.int32, "length");
+        addStringMethod(Cst.int32, "parseInt");
+        addStringMethod(Cst.int32, "ord").addParam(Cst.int32, "pos");
+        addStringMethod(Cst.str, "substring").addParam(Cst.int32, "left").addParam(Cst.int32, "right");
         // operator overloading
-        addStringMethod(TypeEnum.str, "concat").addParam(TypeEnum.str, "rhs");
+        addStringMethod(Cst.str, "concat").addParam(Cst.str, "rhs");
         addStrCmp("eq");
         addStrCmp("neq");
         addStrCmp("lt");
@@ -42,20 +43,20 @@ public class IRInfo {
         addStrCmp("gt");
         addStrCmp("ge");
         // array size
-        addBuiltinFunction(TypeEnum.int32, ".array$size").addParam(PointerType.baseArrayType(), "arr");
+        addBuiltinFunction(Cst.int32, Cst.ARRAY_SIZE).addParam(PointerType.baseArrayType(), "arr");
 
         scopeScan(scope);
     }
 
     private void addStrCmp(String name) {
-        addStringMethod(TypeEnum.bool, name).addParam(TypeEnum.str, "rhs");
+        addStringMethod(Cst.bool, name).addParam(Cst.str, "rhs");
     }
 
     private Function addStringMethod(IRType ret, String name) {
         var f = new Function(name, ret, true);
-        f.addParam(TypeEnum.str, "lhs");
-        functions.put(".str$" + name, f);
-        stringMethods.put(name, ".str$" + name);
+        f.addParam(Cst.str, "lhs");
+        functions.put(Cst.STR_FUNC + name, f);
+        stringMethods.put(name, Cst.STR_FUNC + name);
         return f;
     }
 
@@ -67,7 +68,7 @@ public class IRInfo {
 
     private String classMethodInterpretation(String className, String functionName) {
         // translation
-        return "$" + className + "." + functionName;
+        return Cst.STRUCT + className + "." + functionName;
     }
 
     public Function getStringMethod(String name) {
@@ -124,19 +125,23 @@ public class IRInfo {
     }
 
     public IRType resolveType(Type tp) {
-        if (TypeConst.Int.equals(tp)) return TypeEnum.int32;
-        else if (TypeConst.Bool.equals(tp)) return TypeEnum.bool;
-        else if (TypeConst.Void.equals(tp)) return TypeEnum.void_t;
+        if (TypeConst.Int.equals(tp)) return Cst.int32;
+        else if (TypeConst.Bool.equals(tp)) return Cst.bool;
+        else if (TypeConst.Void.equals(tp)) return Cst.void_t;
         else if (TypeConst.Null.equals(tp)) {
             return PointerType.nullptr();
         } else if (tp instanceof ClassType) {
             return new PointerType(types.get(tp.id));
         } else if (tp.isArray()) {
-            var struct = new StructureType("array$" + tp.id);
-            struct.addMember(new Register(TypeEnum.int32, "size"));
+            var struct = new StructureType(Cst.ARRAY_TYPE + tp.id);
+            struct.addMember(new Register(Cst.int32, "size"));
             struct.addMember(new Register(resolveType(((ArrayObjectType) tp).elementType), "element"));
             return new PointerType(struct);
         } else throw new IllegalStateException();
+    }
+
+    public StructureType resolveClass(ClassType cls){
+        return types.get(cls.id);
     }
 
     public Function getFunction(String ft) {
@@ -144,14 +149,14 @@ public class IRInfo {
     }
 
     public Function getArraySize() {
-        return getFunction(".array$size");
+        return getFunction(Cst.ARRAY_SIZE);
     }
 
     public String registerStrLiteral(String s) {
         if (strLiterals.containsKey(s)) {
             return strLiterals.get(s).name;
         } else {
-            var name = ".str." + strCounter++;
+            var name = Cst.STR_LITERAL + strCounter++;
             strLiterals.put(name, new StringConstant(name, s));
             return name;
         }

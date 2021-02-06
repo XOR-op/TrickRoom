@@ -1,5 +1,7 @@
 package ir.operand;
 
+import ir.instruction.IRDestedInst;
+import ir.instruction.IRInst;
 import ir.typesystem.IRType;
 
 public class Register extends IROperand {
@@ -17,24 +19,29 @@ public class Register extends IROperand {
     private boolean isAnonymous;
     private int renaming = 0;
     public String name;
+    public IRDestedInst reachingDef;
 
     public Register(IRType ty) {
         this.name = Integer.toString(counter++);
         type = ty;
         isAnonymous = true;
+        reachingDef=null;
     }
 
     public Register(IRType ty, String name) {
         this.name = name;
         type = ty;
         isAnonymous = false;
+        reachingDef=null;
     }
 
     public Register rename(int newCount) {
         var reg = new Register(type, name);
-        renaming = newCount;
+        reg.renaming = newCount;
         return reg;
     }
+
+    public Register copy(){return rename(0);}
 
     public boolean isAnonymous() {
         return isAnonymous;

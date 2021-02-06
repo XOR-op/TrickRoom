@@ -14,7 +14,7 @@ public class IntegerType extends IRType{
 
     @Override
     public int size() {
-        return width;
+        return width/8;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package semantic;
+package ast.construct;
 
 import ast.info.CodePosition;
 import exception.semantic.ParsingException;

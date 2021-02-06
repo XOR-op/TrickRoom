@@ -6,7 +6,7 @@ import ir.operand.IROperand;
 public class BoolType extends IRType{
     @Override
     public int size() {
-        return 8;
+        return 1;
     }
 
     @Override

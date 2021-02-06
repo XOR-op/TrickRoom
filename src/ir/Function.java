@@ -1,6 +1,5 @@
 package ir;
 
-import ir.instruction.Ret;
 import ir.operand.Parameter;
 import ir.operand.Register;
 import ir.typesystem.IRType;
@@ -12,7 +11,7 @@ public class Function {
     public IRType retTy;
     public ArrayList<BasicBlock> blocks = new ArrayList<>();
     public ArrayList<Parameter> parameters = new ArrayList<>();
-    public Set<Register> variables=new HashSet<>();
+    public Map<Register,HashSet<BasicBlock>> definedVariables =new HashMap<>();
     public BasicBlock entryBlock, exitBlock;
     public Register returnValue;
     private boolean isBuiltin;
@@ -40,7 +39,17 @@ public class Function {
         return this;
     }
 
-    public void addVariable(Register reg){variables.add(reg);}
+    public void defVariable(Register reg,BasicBlock bb){
+        // define and update Defs(var)
+        bb.defVariable(reg);
+        if(definedVariables.containsKey(reg)){
+            definedVariables.get(reg).add(bb);
+        }else {
+            var newSet=new HashSet<BasicBlock>();
+            newSet.add(bb);
+            definedVariables.put(reg,newSet);
+        }
+    }
 
     public void done(){
         blocks.add(exitBlock);

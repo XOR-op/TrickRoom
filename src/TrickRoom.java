@@ -1,9 +1,12 @@
+import ast.construct.ASTBuilder;
+import ast.construct.ParsingErrorHandler;
+import ast.construct.ScopeBuilder;
+import ast.construct.TypeCollector;
 import ast.struct.RootNode;
-import codegen.IRBuilder;
+import ir.construct.IRBuilder;
 import exception.UnimplementedError;
 import exception.semantic.*;
 import ir.IRInfo;
-import semantic.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;

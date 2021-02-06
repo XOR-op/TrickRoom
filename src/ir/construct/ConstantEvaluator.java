@@ -1,4 +1,4 @@
-package ir;
+package ir.construct;
 
 import ast.struct.ExprNode;
 import exception.UnimplementedError;

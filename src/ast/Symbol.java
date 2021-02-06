@@ -9,19 +9,21 @@ public class Symbol {
     private Type type;
     private Scope scope;
     private boolean isGlobal;
+    private boolean implicitThis;
     public String nameAsReg;
     public ExprNode initExpr;
 
-    public Symbol(Type type, String name, String nameAsReg, boolean isGlobal,ExprNode initExpr) {
+    public Symbol(Type type, String name, String nameAsReg, boolean isGlobal, boolean implicitThis, ExprNode initExpr) {
         this.type = type;
         this.name = name;
         this.nameAsReg = nameAsReg;
         this.isGlobal = isGlobal;
         this.initExpr=initExpr;
+        this.implicitThis = implicitThis;
     }
 
     public Symbol(Type type, String name, String nameAsReg) {
-        this(type, name, nameAsReg, false,null);
+        this(type, name, nameAsReg, false,false,null);
     }
 
     public boolean matches(Type rhs) {
@@ -47,4 +49,5 @@ public class Symbol {
     public boolean isGlobal(){
         return isGlobal;
     }
+    public boolean implicitThis(){return implicitThis;}
 }

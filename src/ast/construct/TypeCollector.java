@@ -1,4 +1,4 @@
-package semantic;
+package ast.construct;
 
 import ast.ASTVisitor;
 import ast.Symbol;
@@ -298,7 +298,7 @@ public class TypeCollector implements ASTVisitor {
     }
 
     private Type calcType(NewExprNode node) {
-        node.type = node.isConstruct ? calcType(node.classNew) : calcType(node.arrNew);
+        node.type = node.isClass ? calcType(node.classNew) : calcType(node.arrNew);
         return node.type;
     }
 

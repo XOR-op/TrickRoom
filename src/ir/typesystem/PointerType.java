@@ -1,5 +1,6 @@
 package ir.typesystem;
 
+import ir.Cst;
 import ir.operand.IROperand;
 import ir.operand.NullptrConstant;
 
@@ -11,7 +12,7 @@ public class PointerType extends IRType{
 
     @Override
     public int size() {
-        return 32;
+        return 4;
     }
 
     @Override
@@ -29,6 +30,6 @@ public class PointerType extends IRType{
     }
 
     public static PointerType baseArrayType(){
-        return new PointerType(TypeEnum.int32);
+        return new PointerType(Cst.int32);
     }
 }
