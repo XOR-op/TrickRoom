@@ -352,7 +352,7 @@ public class ScopeBuilder implements ASTVisitor {
 
     @Override
     public Void visit(ArrayLiteralNode node) {
-        node.type = recoverType(node.type, node);
+        node.type = (ArrayObjectType) recoverType(node.type, node);
         node.dimArr.forEach(sub -> sub.accept(this));
         return null;
     }

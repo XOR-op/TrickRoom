@@ -10,8 +10,9 @@ public class Function {
     public String name;
     public IRType retTy;
     public ArrayList<BasicBlock> blocks = new ArrayList<>();
-    public ArrayList<Parameter> parameters = new ArrayList<>();
-    public Map<Register,HashSet<BasicBlock>> definedVariables =new HashMap<>();
+    public ArrayList<Register> parameters = new ArrayList<>();
+    public Map<String,HashSet<BasicBlock>> definedVariables =new HashMap<>();
+    public Map<String,IRType> varType=new HashMap<>();
     public BasicBlock entryBlock, exitBlock;
     public Register returnValue;
     private boolean isBuiltin;
@@ -29,14 +30,15 @@ public class Function {
         this(name, returnType, false);
     }
 
-    public Function addParam(Parameter reg) {
+    public Function addParam(Register reg) {
         parameters.add(reg);
+        definedVariables.put(reg.name,new HashSet<>());
+        varType.put(reg.name,reg.type);
         return this;
     }
 
     public Function addParam(IRType ty, String name) {
-        parameters.add(new Parameter(ty, name));
-        return this;
+        return addParam(new Register(ty,name));
     }
 
     public void defVariable(Register reg,BasicBlock bb){
@@ -47,7 +49,7 @@ public class Function {
         }else {
             var newSet=new HashSet<BasicBlock>();
             newSet.add(bb);
-            definedVariables.put(reg,newSet);
+            definedVariables.put(reg.name,newSet);
         }
     }
 

@@ -49,7 +49,7 @@ public class Register extends IROperand {
     public boolean sameNaming(IROperand rhs){return rhs instanceof Register&&name.equals(((Register)rhs).name);}
 
     public static IROperand replace(Function<Register,Register> rep,IROperand operand){
-        if(operand instanceof Register)return rep.apply((Register) operand);
+        if(operand instanceof Register&& !((Register) operand).isAnonymous())return rep.apply((Register) operand);
         else return operand;
     }
 
@@ -59,6 +59,6 @@ public class Register extends IROperand {
 
     @Override
     public String tell() {
-        return "%" + name + (renaming == 0 ? "" : "$rname" + renaming);
+        return "%"+ (renaming==0?"":"rm.")+ name + (renaming == 0 ? "" :  "."+ renaming);
     }
 }

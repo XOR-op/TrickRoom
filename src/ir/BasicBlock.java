@@ -11,7 +11,7 @@ public class BasicBlock {
     public IRInst terminatorInst = null;
     public Set<Phi> phiCollection=new HashSet<>();
     public Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
-    public Set<Register> definition = new HashSet<>();
+    public Set<String> definition = new HashSet<>();
 
     public BasicBlock(String name) {
         blockName = "l." + name;
@@ -55,7 +55,7 @@ public class BasicBlock {
     }
 
     public void defVariable(Register reg) {
-        definition.add(reg);
+        definition.add(reg.name);
     }
 
     public BasicBlock split(String name) {

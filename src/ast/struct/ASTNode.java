@@ -2,7 +2,7 @@ package ast.struct;
 
 
 import ast.ASTVisitor;
-import ast.compilingInfo.CodePosition;
+import ast.info.CodePosition;
 import ast.scope.Scope;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;

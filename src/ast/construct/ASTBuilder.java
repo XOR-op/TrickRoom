@@ -4,7 +4,7 @@ import ast.struct.*;
 import ast.type.ArrayObjectType;
 import ast.type.Type;
 import ast.type.TypeConst;
-import ast.compilingInfo.CodePosition;
+import ast.info.CodePosition;
 import exception.UnimplementedError;
 import exception.semantic.ParsingException;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;

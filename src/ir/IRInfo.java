@@ -103,8 +103,8 @@ public class IRInfo {
 
     private Function addMethod(ClassType cls, FunctionType func) {
         var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
-        f.addParam(new Parameter(resolveType(cls), "this"));
-        func.parameters.forEach(param -> f.addParam(new Parameter(resolveType(param.getType()), param.getName())));
+        f.addParam(new Register(resolveType(cls), "this"));
+        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
         functions.put(f.name, f);
         return f;
     }
@@ -118,7 +118,7 @@ public class IRInfo {
 
     public void addFunction(FunctionType func) {
         var f = new Function(func.id, resolveType(func.returnType));
-        func.parameters.forEach(param -> f.addParam(new Parameter(resolveType(param.getType()), param.getName())));
+        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
         functions.put(f.name, f);
     }
 
@@ -172,7 +172,9 @@ public class IRInfo {
         });
         builder.append('\n');
 
-        globalVars.forEach((k,v)-> builder.append(v.tell()).append(" = ").append(v.type).append(" ").append(v.initValue).append('\n'));
+        globalVars.forEach((k,v)->
+                builder.append(v.tell()).append(" = global ").append(v.type).append(" ").append(v.initValue).append('\n')
+        );
         builder.append('\n');
 
         functions.forEach((k, v) -> {

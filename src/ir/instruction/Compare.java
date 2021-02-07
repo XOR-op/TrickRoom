@@ -17,7 +17,7 @@ public class Compare extends IRDestedInst{
     }
     @Override
     public String tell() {
-        return dest+" = "+type+' '+operand1.type+' '+operand1+", "+operand2;
+        return dest+" = icmp "+type+' '+operand1.type+' '+operand1+", "+operand2;
     }
 
     @Override
