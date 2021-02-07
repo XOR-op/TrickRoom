@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.StringJoiner;
 
 public class IRInfo {
-    private HashMap<String, Function> functions = new HashMap<>();
-    private HashMap<String, StructureType> types = new HashMap<>();
-    private HashMap<String, StringConstant> strLiterals = new HashMap<>();
-    private HashMap<String, String> stringMethods = new HashMap<>();
-    private HashMap<String, GlobalVar> globalVars = new HashMap<>();
+    private final HashMap<String, Function> functions = new HashMap<>();
+    private final HashMap<String, StructureType> types = new HashMap<>();
+    private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
+    private final HashMap<String, String> stringMethods = new HashMap<>();
+    private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private int strCounter = 0;
 
     public IRInfo(FileScope scope) {
@@ -113,9 +113,7 @@ public class IRInfo {
         cls.memberFuncs.forEach((name, func) -> addMethod(cls, func));
         cls.constructor.forEach(func -> addMethod(cls, func));
         var struct = types.get(cls.id);
-        cls.memberVars.forEach((k, v) -> {
-            struct.addMember(new Register(resolveType(v.getType()), k));
-        });
+        cls.memberVars.forEach((k, v) -> struct.addMember(new Register(resolveType(v.getType()), k)));
     }
 
     public void addFunction(FunctionType func) {
@@ -164,9 +162,7 @@ public class IRInfo {
 
     public String toLLVMir() {
         StringBuilder builder = new StringBuilder();
-        strLiterals.forEach((k, v) -> {
-            builder.append(v.tell()).append('\n');
-        });
+        strLiterals.forEach((k, v) -> builder.append(v.tell()).append('\n'));
         builder.append('\n');
 
         types.forEach((k, v) -> {
@@ -176,9 +172,7 @@ public class IRInfo {
         });
         builder.append('\n');
 
-        globalVars.forEach((k,v)->{
-            builder.append(v.tell()).append(" = ").append(v.type).append(" ").append(v.initValue).append('\n');
-        });
+        globalVars.forEach((k,v)-> builder.append(v.tell()).append(" = ").append(v.type).append(" ").append(v.initValue).append('\n'));
         builder.append('\n');
 
         functions.forEach((k, v) -> {

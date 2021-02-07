@@ -17,12 +17,12 @@ import java.util.Stack;
  *  - check break, continue and return statements
  */
 public class ScopeBuilder implements ASTVisitor {
-    private RootNode root;
+    private final RootNode root;
     private Scope currentScope;
     private FileScope top;
     private FunctionNode currentFunction;
-    private Stack<LoopNode> loopNodeStack = new Stack<>();
-    private HashMap<String, Type> typeCollection = new HashMap<>();
+    private final Stack<LoopNode> loopNodeStack = new Stack<>();
+    private final HashMap<String, Type> typeCollection = new HashMap<>();
     private int scopeLevel = 0;
     private ClassType currentClass = null;
 

@@ -4,6 +4,8 @@ import ir.instruction.IRDestedInst;
 import ir.instruction.IRInst;
 import ir.typesystem.IRType;
 
+import java.util.function.Function;
+
 public class Register extends IROperand {
     // global allocation
     private static int counter = 0;
@@ -19,20 +21,17 @@ public class Register extends IROperand {
     private boolean isAnonymous;
     private int renaming = 0;
     public String name;
-    public IRDestedInst reachingDef;
 
     public Register(IRType ty) {
         this.name = Integer.toString(counter++);
         type = ty;
         isAnonymous = true;
-        reachingDef=null;
     }
 
     public Register(IRType ty, String name) {
         this.name = name;
         type = ty;
         isAnonymous = false;
-        reachingDef=null;
     }
 
     public Register rename(int newCount) {
@@ -45,6 +44,13 @@ public class Register extends IROperand {
 
     public boolean isAnonymous() {
         return isAnonymous;
+    }
+
+    public boolean sameNaming(IROperand rhs){return rhs instanceof Register&&name.equals(((Register)rhs).name);}
+
+    public static IROperand replace(Function<Register,Register> rep,IROperand operand){
+        if(operand instanceof Register)return rep.apply((Register) operand);
+        else return operand;
     }
 
     public boolean equals(Register rhs){

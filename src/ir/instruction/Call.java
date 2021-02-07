@@ -26,4 +26,19 @@ public class Call extends IRDestedInst{
         args.forEach(arg->sj.add(arg.type.tell()+" "+arg.tell()));
         return dest+" = call "+function.retTy+" "+function.name+sj.toString();
     }
+
+    @Override
+    public void renameOperand(Register reg) {
+        for(int i=0;i<args.size();++i){
+            if(reg.sameNaming(args.get(i)))
+                args.set(i,reg);
+        }
+    }
+
+    @Override
+    public void renameOperand(java.util.function.Function<Register, Register> replace) {
+        for(int i=0;i<args.size();++i){
+            args.set(i,Register.replace(replace,args.get(i)));
+        }
+    }
 }

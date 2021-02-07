@@ -1,6 +1,6 @@
 package ast.construct;
 
-import ast.info.CodePosition;
+import ast.compilingInfo.CodePosition;
 import exception.semantic.ParsingException;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;

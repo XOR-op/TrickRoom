@@ -4,6 +4,8 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 import ir.typesystem.IRType;
 
+import java.util.function.Function;
+
 public class Alloca extends IRDestedInst{
     private int align;
     private IRType type;
@@ -25,4 +27,15 @@ public class Alloca extends IRDestedInst{
     public String tell() {
         return dest+" = alloca "+type+(size==1?"":(", "+type+" "+size))+(align ==0?"":", align "+align);
     }
+
+    @Override
+    public void renameOperand(Register reg) {
+        // do nothing
+    }
+
+    @Override
+    public void renameOperand(Function<Register, Register> replace) {
+        // do nothing
+    }
+
 }

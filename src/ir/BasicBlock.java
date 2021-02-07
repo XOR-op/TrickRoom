@@ -7,11 +7,10 @@ import java.util.*;
 
 public class BasicBlock {
     private String blockName;
-    private ArrayList<IRInst> insts = new ArrayList<>();
-    private IRInst terminatorInst = null;
+    public ArrayList<IRInst> insts = new ArrayList<>();
+    public IRInst terminatorInst = null;
     public Set<Phi> phiCollection=new HashSet<>();
     public Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
-    public List<BasicBlock> dominanceFrontier = new ArrayList<>();
     public Set<Register> definition = new HashSet<>();
 
     public BasicBlock(String name) {

@@ -4,6 +4,8 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 import ir.typesystem.IRType;
 
+import java.util.function.Function;
+
 public class BitCast extends IRDestedInst {
 
     private IROperand from;
@@ -18,5 +20,15 @@ public class BitCast extends IRDestedInst {
     @Override
     public String tell() {
         return dest+" = bitcast "+from.type+" "+from+" to "+to;
+    }
+
+    @Override
+    public void renameOperand(Register reg) {
+        if(reg.sameNaming(from))from=reg;
+    }
+
+    @Override
+    public void renameOperand(Function<Register, Register> replace) {
+        from=Register.replace(replace,from);
     }
 }

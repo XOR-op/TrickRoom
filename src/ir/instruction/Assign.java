@@ -5,6 +5,8 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 import ir.typesystem.PointerType;
 
+import java.util.function.Function;
+
 public class Assign extends IRDestedInst{
     private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -21,10 +23,17 @@ public class Assign extends IRDestedInst{
             return dest+" = add "+dest.type+" "+src+", "+dest.type+" 0";
         else {
             assert dest.type instanceof PointerType;
-            String s= Cst.TYPE_CAST+src+".1 = bitcast "+src.type+" "+src+" to i32\n";
-            s+= Cst.TYPE_CAST+src+".2 = add i32 "+ Cst.TYPE_CAST+src+".1, i32 0\n";
-            s+= dest+" = bitcast i32 "+ Cst.TYPE_CAST+src+".2 to "+dest.type;
-            return s;
+            return dest+" = getelementptr "+src.type+" "+src+", i32 0, i32 0";
         }
+    }
+
+    @Override
+    public void renameOperand(Register reg) {
+        if(reg.sameNaming(src))src=reg;
+    }
+
+    @Override
+    public void renameOperand(Function<Register, Register> replace) {
+        src=Register.replace(replace,src);
     }
 }

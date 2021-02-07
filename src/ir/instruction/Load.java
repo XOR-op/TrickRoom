@@ -3,6 +3,8 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
+import java.util.function.Function;
+
 public class Load extends IRDestedInst{
     private IROperand address;
     public Load(Register dst,IROperand addr){
@@ -13,5 +15,15 @@ public class Load extends IRDestedInst{
     @Override
     public String tell() {
         return dest+" = load "+dest.type+", "+address.type+" "+address;
+    }
+
+    @Override
+    public void renameOperand(Register reg) {
+        if(reg.sameNaming(address))address=reg;
+    }
+
+    @Override
+    public void renameOperand(Function<Register, Register> replace) {
+        address=Register.replace(replace,address);
     }
 }

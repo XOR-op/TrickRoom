@@ -11,21 +11,29 @@ import java.util.*;
 
 public class SSAConverter {
     // dominance
-    private Function func;
-    private HashMap<BasicBlock, Integer> order =new HashMap<>();
-    private ArrayList<BasicBlock> blocksByOrder=new ArrayList<>();
-    private HashMap<BasicBlock,BasicBlock> iDoms=new HashMap<>();
-    private HashMap<BasicBlock,HashSet<BasicBlock>> domTree=new HashMap<>();
+    private final Function func;
+    private final HashMap<BasicBlock, Integer> order =new HashMap<>();
+    private final ArrayList<BasicBlock> blocksByOrder=new ArrayList<>();
+    private final HashMap<BasicBlock,BasicBlock> iDoms=new HashMap<>();
+    private final HashMap<BasicBlock,HashSet<BasicBlock>> domTree=new HashMap<>();
+    private final HashMap<BasicBlock,ArrayList<BasicBlock>> dominanceFrontier=new HashMap<>();
 
     private final int maxOrder;
 
     private HashMap<String,Integer> renamingCounter=new HashMap<>();
+    private HashMap<String,Stack<Register>> namingStack=new HashMap<>();
 
     public SSAConverter(Function f) {
         func = f;
         maxOrder = f.blocks.size();
-        func.definedVariables.forEach((v,s)->renamingCounter.put(v.name,1));
-        func.blocks.forEach(b->domTree.put(b,new HashSet<>()));
+        func.definedVariables.forEach((v,s)->{
+            renamingCounter.put(v.name,1);
+            namingStack.put(v.name,new Stack<>());
+        });
+        func.blocks.forEach(b->{
+            domTree.put(b,new HashSet<>());
+            dominanceFrontier.put(b,new ArrayList<>());
+        });
         reversePostorder(f.entryBlock);
         calculateDom();
     }
@@ -87,7 +95,7 @@ public class SSAConverter {
             if(block.prevs.size()>1){
                 for(var prev:block.prevs){
                     for (var cur=prev;cur!=iDoms.get(block);cur=iDoms.get(cur))
-                        cur.dominanceFrontier.add(block);
+                        dominanceFrontier.get(cur).add(block);
                 }
             }
         }
@@ -99,7 +107,7 @@ public class SSAConverter {
             var defs=new LinkedList<>(defsRef);
             while (!defs.isEmpty()){
                 BasicBlock oneDef=defs.pop();
-                for(var frontier:oneDef.dominanceFrontier){
+                for(var frontier:dominanceFrontier.get(oneDef)){
                     if(!added.contains(frontier)){
                         frontier.appendPhi(new Phi(variable));
                         added.add(frontier);
@@ -112,16 +120,46 @@ public class SSAConverter {
         });
     }
 
-    private void updateReachingDef(Register variable, IRDestedInst definition){
-        // pop implicit definition stack
-        var reaching=variable.reachingDef;
-        while (reaching!=null&&reaching.parentBlock!=definition.parentBlock)
-            reaching=reaching.dest.reachingDef;
-        variable.reachingDef=reaching;
+    private Register allocNewRenaming(Register var,HashSet<String> modified){
+        int i=renamingCounter.get(var.name);
+        renamingCounter.put(var.name,i+1);
+        var renaming=var.rename(i);
+        if(modified.contains(var.name))
+            namingStack.get(var.name).pop();
+        else modified.add(var.name);
+        namingStack.get(var.name).push(renaming);
+        return renaming;
     }
 
-    public void variableRenaming(){
+    private Register getRenaming(Register var){
+        return namingStack.get(var.name).peek();
+    }
 
+    public void variableRenaming(BasicBlock bb){
+        var modifiedSet=new HashSet<String>();
+        bb.phiCollection.forEach(phi->{
+            phi.renameDest(allocNewRenaming(phi.dest,modifiedSet));
+        });
+        bb.insts.forEach(irInst -> {
+            irInst.renameOperand(this::getRenaming);
+            if(irInst instanceof IRDestedInst && ((IRDestedInst) irInst).namedDest())
+                ((IRDestedInst) irInst).renameDest(r->allocNewRenaming(r,modifiedSet));
+        });
+        bb.nexts.forEach(nbb->{
+            nbb.phiCollection.forEach(p->{
+                p.append(getRenaming(p.dest));
+            });
+        });
+        // iterate successor
+        domTree.get(bb).forEach(this::variableRenaming);
+        // pop current basic block's modified renaming
+        modifiedSet.forEach(v->namingStack.get(v).pop());
     }
 
 }
+
+
+
+
+
+

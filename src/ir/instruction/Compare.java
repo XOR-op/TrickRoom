@@ -3,6 +3,8 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
+import java.util.function.Function;
+
 public class Compare extends IRDestedInst{
     public enum CmpEnum{eq,ne,sgt,sge,slt,sle}
     public IROperand operand1,operand2;
@@ -16,6 +18,18 @@ public class Compare extends IRDestedInst{
     @Override
     public String tell() {
         return dest+" = "+type+' '+operand1.type+' '+operand1+", "+operand2;
+    }
+
+    @Override
+    public void renameOperand(Register reg) {
+        if(reg.sameNaming(operand1))operand1=reg;
+        if(reg.sameNaming(operand2))operand2=reg;
+    }
+
+    @Override
+    public void renameOperand(Function<Register, Register> replace) {
+        operand1=Register.replace(replace,operand1);
+        operand2=Register.replace(replace,operand2);
     }
 
     public static CmpEnum getCmpOpEnum(String s){

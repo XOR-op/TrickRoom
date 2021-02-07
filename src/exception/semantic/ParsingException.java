@@ -1,6 +1,6 @@
 package exception.semantic;
 
-import ast.info.CodePosition;
+import ast.compilingInfo.CodePosition;
 
 public class ParsingException extends SemanticException{
     public ParsingException(CodePosition c) {

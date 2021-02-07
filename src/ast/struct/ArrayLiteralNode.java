@@ -1,14 +1,15 @@
 package ast.struct;
 
 import ast.ASTVisitor;
+import ast.type.ArrayObjectType;
 import ast.type.Type;
 
 import java.util.ArrayList;
 
 public class ArrayLiteralNode extends ExprNode {
-    public Type type;
+    public ArrayObjectType type;
     public ArrayList<ExprNode> dimArr;
-    public ArrayLiteralNode(Type t){
+    public ArrayLiteralNode(ArrayObjectType t){
         type=t;
         dimArr=new ArrayList<>();
     }

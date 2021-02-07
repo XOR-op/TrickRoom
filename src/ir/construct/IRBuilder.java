@@ -6,7 +6,6 @@ import ast.type.ClassType;
 import ast.type.ArrayObjectType;
 import ast.type.TypeConst;
 import ast.scope.FileScope;
-import exception.UnimplementedError;
 import ir.BasicBlock;
 import ir.Cst;
 import ir.Function;
@@ -15,24 +14,26 @@ import ir.instruction.*;
 import ir.operand.*;
 import ir.typesystem.*;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 public class IRBuilder implements ASTVisitor {
     private ClassType currentClass;
     private Function currentFunction = null;
     private BasicBlock currentBlock = null;
-    private Stack<BasicBlock> currentLoopUpdBlock = new Stack<>();
-    private Stack<BasicBlock> currentAfterLoopBlock = new Stack<>();
-    private IRInfo info;
+    private final Stack<BasicBlock> currentLoopUpdBlock = new Stack<>();
+    private final Stack<BasicBlock> currentAfterLoopBlock = new Stack<>();
+    private final IRInfo info;
+    private final RootNode root;
     private int counter = 0;
-    private RootNode root;
 
 
     private String generateBlockName() {
         return Integer.toString(counter++);
     }
-    private String generateBlockName(String s){
-        return s+generateBlockName();
+
+    private String generateBlockName(String s) {
+        return s + generateBlockName();
     }
 
     public IRBuilder(RootNode rootNode) {
@@ -86,7 +87,7 @@ public class IRBuilder implements ASTVisitor {
             var cmp = new Compare(Compare.getCmpOpEnum(node.lexerSign), cast.dest, new NullptrConstant(), new Register(Cst.bool));
             currentBlock.appendInst(cast);
             currentBlock.appendInst(cmp);
-            return (Register) cmp.dest;
+            return cmp.dest;
         } else {
             var binst = Binary.getIntBinOpEnum(node.lexerSign);
             if (binst != null) {
@@ -103,7 +104,7 @@ public class IRBuilder implements ASTVisitor {
                 var inst = new Compare(cinst, new Register(Cst.bool),
                         (IROperand) node.lhs.accept(this), (IROperand) node.rhs.accept(this));
                 currentBlock.appendInst(inst);
-                return (Register) inst.dest;
+                return inst.dest;
             }
         }
     }
@@ -180,70 +181,108 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(MemberNode node) {
         // return pointer of member
         // also will called only when accessing member variables
-        var indexing = new GetElementPtr(new Register(info.resolveType(node.type)),
-                (Register) node.object.accept(this), new IntConstant(
-                ((StructureType) (info.resolveType(node.object.type))).getMemberOffset(node.member)
-        ));
+        var indexing = new GetElementPtr(new Register(info.resolveType(node.type)), (Register) node.object.accept(this), new IntConstant(0),
+                new IntConstant(((StructureType) (info.resolveType(node.object.type))).getMemberOffset(node.member)
+                ));
         currentBlock.appendInst(indexing);
         return indexing.dest;
+    }
+
+    private Register arrayInitialize(int level,ArrayList<IROperand> dims,IRType elementType){
+        // n-dim nested loop
+        // if using stack, it may be more efficient by eliminate repeated calculation of size
+        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
+        IRDestedInst arrayWidth = new Binary(Binary.BinInstEnum.mul, new Register(Cst.int32),
+                dims.get(level), new IntConstant(elementType.size()));
+        IRDestedInst calcSize = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32),
+                new IntConstant(Cst.int32.size()), arrayWidth.dest);
+        alloc.push(calcSize.dest);
+        // calculate real array address
+        IRDestedInst trueArrayAddress = new GetElementPtr(new Register(new PointerType(Cst.byte_t)), alloc.dest,
+                new IntConstant(0), new IntConstant(4));
+        IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)), trueArrayAddress.dest);
+        // store size
+        IRDestedInst cast = new BitCast(new Register(new PointerType(Cst.int32)), alloc.dest);
+        IRInst storeSize = new Store(dims.get(level), cast.dest);
+        currentBlock.appendInst(alloc).appendInst(arrayWidth).appendInst(calcSize);
+        currentBlock.appendInst(cast).appendInst(storeSize);
+        currentBlock.appendInst(trueArrayAddress).appendInst(returnCast);
+        if(level<dims.size()-1){
+            // initialize subarray
+            var beforeLoop=currentBlock;
+            var cond=beforeLoop.split("cond");
+            var loopBody=cond.split("body");
+            var afterLoop=loopBody.split("after");
+            IRDestedInst incrVar=new Assign(new Register(new PointerType(elementType)),returnCast.dest);
+            IRDestedInst endAddr=new GetElementPtr(new Register(new PointerType(elementType)),
+                    returnCast.dest,dims.get(level),new IntConstant(0));
+            IRDestedInst cmpAddr=new Compare(Compare.CmpEnum.ne,new Register(Cst.bool),incrVar.dest, endAddr.dest);
+            beforeLoop.appendInst(incrVar).appendInst(endAddr);
+            beforeLoop.setJumpTerminator(cond);
+            cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest,loopBody,afterLoop);
+            currentBlock=loopBody;
+            arrayInitialize(level+1,dims,((PointerType)elementType).subType());
+            currentBlock.appendInst(new GetElementPtr(incrVar.dest,incrVar.dest,new IntConstant(1),new IntConstant(0)));
+            currentBlock.setJumpTerminator(cond);
+            currentBlock=afterLoop;
+        } // we assume no initialization is needed for the most internal elements
+        return returnCast.dest;
     }
 
     @Override
     public Register visit(NewExprNode node) {
         //  return pointer to newed object
         // allocate heap with i8* returned
-        var alloc=new Call(new Register(new PointerType(Cst.byte_t)),info.getFunction(Cst.MALLOC));
-        if(node.isClass){
+        if (node.isClass) {
+            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
+            var classType = info.resolveType(node.classNew.type);
             alloc.push(new IntConstant(info.resolveClass((ClassType) node.classNew.type).size()));
-            var cast=new BitCast(new Register(info.resolveType(node.classNew.type)),alloc.dest);
-            var constructCall=new Call(new Register(info.resolveType(node.classNew.type)),
-                    info.getClassMethod(node.classNew.type.id,node.classNew.func.id));
+            var cast = new BitCast(new Register(classType), alloc.dest);
+            var constructCall = new Call(new Register(classType),
+                    info.getClassMethod(node.classNew.type.id, node.classNew.func.id));
             constructCall.push(cast.dest);
-            node.classNew.arguments.forEach(exprNode -> constructCall.push((IROperand) exprNode.accept(this)));
+            node.classNew.arguments.forEach(
+                    exprNode -> constructCall.push((IROperand) exprNode.accept(this))
+            );
             currentBlock.appendInst(alloc).appendInst(cast).appendInst(constructCall);
-            return constructCall.dest;
-        }else {
-            // array
-            var arrLiteral=node.arrNew;
-            var arrLen=(IROperand) arrLiteral.dimArr.get(0).accept(this);
-            var calcSize=new Binary(Binary.BinInstEnum.add,new Register(Cst.int32),
-                    new IntConstant(Cst.int32.size()),arrLen);
-            alloc.push(calcSize.dest);
-            // store size
-            var cast=new BitCast(new Register(new PointerType(Cst.int32)),alloc.dest);
-            var storeSize=new Store(arrLen,cast.dest);
-            currentBlock.appendInst(alloc).appendInst(calcSize).appendInst(cast).appendInst(storeSize);
-            // initialize subarray
-            // todo
-            return alloc.dest;
+            return cast.dest;
+        } else {
+            // array [i32, ty]* with ty* returned
+            var elementType = info.resolveType(node.arrNew.type.subType());
+            var arrDimension = new ArrayList<IROperand>();
+            node.arrNew.dimArr.forEach(d -> {
+                if (d != null)
+                    arrDimension.add((IROperand) d.accept(this));
+            });
+            return arrayInitialize(0,arrDimension,elementType);
         }
     }
 
     @Override
     public Register visit(SubscriptionNode node) {
         // perform pointer addition
-        var inst = new GetElementPtr(new Register(Cst.int32),
-                (Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this));
+        var inst = new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))),
+                (Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this), new IntConstant(0));
         currentBlock.appendInst(inst);
         return inst.dest;
     }
 
-    private GetElementPtr calculateImplicitThis(IdentifierNode node){
+    private GetElementPtr calculateImplicitThis(IdentifierNode node) {
         return new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))), visit(new ThisNode()),
-                new IntConstant(info.resolveClass(currentClass).getMemberOffset(node.id)));
+                new IntConstant(0), new IntConstant(info.resolveClass(currentClass).getMemberOffset(node.id)));
     }
 
     @Override
     public Register visit(IdentifierNode node) {
         // only standalone identifier, member identifier will not be called
         // left-value implicit this identifier will be processed in visit(AssignmentNode)
-        if(node.sym.implicitThis()){
-            var getPtr=calculateImplicitThis(node);
-            var load=new Load(new Register(info.resolveType(node.type)),getPtr.dest);
+        if (node.sym.implicitThis()) {
+            var getPtr = calculateImplicitThis(node);
+            var load = new Load(new Register(info.resolveType(node.type)), getPtr.dest);
             currentBlock.appendInst(getPtr);
             currentBlock.appendInst(load);
             return load.dest;
-        }else {
+        } else {
             return node.sym.isGlobal() ?
                     new GlobalVar(info.resolveType(node.type), node.sym.nameAsReg) :
                     new Register(info.resolveType(node.type), node.sym.nameAsReg);
@@ -263,7 +302,7 @@ public class IRBuilder implements ASTVisitor {
                 default -> throw new IllegalStateException();
             }
         } else if (TypeConst.Int.equals(node.type)) {
-            return new IntConstant(Integer.valueOf(node.content));
+            return new IntConstant(Integer.parseInt(node.content));
         } else if (TypeConst.String.equals(node.type)) {
             return new Register(Cst.str, info.registerStrLiteral(node.content));
         } else {
@@ -275,24 +314,24 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(AssignmentNode node) {
         IROperand rhs = (IROperand) node.rhs.accept(this);
         // todo eliminate redundant anonymous register
-        if(node.lhs instanceof IdentifierNode) {
-            if(((IdentifierNode) node.lhs).sym.implicitThis()){
-                var getPtr=calculateImplicitThis((IdentifierNode) node.lhs);
-                var store=new Store(rhs,getPtr.dest);
+        if (node.lhs instanceof IdentifierNode) {
+            if (((IdentifierNode) node.lhs).sym.implicitThis()) {
+                var getPtr = calculateImplicitThis((IdentifierNode) node.lhs);
+                var store = new Store(rhs, getPtr.dest);
                 currentBlock.appendInst(getPtr);
                 currentBlock.appendInst(store);
                 return null;
-            }else {
+            } else {
                 Register lhs = (Register) node.lhs.accept(this);
                 var inst = new Assign(lhs, rhs);
                 currentFunction.defVariable(lhs, currentBlock);
                 currentBlock.appendInst(inst);
                 return inst.dest;
             }
-        }else {
+        } else {
             assert node.lhs instanceof MemberNode;
             Register lhs = (Register) node.lhs.accept(this);
-            var inst = new Store(rhs,lhs);
+            var inst = new Store(rhs, lhs);
             currentBlock.appendInst(inst);
             return null;
         }
