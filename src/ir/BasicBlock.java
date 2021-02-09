@@ -94,8 +94,14 @@ public class BasicBlock {
             builder.deleteCharAt(builder.length() - 1);
         }
         builder.append('\n');
+        phiCollection.forEach(p->builder.append('\t').append(p.tell()).append('\n'));
         insts.forEach(i -> builder.append('\t').append(i.tell()).append('\n'));
         builder.append('\t').append(terminatorInst.tell()).append("\n");
         return builder.toString();
+    }
+
+    @Override
+    public String toString() {
+        return blockName;
     }
 }

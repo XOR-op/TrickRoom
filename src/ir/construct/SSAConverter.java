@@ -37,6 +37,9 @@ public class SSAConverter {
     }
 
     private void reversePostorder() {
+        /*
+
+         */
         reversePostorder(func.entryBlock, new HashSet<>());
         Collections.reverse(blocksByOrder);
     }
@@ -51,11 +54,13 @@ public class SSAConverter {
     }
 
     private BasicBlock intersect(BasicBlock i, BasicBlock j) {
-        while (!order.get(i).equals(order.get(j))) {
+        while (i!=j) {
             while (order.get(i) > order.get(j)) {
+                assert iDoms.get(i)!=null;
                 i = iDoms.get(i);
             }
             while (order.get(j) > order.get(i)) {
+                assert iDoms.get(j)!=null;
                 j = iDoms.get(j);
             }
         }
@@ -73,11 +78,12 @@ public class SSAConverter {
             for (int cur = 1; cur < blocksByOrder.size(); ++cur) {
                 var curBlock = blocksByOrder.get(cur);
                 var iter = curBlock.prevs.iterator();
-                var newIDom = iter.next(); // pick random one
+                BasicBlock newIDom=iter.next();
+                while (iDoms.get(newIDom)==null)newIDom=iter.next(); // pick first processed one
                 while (iter.hasNext()) {
-                    var prev = iter.next();
-                    if (iDoms.get(prev) != null)
-                        newIDom = intersect(prev, newIDom);
+                    var onePrev = iter.next();
+                    if (iDoms.get(onePrev) != null)
+                        newIDom = intersect(onePrev, newIDom);
                 }
                 if (iDoms.get(curBlock) != newIDom) {
                     iDoms.put(curBlock, newIDom);

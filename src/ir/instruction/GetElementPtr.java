@@ -2,6 +2,7 @@ package ir.instruction;
 
 import ir.operand.IROperand;
 import ir.operand.Register;
+import ir.typesystem.PointerType;
 
 import java.util.function.Function;
 
@@ -19,7 +20,7 @@ public class GetElementPtr extends IRDestedInst{
 
     @Override
     public String tell() {
-        return dest+" = getelementptr "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
+        return dest+" = getelementptr "+((PointerType)base.type).subType()+" "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
     }
 
     @Override

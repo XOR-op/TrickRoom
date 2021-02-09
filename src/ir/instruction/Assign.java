@@ -23,7 +23,7 @@ public class Assign extends IRDestedInst{
             return dest+" = add "+dest.type+" "+src+", "+dest.type+" 0";
         else {
             assert dest.type instanceof PointerType;
-            return dest+" = getelementptr "+src.type+" "+src+", i32 0, i32 0";
+            return dest+" = getelementptr "+((PointerType) dest.type).subType()+" "+dest.type+" "+src+", i32 0, i32 0";
         }
     }
 

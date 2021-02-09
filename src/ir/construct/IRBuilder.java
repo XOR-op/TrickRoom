@@ -53,17 +53,11 @@ public class IRBuilder implements ASTVisitor {
             Function f;
             switch (node.lexerSign) {
                 case "==" -> f = info.getStringMethod("eq");
-
                 case "!=" -> f = info.getStringMethod("neq");
-
                 case "<" -> f = info.getStringMethod("lt");
-
                 case ">" -> f = info.getStringMethod("gt");
-
                 case "<=" -> f = info.getStringMethod("le");
-
                 case ">=" -> f = info.getStringMethod("ge");
-
                 default -> throw new IllegalStateException("Unexpected value: " + node.lexerSign);
             }
             var inst = new Call(new Register(Cst.bool), f);
@@ -103,44 +97,57 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Register visit(UnaryExprNode node) {
-        var target = (Register) node.expr.accept(this);
         Binary inst;
         if (node.isPrefix) {
             // !/~/-/+
+            var target = (Register) node.expr.accept(this);
             switch (node.lexerSign) {
                 case "+" -> {
-                    // no instruction
                     return target;
                 }
                 case "-" -> inst = new Binary(Binary.BinInstEnum.sub, new Register(Cst.int32), new IntConstant(0), target);
-
                 case "!" -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.bool), new BoolConstant(true), target);
-
                 case "~" -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.int32), new IntConstant(Integer.MAX_VALUE), target);
-
                 default -> throw new IllegalStateException(node.lexerSign);
-
             }
             currentBlock.appendInst(inst);
             return inst.dest;
         } else {
             // must be suffix ++/--
-            // save original value
-            var inst1 = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32), target, new IntConstant(0));
-            // incremental operation
-            var inst2 = new Binary(node.lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
-            currentBlock.appendInst(inst1);
-            currentBlock.appendInst(inst2);
-            return inst1.dest;
+            if(directlyAccessible(node.expr)) {
+                var target=(Register)node.expr.accept(this);
+                var move = new Assign(new Register(Cst.int32),target);
+                var incremental = new Binary(node.lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
+                currentFunction.defVariable(target, currentBlock);
+                currentBlock.appendInst(move).appendInst(incremental);
+                return move.dest;
+            }else {
+                var ptr=locate(node.expr);
+                var load=new Load(new Register(Cst.int32),ptr);
+                var incre=new Binary(Binary.BinInstEnum.add,new Register(Cst.int32),load.dest,new IntConstant(1));
+                var store=new Store(incre.dest,ptr);
+                currentBlock.appendInst(load).appendInst(incre).appendInst(store);
+                return load.dest;
+            }
         }
     }
 
     @Override
     public Register visit(PrefixLeftValueNode node) {
-        var target = (Register) node.expr.accept(this);
-        var inst = new Binary(node.sign.equals("+") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
-        currentBlock.appendInst(inst);
-        return inst.dest;
+        if(directlyAccessible(node.expr)) {
+            var target = (Register) node.expr.accept(this);
+            var inst = new Binary(node.sign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
+            currentFunction.defVariable(target, currentBlock);
+            currentBlock.appendInst(inst);
+            return inst.dest;
+        }else {
+            var ptr=locate(node.expr);
+            var load=new Load(new Register(Cst.int32),ptr);
+            var incre=new Binary(Binary.BinInstEnum.add,new Register(Cst.int32),load.dest,new IntConstant(1));
+            var store=new Store(incre.dest,ptr);
+            currentBlock.appendInst(load).appendInst(incre).appendInst(store);
+            return incre.dest;
+        }
     }
 
     @Override
@@ -171,13 +178,23 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Register visit(MemberNode node) {
-        // return pointer of member
-        // also will called only when accessing member variables
+        // will called only when accessing member variables
         var indexing = new GetElementPtr(new Register(info.resolveType(node.type)), (Register) node.object.accept(this), new IntConstant(0),
                 new IntConstant(((StructureType) (info.resolveType(node.object.type))).getMemberOffset(node.member)
                 ));
-        currentBlock.appendInst(indexing);
-        return indexing.dest;
+        var loading = new Load(new Register(info.resolveType(node.type)), indexing.dest);
+        currentBlock.appendInst(indexing).appendInst(loading);
+        return loading.dest;
+    }
+
+    @Override
+    public Register visit(SubscriptionNode node) {
+        // perform pointer addition and load
+        var inst = new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))),
+                (Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this), new IntConstant(0));
+        var loading = new Load(new Register(info.resolveType(node.type)), inst.dest);
+        currentBlock.appendInst(inst).appendInst(loading);
+        return loading.dest;
     }
 
     private Register arrayInitialize(int level, ArrayList<IROperand> dims, IRType elementType) {
@@ -250,15 +267,6 @@ public class IRBuilder implements ASTVisitor {
         }
     }
 
-    @Override
-    public Register visit(SubscriptionNode node) {
-        // perform pointer addition
-        var inst = new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))),
-                (Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this), new IntConstant(0));
-        currentBlock.appendInst(inst);
-        return inst.dest;
-    }
-
     private GetElementPtr calculateImplicitThis(IdentifierNode node) {
         return new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))), visit(new ThisNode()),
                 new IntConstant(0), new IntConstant(info.resolveClass(currentClass).getMemberOffset(node.id)));
@@ -268,7 +276,7 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(IdentifierNode node) {
         // only standalone identifier, member identifier will not be called
         // left-value implicit this identifier will be processed in visit(AssignmentNode)
-        var inferType=info.resolveType(node.type);
+        var inferType = info.resolveType(node.type);
         if (node.sym.implicitThis()) {
             var getPtr = calculateImplicitThis(node);
             var load = new Load(new Register(inferType), getPtr.dest);
@@ -276,7 +284,7 @@ public class IRBuilder implements ASTVisitor {
             currentBlock.appendInst(load);
             return load.dest;
         } else if (node.sym.isGlobal()) {
-            var load=new Load(new Register(inferType),new GlobalVar(new PointerType(inferType), node.sym.nameAsReg));
+            var load = new Load(new Register(inferType), new GlobalVar(new PointerType(inferType), node.sym.nameAsReg));
             currentBlock.appendInst(load);
             return load.dest;
         } else {
@@ -284,49 +292,54 @@ public class IRBuilder implements ASTVisitor {
         }
     }
 
-    @Override
-    public IROperand visit(LiteralNode node) {
-        if (TypeConst.Bool.equals(node.type)) {
-            switch (node.content) {
-                case "true" -> {
-                    return new BoolConstant(true);
-                }
-                case "false" -> {
-                    return new BoolConstant(false);
-                }
-                default -> throw new IllegalStateException();
+    private boolean directlyAccessible(ExprNode node) {
+        return node instanceof IdentifierNode &&
+                !((IdentifierNode) node).sym.isGlobal() &&
+                !((IdentifierNode) node).sym.implicitThis();
+    }
+
+    private Register locate(ExprNode node) {
+        // always return pointer to a left value
+        var inferType = info.resolveType(node.type);
+        if (node instanceof IdentifierNode) {
+            if (((IdentifierNode) node).sym.implicitThis()) {
+                var getPtr = calculateImplicitThis((IdentifierNode) node);
+                return getPtr.dest;
+            } else {
+                assert ((IdentifierNode) node).sym.isGlobal();
+                return new GlobalVar(new PointerType(inferType), ((IdentifierNode) node).sym.nameAsReg);
             }
-        } else if (TypeConst.Int.equals(node.type)) {
-            return new IntConstant(Integer.parseInt(node.content));
-        } else if (TypeConst.String.equals(node.type)) {
-            return new Register(Cst.str, info.registerStrLiteral(node.content));
+        } else if (node instanceof SubscriptionNode) {
+            var inst = new GetElementPtr(new Register(new PointerType(inferType)),
+                    (Register) ((SubscriptionNode) node).lhs.accept(this),
+                    (IROperand) ((SubscriptionNode) node).rhs.accept(this), new IntConstant(0));
+            currentBlock.appendInst(inst);
+            return inst.dest;
         } else {
-            return new NullptrConstant();
+            assert node instanceof MemberNode;
+            var indexing = new GetElementPtr(new Register(inferType), (IROperand) ((MemberNode) node).object.accept(this),
+                    new IntConstant(0), new IntConstant(((StructureType)
+                    (info.resolveType(((MemberNode) node).object.type))).getMemberOffset(((MemberNode) node).member)
+            ));
+            currentBlock.appendInst(indexing);
+            return indexing.dest;
         }
     }
+
 
     @Override
     public Register visit(AssignmentNode node) {
         IROperand rhs = (IROperand) node.rhs.accept(this);
-        // todo eliminate redundant anonymous register
-        if (node.lhs instanceof IdentifierNode) {
-            if (((IdentifierNode) node.lhs).sym.implicitThis()) {
-                var getPtr = calculateImplicitThis((IdentifierNode) node.lhs);
-                var store = new Store(rhs, getPtr.dest);
-                currentBlock.appendInst(getPtr);
-                currentBlock.appendInst(store);
-                return null;
-            } else {
-                Register lhs = (Register) node.lhs.accept(this);
-                var inst = new Assign(lhs, rhs);
-                currentFunction.defVariable(lhs, currentBlock);
-                currentBlock.appendInst(inst);
-                return inst.dest;
-            }
-        } else {
-            assert node.lhs instanceof MemberNode;
+        if (directlyAccessible(node.lhs)) {
+            // todo eliminate redundant anonymous register
             Register lhs = (Register) node.lhs.accept(this);
-            var inst = new Store(rhs, lhs);
+            var inst = new Assign(lhs, rhs);
+            currentFunction.defVariable(lhs, currentBlock);
+            currentBlock.appendInst(inst);
+            return inst.dest;
+        } else {
+            Register ptr = locate(node.lhs);
+            var inst = new Store(rhs, ptr);
             currentBlock.appendInst(inst);
             return null;
         }
@@ -351,6 +364,29 @@ public class IRBuilder implements ASTVisitor {
         currentFunction = null;
         return null;
     }
+
+    @Override
+    public Object visit(DeclarationNode node) {
+        var varReg = new Register(info.resolveType(node.sym.getType()), node.sym.nameAsReg);
+        if (node.expr != null) {
+            currentFunction.defVariable(varReg, currentBlock);
+            var inst = new Assign(varReg, (IROperand) node.expr.accept(this));
+            currentBlock.appendInst(inst);
+            return inst.dest;
+        }
+        return null;
+    }
+
+
+    @Override
+    public Object visit(ClassNode node) {
+        currentClass = node.cls;
+        node.methods.forEach(m -> m.accept(this));
+        node.constructor.forEach(c -> c.accept(this));
+        currentClass = null;
+        return null;
+    }
+
 
     @Override
     public Object visit(LoopNode node) {
@@ -430,6 +466,16 @@ public class IRBuilder implements ASTVisitor {
     }
 
     @Override
+    public Object visit(ReturnNode node) {
+        if (node.returnExpr != null) {
+            var inst = new Assign(currentFunction.returnValue, (IROperand) node.returnExpr.accept(this));
+            currentBlock.appendInst(inst);
+            currentBlock.setJumpTerminator(currentFunction.exitBlock);
+        }
+        return null;
+    }
+
+    @Override
     public Object visit(ExprStmtNode node) {
         node.expr.accept(this);
         return null;
@@ -454,37 +500,6 @@ public class IRBuilder implements ASTVisitor {
     }
 
     @Override
-    public Object visit(DeclarationNode node) {
-        var varReg = new Register(info.resolveType(node.sym.getType()), node.sym.nameAsReg);
-        currentFunction.defVariable(varReg, currentBlock);
-        if (node.expr != null) {
-            var inst = new Assign(varReg, (IROperand) node.expr.accept(this));
-            currentBlock.appendInst(inst);
-            return inst.dest;
-        }
-        return null;
-    }
-
-    @Override
-    public Object visit(ReturnNode node) {
-        if (node.returnExpr != null) {
-            var inst = new Assign(currentFunction.returnValue, (IROperand) node.returnExpr.accept(this));
-            currentBlock.appendInst(inst);
-            currentBlock.setJumpTerminator(currentFunction.exitBlock);
-        }
-        return null;
-    }
-
-    @Override
-    public Object visit(ClassNode node) {
-        currentClass = node.cls;
-        node.methods.forEach(m -> m.accept(this));
-        node.constructor.forEach(c -> c.accept(this));
-        currentClass = null;
-        return null;
-    }
-
-    @Override
     public Register visit(ThisNode node) {
         return new Register(info.resolveType(currentClass), "this");
     }
@@ -493,6 +508,27 @@ public class IRBuilder implements ASTVisitor {
     public Object visit(SuiteNode node) {
         node.statements.forEach(s -> s.accept(this));
         return null;
+    }
+
+    @Override
+    public IROperand visit(LiteralNode node) {
+        if (TypeConst.Bool.equals(node.type)) {
+            switch (node.content) {
+                case "true" -> {
+                    return new BoolConstant(true);
+                }
+                case "false" -> {
+                    return new BoolConstant(false);
+                }
+                default -> throw new IllegalStateException();
+            }
+        } else if (TypeConst.Int.equals(node.type)) {
+            return new IntConstant(Integer.parseInt(node.content));
+        } else if (TypeConst.String.equals(node.type)) {
+            return new Register(Cst.str, info.registerStrLiteral(node.content));
+        } else {
+            return new NullptrConstant();
+        }
     }
 
     @Override

@@ -4,6 +4,7 @@ import exception.UnimplementedError;
 import ir.operand.Register;
 
 import java.util.ArrayList;
+import java.util.StringJoiner;
 import java.util.function.Function;
 
 public class Phi extends IRDestedInst{
@@ -20,7 +21,9 @@ public class Phi extends IRDestedInst{
 
     @Override
     public String tell() {
-        throw new UnimplementedError();
+        StringJoiner sj=new StringJoiner(", ",dest+" = phi [","]");
+        arguments.forEach(a->sj.add(a.tell()));
+        return sj.toString();
     }
 
     @Override
