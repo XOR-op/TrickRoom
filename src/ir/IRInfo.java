@@ -9,6 +9,7 @@ import ir.operand.StringConstant;
 import ir.typesystem.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.StringJoiner;
 
 public class IRInfo {
@@ -17,6 +18,7 @@ public class IRInfo {
     private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
     private final HashMap<String, String> stringMethods = new HashMap<>();
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
+    private final HashSet<Function> globalFunction=new HashSet<>();
     private int strCounter = 0;
 
     public IRInfo(FileScope scope) {
@@ -57,12 +59,14 @@ public class IRInfo {
         f.addParam(Cst.str, "lhs");
         functions.put(Cst.STR_FUNC + name, f);
         stringMethods.put(name, Cst.STR_FUNC + name);
+        globalFunction.add(f);
         return f;
     }
 
     private Function addBuiltinFunction(IRType ret, String name) {
         var f = new Function(name, ret, true);
         functions.put(name, f);
+        globalFunction.add(f);
         return f;
     }
 
@@ -165,11 +169,9 @@ public class IRInfo {
         strLiterals.forEach((k, v) -> builder.append(v.tell()).append('\n'));
         builder.append('\n');
 
-        types.forEach((k, v) -> {
-            var joiner = new StringJoiner(", ", "{", "}");
-            v.members.forEach(m -> joiner.add(m.type.tell()));
-            builder.append(v.tell()).append(" = ").append(joiner.toString()).append("\n");
-        });
+        globalFunction.forEach(f->builder.append(f.toDeclaration()));
+
+        types.forEach((k, v) -> builder.append(v).append(" = ").append(v.isWhat()).append('\n'));
         builder.append('\n');
 
         globalVars.forEach((k,v)->

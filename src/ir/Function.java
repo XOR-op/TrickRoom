@@ -62,6 +62,14 @@ public class Function {
         return this;
     }
 
+    public String toDeclaration(){
+        var builder = new StringBuilder();
+        var argJoiner = new StringJoiner(",", "(", ")");
+        parameters.forEach(p -> argJoiner.add(p.type.tell()));
+        builder.append("declare ").append(retTy.tell()).append(" @").append(name).append(argJoiner.toString()).append(" \n");
+        return builder.toString();
+    }
+
     public String tell() {
         var builder = new StringBuilder();
         var argJoiner = new StringJoiner(",", "(", ")");

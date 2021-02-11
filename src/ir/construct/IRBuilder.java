@@ -331,12 +331,16 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(AssignmentNode node) {
         IROperand rhs = (IROperand) node.rhs.accept(this);
         if (directlyAccessible(node.lhs)) {
-            // todo eliminate redundant anonymous register
             Register lhs = (Register) node.lhs.accept(this);
-            var inst = new Assign(lhs, rhs);
-            currentFunction.defVariable(lhs, currentBlock);
-            currentBlock.appendInst(inst);
-            return inst.dest;
+//            if(rhs instanceof Register){
+//                ((Register) rhs).replaceWith(lhs.name);
+//                return lhs;
+//            }else {
+                var inst = new Assign(lhs, rhs);
+                currentFunction.defVariable(lhs, currentBlock);
+                currentBlock.appendInst(inst);
+                return inst.dest;
+//            }
         } else {
             Register ptr = locate(node.lhs);
             var inst = new Store(rhs, ptr);
@@ -370,9 +374,15 @@ public class IRBuilder implements ASTVisitor {
         var varReg = new Register(info.resolveType(node.sym.getType()), node.sym.nameAsReg);
         if (node.expr != null) {
             currentFunction.defVariable(varReg, currentBlock);
-            var inst = new Assign(varReg, (IROperand) node.expr.accept(this));
-            currentBlock.appendInst(inst);
-            return inst.dest;
+            var expr=(IROperand) node.expr.accept(this);
+//            if(expr instanceof Register){
+//                ((Register) expr).replaceWith(varReg.name);
+//                return expr;
+//            }else {
+                var inst = new Assign(varReg, expr);
+                currentBlock.appendInst(inst);
+                return inst.dest;
+//            }
         }
         return null;
     }
@@ -468,9 +478,14 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(ReturnNode node) {
         if (node.returnExpr != null) {
-            var inst = new Assign(currentFunction.returnValue, (IROperand) node.returnExpr.accept(this));
-            currentBlock.appendInst(inst);
-            currentBlock.setJumpTerminator(currentFunction.exitBlock);
+            var expr=(IROperand) node.returnExpr.accept(this);
+//            if(expr instanceof Register){
+//                ((Register) expr).replaceWith(currentFunction.returnValue.name);
+//            }else {
+                var inst = new Assign(currentFunction.returnValue, expr);
+                currentBlock.appendInst(inst);
+                currentBlock.setJumpTerminator(currentFunction.exitBlock);
+//            }
         }
         return null;
     }

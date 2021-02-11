@@ -20,7 +20,7 @@ public class GetElementPtr extends IRDestedInst{
 
     @Override
     public String tell() {
-        return dest+" = getelementptr "+((PointerType)base.type).subType()+" "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
+        return dest+" = getelementptr "+((PointerType)base.type).subType()+", "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
     }
 
     @Override

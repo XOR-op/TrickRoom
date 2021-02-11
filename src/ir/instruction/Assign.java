@@ -2,6 +2,7 @@ package ir.instruction;
 
 import ir.Cst;
 import ir.operand.IROperand;
+import ir.operand.IntConstant;
 import ir.operand.Register;
 import ir.typesystem.PointerType;
 
@@ -20,10 +21,10 @@ public class Assign extends IRDestedInst{
     public String tell() {
 //        return ANSI_CYAN+dest.type+" "+dest+ " = pseudo mv from "+src.type+" "+src+ANSI_RESET;
         if(dest.type.equals(Cst.int32)||dest.type.equals(Cst.bool))
-            return dest+" = add "+dest.type+" "+src+", "+dest.type+" 0";
+            return new Binary(Binary.BinInstEnum.add,dest,src,new IntConstant(0)).tell();
         else {
             assert dest.type instanceof PointerType;
-            return dest+" = getelementptr "+((PointerType) dest.type).subType()+" "+dest.type+" "+src+", i32 0, i32 0";
+            return new GetElementPtr(dest,src,new IntConstant(0),new IntConstant(0)).tell();
         }
     }
 

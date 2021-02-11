@@ -6,7 +6,7 @@ import ir.operand.Register;
 import java.util.*;
 
 public class BasicBlock {
-    private String blockName;
+    private final String blockName;
     public ArrayList<IRInst> insts = new ArrayList<>();
     public IRInst terminatorInst = null;
     public Set<Phi> phiCollection=new HashSet<>();
@@ -47,11 +47,6 @@ public class BasicBlock {
     public void appendPhi(Phi phi){
         phiCollection.add(phi);
         phi.parentBlock=this;
-    }
-
-    public void modifyLastInstDest(Register reg) {
-        assert insts.size() != 0 && insts.get(insts.size() - 1) instanceof IRDestedInst && ((IRDestedInst) insts.get(insts.size() - 1)).dest.isAnonymous();
-        ((IRDestedInst) insts.get(insts.size() - 1)).dest = reg;
     }
 
     public void defVariable(Register reg) {

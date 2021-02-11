@@ -39,7 +39,7 @@ public class StructureType extends IRType {
 
     public String isWhat() {
         StringJoiner s = new StringJoiner(", ", "type <{ ", " }>");
-        members.forEach(tp -> s.add(tp.tell()));
+        members.forEach(tp -> s.add(tp.type.tell()));
         return s.toString();
     }
 

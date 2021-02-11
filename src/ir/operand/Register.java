@@ -23,7 +23,7 @@ public class Register extends IROperand {
     public String name;
 
     public Register(IRType ty) {
-        this.name = Integer.toString(counter++);
+        this.name = "ANONY_"+(counter++);
         type = ty;
         isAnonymous = true;
     }
@@ -40,6 +40,10 @@ public class Register extends IROperand {
         return reg;
     }
 
+    public void replaceWith(String name){
+        this.name=name;
+    }
+
     public Register copy(){return rename(0);}
 
     public boolean isAnonymous() {
@@ -49,7 +53,8 @@ public class Register extends IROperand {
     public boolean sameNaming(IROperand rhs){return rhs instanceof Register&&name.equals(((Register)rhs).name);}
 
     public static IROperand replace(Function<Register,Register> rep,IROperand operand){
-        if(operand instanceof Register&& !((Register) operand).isAnonymous())return rep.apply((Register) operand);
+        if(operand instanceof Register&& !((Register) operand).isAnonymous())
+            return rep.apply((Register) operand);
         else return operand;
     }
 
