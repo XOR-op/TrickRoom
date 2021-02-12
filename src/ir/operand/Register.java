@@ -42,6 +42,7 @@ public class Register extends IROperand {
 
     public void replaceWith(String name){
         this.name=name;
+        this.isAnonymous=false;
     }
 
     public Register copy(){return rename(0);}
@@ -64,6 +65,6 @@ public class Register extends IROperand {
 
     @Override
     public String tell() {
-        return "%"+ (renaming==0?"":"rm.")+ name + (renaming == 0 ? "" :  "."+ renaming);
+        return "%"+ (renaming==0?"":"rem.")+ name + (renaming == 0 ? "" :  "."+ renaming);
     }
 }

@@ -6,7 +6,7 @@ import ir.operand.Register;
 import java.util.function.Function;
 
 public class Ret extends IRInst{
-    private IROperand value;
+    public IROperand value;
     public Ret(IROperand val){
         assert val!=null;
         value=val;

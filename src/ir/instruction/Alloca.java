@@ -17,7 +17,7 @@ public class Alloca extends IRDestedInst{
         size=sz;
     }
     public Alloca(Register dest,IRType ty,int sz){
-        this(dest,ty,sz,0);
+        this(dest,ty,sz,4);
     }
     public Alloca(Register dest,IRType ty){
         this(dest,ty,1);

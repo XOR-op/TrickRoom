@@ -1,28 +1,43 @@
 package ir.instruction;
 
-import exception.UnimplementedError;
+import ir.BasicBlock;
 import ir.operand.Register;
 
 import java.util.ArrayList;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
-public class Phi extends IRDestedInst{
-    public ArrayList<Register> arguments=new ArrayList<>();
+public class Phi extends IRDestedInst {
+    public class Source {
+        public Register reg;
+        public BasicBlock block;
 
-    public Phi(Register reg){
-        dest=reg.copy();
+        public Source(Register r, BasicBlock b) {
+            reg = r;
+            block = b;
+        }
+
+        public String tell() {
+            return "[" + reg + ", %" + block + "]";
+        }
     }
 
-    public void append(Register reg){
+    public ArrayList<Source> arguments = new ArrayList<>();
+
+    public Phi(Register reg) {
+        assert reg.type != null;
+        dest = reg.copy();
+    }
+
+    public void append(Register reg, BasicBlock blk) {
         assert reg.name.equals(dest.name);
-        arguments.add(reg);
+        arguments.add(new Source(reg, blk));
     }
 
     @Override
     public String tell() {
-        StringJoiner sj=new StringJoiner(", ",dest+" = phi [","]");
-        arguments.forEach(a->sj.add(a.tell()));
+        StringJoiner sj = new StringJoiner(", ", dest + " = phi " + dest.type.tell() + " ", "");
+        arguments.forEach(a -> sj.add(a.tell()));
         return sj.toString();
     }
 

@@ -20,8 +20,8 @@ public class SSAConverter {
 
     private final int maxOrder;
 
-    private HashMap<String, Integer> renamingCounter = new HashMap<>();
-    private HashMap<String, Stack<Register>> namingStack = new HashMap<>();
+    private final HashMap<String, Integer> renamingCounter = new HashMap<>();
+    private final HashMap<String, Stack<Register>> namingStack = new HashMap<>();
 
     public SSAConverter(Function f) {
         func = f;
@@ -37,9 +37,6 @@ public class SSAConverter {
     }
 
     private void reversePostorder() {
-        /*
-
-         */
         reversePostorder(func.entryBlock, new HashSet<>());
         Collections.reverse(blocksByOrder);
     }
@@ -110,7 +107,7 @@ public class SSAConverter {
     }
 
     public void phiInsertion() {
-        func.definedVariables.forEach((variable, defsRef) -> {
+        func.varDefs.forEach((variable, defsRef) -> {
             var added = new HashSet<BasicBlock>();
             var defs = new LinkedList<>(defsRef);
             while (!defs.isEmpty()) {
@@ -150,7 +147,7 @@ public class SSAConverter {
         }
     }
     public void variableRenaming(){
-        func.definedVariables.forEach((v, s) -> {
+        func.varDefs.forEach((v, s) -> {
             renamingCounter.put(v, 1);
             namingStack.put(v, new Stack<>());
         });
@@ -170,9 +167,10 @@ public class SSAConverter {
             if (irInst instanceof IRDestedInst && ((IRDestedInst) irInst).namedDest())
                 ((IRDestedInst) irInst).renameDest(r -> allocNewRenaming(r, modifiedSet));
         });
+        bb.terminatorInst.renameOperand(this::getRenaming);
         bb.nexts.forEach(nbb -> {
             nbb.phiCollection.forEach(p -> {
-                p.append(getRenaming(p.dest));
+                p.append(getRenaming(p.dest),bb);
             });
         });
         // iterate successor

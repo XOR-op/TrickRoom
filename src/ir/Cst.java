@@ -10,6 +10,7 @@ public class Cst {
     public static final String ARRAY_SIZE="builtin.array.size";
     public static final String TYPE_CAST="typecast.";
     public static final String MALLOC="builtin.malloc";
+    public static final String RETURN_VAL="ret.val";
     public static final IRType int32 =new IntegerType();
     public static final IRType str=new PointerType(new IntegerType(8));
     public static final IRType bool=new BoolType();

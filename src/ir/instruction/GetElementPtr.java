@@ -11,7 +11,6 @@ public class GetElementPtr extends IRDestedInst{
     public IROperand indexing;
     public IROperand offset;
     public GetElementPtr(Register dst,IROperand src,IROperand index, IROperand off){
-        // addr=base+index*sizeof(struct)+off
         dest=dst;
         base=src;
         indexing=index;
@@ -20,7 +19,7 @@ public class GetElementPtr extends IRDestedInst{
 
     @Override
     public String tell() {
-        return dest+" = getelementptr "+((PointerType)base.type).subType()+", "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
+        return dest+" = getelementptr inbounds "+((PointerType)base.type).subType()+", "+base.type+" "+base+", "+indexing.type+" "+indexing+", "+offset.type+" "+offset;
     }
 
     @Override

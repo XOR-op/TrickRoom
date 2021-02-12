@@ -1,6 +1,7 @@
 package ir.typesystem;
 
 import ir.operand.IROperand;
+import ir.operand.IntConstant;
 import ir.operand.Register;
 
 import java.util.ArrayList;
@@ -24,12 +25,21 @@ public class StructureType extends IRType {
         return this;
     }
 
+    @Deprecated
     public int getMemberOffset(String mem) {
         int off = 0;
         for (int idx = 0; idx < members.size() && !members.get(idx).name.equals(mem); ++idx) {
             off += members.get(idx).type.size();
         }
         return off;
+    }
+
+    public IntConstant getMemberIndex(String mem){
+
+        for (int idx = 0; idx < members.size() ; ++idx) {
+            if(members.get(idx).name.equals(mem))return new IntConstant(idx);
+        }
+        throw new IllegalStateException();
     }
 
     @Override

@@ -17,7 +17,7 @@ public class Branch extends IRInst{
 
     @Override
     public String tell() {
-        return "br i1 "+condition+", label "+ trueBranch.getBlockName()+", label "+falseBranch.getBlockName();
+        return "br i1 "+condition+", label %"+ trueBranch.getBlockName()+", label %"+falseBranch.getBlockName();
     }
 
     @Override
