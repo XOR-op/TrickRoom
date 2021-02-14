@@ -28,6 +28,11 @@ public class FileScope extends Scope {
     }
 
     @Override
+    public String getSuffix(String s) {
+        return "";
+    }
+
+    @Override
     public FunctionType getFunction(String func, ASTNode node) {
         FunctionType f;
         if ((f = functionTable.get(func)) != null) return f;

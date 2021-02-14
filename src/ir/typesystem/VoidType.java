@@ -2,7 +2,7 @@ package ir.typesystem;
 
 import ir.operand.IROperand;
 
-public class VoidType extends IRType{
+public class VoidType extends IRType {
     @Override
     public int size() {
         throw new IllegalStateException();

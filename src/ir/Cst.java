@@ -7,8 +7,6 @@ public class Cst {
     public static final String STR_FUNC="builtin.str.";
     public static final String STR_LITERAL="str.";
     public static final String ARRAY_TYPE="array.";
-    public static final String ARRAY_SIZE="builtin.array.size";
-    public static final String TYPE_CAST="typecast.";
     public static final String MALLOC="builtin.malloc";
     public static final String RETURN_VAL="ret.val";
     public static final IRType int32 =new IntegerType();

@@ -18,12 +18,12 @@ public class Symbol {
         this.name = name;
         this.nameAsReg = nameAsReg;
         this.isGlobal = isGlobal;
-        this.initExpr=initExpr;
+        this.initExpr = initExpr;
         this.implicitThis = implicitThis;
     }
 
     public Symbol(Type type, String name, String nameAsReg) {
-        this(type, name, nameAsReg, false,false,null);
+        this(type, name, nameAsReg, false, false, null);
     }
 
     public boolean matches(Type rhs) {
@@ -46,8 +46,11 @@ public class Symbol {
         return type;
     }
 
-    public boolean isGlobal(){
+    public boolean isGlobal() {
         return isGlobal;
     }
-    public boolean implicitThis(){return implicitThis;}
+
+    public boolean implicitThis() {
+        return implicitThis;
+    }
 }

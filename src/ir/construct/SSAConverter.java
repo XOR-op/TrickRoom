@@ -129,6 +129,8 @@ public class SSAConverter {
         int i = renamingCounter.get(var.name);
         renamingCounter.put(var.name, i + 1);
         var renaming = var.rename(i);
+        assert renaming!=null;
+        // one bb one def
         if (modified.contains(var.name))
             namingStack.get(var.name).pop();
         else modified.add(var.name);
@@ -149,7 +151,9 @@ public class SSAConverter {
     public void variableRenaming(){
         func.varDefs.forEach((v, s) -> {
             renamingCounter.put(v, 1);
-            namingStack.put(v, new Stack<>());
+            var stk=new Stack<Register>();
+            stk.push(new Register(func.varType.get(v),v));
+            namingStack.put(v, stk);
         });
         func.parameters.forEach(r -> {
             namingStack.get(r.name).push(r);
@@ -175,6 +179,9 @@ public class SSAConverter {
         });
         // iterate successor
         domTree.get(bb).forEach(this::variableRenaming);
+        modifiedSet.forEach(v->{
+            assert namingStack.get(v).size()>1;
+        });
         // pop current basic block's modified renaming
         modifiedSet.forEach(v -> namingStack.get(v).pop());
     }

@@ -1,16 +1,15 @@
 package ir;
 
+import ast.Symbol;
 import ast.type.*;
 import ast.scope.FileScope;
 import ir.operand.GlobalVar;
-import ir.operand.Parameter;
 import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.StringJoiner;
 
 public class IRInfo {
     private final HashMap<String, Function> functions = new HashMap<>();
@@ -18,7 +17,7 @@ public class IRInfo {
     private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
     private final HashMap<String, String> stringMethods = new HashMap<>();
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
-    private final HashSet<Function> globalFunction=new HashSet<>();
+    private final HashSet<Function> globalFunction = new HashSet<>();
     private int strCounter = 0;
 
     public IRInfo(FileScope scope) {
@@ -30,7 +29,7 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        addBuiltinFunction(new PointerType(Cst.byte_t),Cst.MALLOC).addParam(Cst.int32,"len");
+        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
         // string methods
         addStringMethod(Cst.int32, "length");
         addStringMethod(Cst.int32, "parseInt");
@@ -44,8 +43,6 @@ public class IRInfo {
         addStrCmp("le");
         addStrCmp("gt");
         addStrCmp("ge");
-        // array size
-        addBuiltinFunction(Cst.int32, Cst.ARRAY_SIZE).addParam(PointerType.baseArrayType(), "arr");
 
         scopeScan(scope);
     }
@@ -94,13 +91,13 @@ public class IRInfo {
             if (!func.isBuiltin)
                 addFunction(func);
         });
-        scope.globalVarTable.forEach((s,v)->{
+        scope.globalVarTable.forEach((s, v) -> {
             //todo
 //            var glo= v.initExpr==null?
 //                    new GlobalVar(resolveType(v.getType()),v.nameAsReg):
 //                    new GlobalVar(resolveType(v.getType()),v.nameAsReg,ConstantEvaluator.evaluate(v.initExpr));
-            var glo=new GlobalVar(resolveType(v.getType()),v.nameAsReg);
-            globalVars.put(s,glo);
+            var glo = new GlobalVar(resolveType(v.getType()), v.nameAsReg);
+            globalVars.put(s, glo);
         });
     }
 
@@ -108,7 +105,7 @@ public class IRInfo {
     private Function addMethod(ClassType cls, FunctionType func) {
         var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
         f.addParam(new Register(resolveType(cls), "this"));
-        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
+        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.nameAsReg)));
         functions.put(f.name, f);
         return f;
     }
@@ -122,7 +119,7 @@ public class IRInfo {
 
     public void addFunction(FunctionType func) {
         var f = new Function(func.id, resolveType(func.returnType));
-        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.getName())));
+        func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.nameAsReg)));
         functions.put(f.name, f);
     }
 
@@ -131,7 +128,9 @@ public class IRInfo {
         else if (TypeConst.Bool.equals(tp)) return Cst.bool;
         else if (TypeConst.Void.equals(tp)) return Cst.void_t;
         else if (TypeConst.Null.equals(tp)) {
-            return PointerType.nullptr();
+            throw new IllegalStateException();
+        } else if (TypeConst.String.equals(tp)) {
+            return Cst.str;
         } else if (tp instanceof ClassType) {
             return new PointerType(types.get(tp.id));
         } else if (tp.isArray()) {
@@ -142,7 +141,7 @@ public class IRInfo {
         } else throw new IllegalStateException();
     }
 
-    public StructureType resolveClass(ClassType cls){
+    public StructureType resolveClass(ClassType cls) {
         return types.get(cls.id);
     }
 
@@ -150,31 +149,30 @@ public class IRInfo {
         return functions.get(ft);
     }
 
-    public Function getArraySize() {
-        return getFunction(Cst.ARRAY_SIZE);
-    }
-
-    public String registerStrLiteral(String s) {
+    public Register registerStrLiteral(String s) {
+        String name;
         if (strLiterals.containsKey(s)) {
-            return strLiterals.get(s).name;
+            name = strLiterals.get(s).name;
         } else {
-            var name = Cst.STR_LITERAL + strCounter++;
-            strLiterals.put(name, new StringConstant(name, s));
-            return name;
+            name = Cst.STR_LITERAL + strCounter++;
+            strLiterals.put(s, new StringConstant(name, s));
         }
+        return GlobalVar.toStaticString(name, s.length() + 1);
     }
 
     public String toLLVMir() {
         StringBuilder builder = new StringBuilder();
-        strLiterals.forEach((k, v) -> builder.append(v.tell()).append('\n'));
+        strLiterals.forEach((k, v) -> {
+            builder.append(v.toDefinition()).append('\n');
+        });
         builder.append('\n');
 
-        globalFunction.forEach(f->builder.append(f.toDeclaration()));
+        globalFunction.forEach(f -> builder.append(f.toDeclaration()));
 
         types.forEach((k, v) -> builder.append(v).append(" = ").append(v.isWhat()).append('\n'));
         builder.append('\n');
 
-        globalVars.forEach((k,v)->
+        globalVars.forEach((k, v) ->
                 builder.append(v.tell()).append(" = global ").append(v.type).append(" ").append(v.initValue).append('\n')
         );
         builder.append('\n');

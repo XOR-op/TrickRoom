@@ -1,10 +1,11 @@
 package ir.operand;
 
+import ir.typesystem.IRType;
 import ir.typesystem.PointerType;
 
 public class NullptrConstant extends IROperand{
-    public NullptrConstant(){
-        this.type= PointerType.nullptr();
+    public NullptrConstant(PointerType type){
+        this.type= type;
     }
     @Override
     public String tell() {

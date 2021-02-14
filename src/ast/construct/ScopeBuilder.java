@@ -23,13 +23,11 @@ public class ScopeBuilder implements ASTVisitor {
     private FunctionNode currentFunction;
     private final Stack<LoopNode> loopNodeStack = new Stack<>();
     private final HashMap<String, Type> typeCollection = new HashMap<>();
-    private int scopeLevel = 0;
     private ClassType currentClass = null;
 
     private void pushScope(Scope scope) {
         assert scope.getUpstream() == null || scope.getUpstream() == currentScope;
         currentScope = scope;
-        scopeLevel++;
     }
 
     private void pushScope(ASTNode node) {
@@ -38,7 +36,6 @@ public class ScopeBuilder implements ASTVisitor {
 
     private void popScope() {
         currentScope = currentScope.getUpstream();
-        scopeLevel--;
     }
 
     private void globalRegisterFunc(String s) {
@@ -47,6 +44,7 @@ public class ScopeBuilder implements ASTVisitor {
 
     private void stringRegisterMethod(String s) {
         FunctionType f = FunctionType.parse(s);
+        f.parentClass= (ClassType) TypeConst.String;
         ((ClassType) TypeConst.String).memberFuncs.put(f.id, f);
     }
 
@@ -107,12 +105,12 @@ public class ScopeBuilder implements ASTVisitor {
 
     private Symbol scanDecl(DeclarationNode node) {
         node.type = recoverType(node.type, node);
-        String prefix = (currentClass != null && currentFunction == null )?("struct."+currentClass.id+".") : "";
-        boolean isGlobal=currentClass==null&&currentFunction==null;
-        node.sym = new Symbol(node.type, node.id, prefix + node.id,
-                isGlobal,!isGlobal&&currentFunction==null,node.expr);
-        if(currentFunction==null&&currentClass==null){
-            top.globalVarTable.put(node.sym.nameAsReg,node.sym);
+        String prefix = (currentClass != null && currentFunction == null) ? ("struct." + currentClass.id + ".") : "";
+        boolean isGlobal = currentClass == null && currentFunction == null;
+        node.sym = new Symbol(node.type, node.id, prefix + node.id+currentScope.getSuffix(node.id),
+                isGlobal, !isGlobal && currentFunction == null, node.expr);
+        if (currentFunction == null && currentClass == null) {
+            top.globalVarTable.put(node.sym.nameAsReg, node.sym);
         }
         return node.sym;
     }
@@ -139,7 +137,7 @@ public class ScopeBuilder implements ASTVisitor {
     private ClassType scanClass(ClassNode node) {
         // will check names
         var cls = node.cls;
-        currentClass=cls;
+        currentClass = cls;
         var scp = new ClassScope(currentScope, cls);
         node.scope = scp;
         scp.registerVar("this", cls, "this", node);
@@ -176,7 +174,7 @@ public class ScopeBuilder implements ASTVisitor {
             cls.constructor.add(new FunctionType(fn));
         }
         popScope();
-        currentClass=null;
+        currentClass = null;
         return cls;
     }
 

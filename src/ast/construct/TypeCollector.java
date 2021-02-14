@@ -31,13 +31,16 @@ public class TypeCollector implements ASTVisitor {
             throw new TypeMismatch(a, b, node);
     }
 
-    private void checkWithNull(Type a, Type b, ASTNode node) {
+    private void checkWithNull(Type a, Type b, ASTNode node, ExprNode aNode, ExprNode bNode) {
+        // also modify null-node's type
         if (TypeConst.Null.equals(b)) {
             if ((a.equals(TypeConst.Void) || a.equals(TypeConst.Int) || a.equals(TypeConst.Bool)) && !a.isArray())
                 throw new TypeMismatch(a, b, node);
+            else bNode.type = a;
         } else if (TypeConst.Null.equals(a)) {
             if ((b.equals(TypeConst.Void) || b.equals(TypeConst.Int) || b.equals(TypeConst.Bool)) && !a.isArray())
                 throw new TypeMismatch(a, b, node);
+            else aNode.type = b;
         } else check(a, b, node);
     }
 
@@ -76,7 +79,7 @@ public class TypeCollector implements ASTVisitor {
     public Void visit(DeclarationNode node) {
         boolean will = checkIn(node);
         if (node.expr != null)
-            checkWithNull(node.type, inferType(node.expr), node);
+            checkWithNull(node.type, inferType(node.expr), node, null, node.expr);
         checkOut(will);
         return null;
     }
@@ -114,7 +117,7 @@ public class TypeCollector implements ASTVisitor {
                 throw new TypeMismatch(TypeConst.Void, node.correspondingFunction.returnType, node);
             else return null;
         }
-        checkWithNull(inferType(node.returnExpr), node.correspondingFunction.returnType, node);
+        checkWithNull(inferType(node.returnExpr), node.correspondingFunction.returnType, node, node.returnExpr, null);
         return null;
     }
 
@@ -202,7 +205,7 @@ public class TypeCollector implements ASTVisitor {
         // check left value
         if (isLeftValue(node.lhs)) {
             Type l = inferType(node.lhs), r = inferType(node.rhs);
-            checkWithNull(l, r, node);
+            checkWithNull(l, r, node, node.lhs, node.rhs);
             node.type = l;
             return l;
         } else throw new LeftValueRequired(node);
@@ -230,7 +233,7 @@ public class TypeCollector implements ASTVisitor {
         if (func.parameters.size() != node.arguments.size()) return 1;
         for (int i = 0; i < func.parameters.size(); ++i) {
             try {
-                checkWithNull(func.parameters.get(i).getType(), inferType(node.arguments.get(i)), node);
+                checkWithNull(func.parameters.get(i).getType(), inferType(node.arguments.get(i)), node, null, node.arguments.get(i));
             } catch (TypeMismatch e) {
                 return 2;
             }
@@ -306,7 +309,7 @@ public class TypeCollector implements ASTVisitor {
         assert node.lhs != null && node.rhs != null;
         Type lhs = inferType(node.lhs), rhs = inferType(node.rhs);
         if (node.lexerSign.equals("==") || node.lexerSign.equals("!=")) {
-            checkWithNull(lhs, rhs, node);
+            checkWithNull(lhs, rhs, node, node.lhs, node.rhs);
         } else {
             check(lhs, rhs, node);
             if (lhs instanceof ClassType && !lhs.equals(TypeConst.String))

@@ -15,10 +15,16 @@ public class Scope {
 
     protected Scope upstream;
     protected HashMap<String, Symbol> syntaxTable;
+    protected int level;
 
     public Scope(Scope up){
         upstream=up;
         syntaxTable=new HashMap<>();
+        level= up==null?0:up.level+1;
+    }
+
+    public String getSuffix(String s) {
+        return upstream.getSuffix(s);
     }
 
     public Scope getUpstream() {

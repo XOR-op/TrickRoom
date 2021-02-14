@@ -377,7 +377,10 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         if (ctx.DecInteger() != null) {
             tp = TypeConst.Int;
         } else if (ctx.String() != null) {
-            tp = TypeConst.String;
+            var s=ctx.getText();
+            var node = new LiteralNode(TypeConst.String, s.substring(1,s.length()-1));
+            node.setPos(ctx);
+            return node;
         } else if (ctx.TRUE_KW() != null || ctx.FALSE_KW() != null) {
             tp = TypeConst.Bool;
         } else if (ctx.NULL_KW() != null) {

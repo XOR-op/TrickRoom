@@ -11,6 +11,7 @@ public class Call extends IRDestedInst{
     public Function function;
     public ArrayList<IROperand> args;
     public Call(Register dst, Function func){
+        assert func!=null;
         function=func;
         args=new ArrayList<>();
         dest=dst;

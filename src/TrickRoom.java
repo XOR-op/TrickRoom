@@ -43,7 +43,7 @@ public class TrickRoom {
 
     private void error(String s) {
         logln(s);
-        throw new RuntimeException();
+        System.exit(1);
     }
 
     public static void main(String[] args) {
