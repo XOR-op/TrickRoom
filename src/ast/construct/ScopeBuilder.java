@@ -44,7 +44,7 @@ public class ScopeBuilder implements ASTVisitor {
 
     private void stringRegisterMethod(String s) {
         FunctionType f = FunctionType.parse(s);
-        f.parentClass= (ClassType) TypeConst.String;
+        f.parentClass = (ClassType) TypeConst.String;
         ((ClassType) TypeConst.String).memberFuncs.put(f.id, f);
     }
 
@@ -107,7 +107,7 @@ public class ScopeBuilder implements ASTVisitor {
         node.type = recoverType(node.type, node);
         String prefix = (currentClass != null && currentFunction == null) ? ("struct." + currentClass.id + ".") : "";
         boolean isGlobal = currentClass == null && currentFunction == null;
-        node.sym = new Symbol(node.type, node.id, prefix + node.id+currentScope.getSuffix(node.id),
+        node.sym = new Symbol(node.type, node.id, prefix + node.id + currentScope.getSuffix(node.id),
                 isGlobal, !isGlobal && currentFunction == null, node.expr);
         if (currentFunction == null && currentClass == null) {
             top.globalVarTable.put(node.sym.nameAsReg, node.sym);
@@ -117,16 +117,18 @@ public class ScopeBuilder implements ASTVisitor {
 
     private FunctionType scanFunction(FunctionNode node) {
         // will check parameters
+        currentFunction = node;
         node.scope = new FunctionScope(currentScope);
         var func = new FunctionType(node);
         func.id = node.funcId;
         node.returnType = recoverType(node.returnType, node);
         func.returnType = node.returnType;
-        for (var para : node.parameters) {
+        for (var para : node.parameterNode) {
             var re = scanDecl(para);
             node.scope.registerVar(re, node);
             func.parameters.add(re);
         }
+        currentFunction = null;
         return func;
     }
 
@@ -142,12 +144,12 @@ public class ScopeBuilder implements ASTVisitor {
         node.scope = scp;
         scp.registerVar("this", cls, "this", node);
         pushScope(node);
-        for (var member : node.members) {
+        for (var member : node.memberNode) {
             var sym = scanDecl(member);
             scp.registerVar(sym, node);
             cls.memberVars.put(member.id, sym);
         }
-        for (var method : node.methods) {
+        for (var method : node.methodNode) {
             var func = scanFunction(method);
             if (func.id.equals(cls.id)) {
                 throw new NoMatchedFunction(method, "invalid name for method");
@@ -156,7 +158,7 @@ public class ScopeBuilder implements ASTVisitor {
             scp.registerMethod(func, node);
             cls.memberFuncs.put(func.id, func);
         }
-        for (var con : node.constructor) {
+        for (var con : node.constructorNode) {
             var fn = scanFunction(con);
             if (!fn.id.equals(cls.id)) {
                 // mismatched constructor
@@ -168,10 +170,12 @@ public class ScopeBuilder implements ASTVisitor {
             // todo check for duplicated constructor
         }
         if (cls.constructor.isEmpty()) {
-            var fn = new FunctionNode(cls.id);
-            fn.suite = new SuiteNode();
-            fn.returnType = cls;
-            cls.constructor.add(new FunctionType(fn));
+            var fnNode = new FunctionNode(cls.id);
+            fnNode.suiteNode = new SuiteNode();
+            fnNode.returnType = cls;
+            fnNode.scope = new FunctionScope(currentScope);
+            cls.constructor.add(new FunctionType(fnNode));
+            node.constructorNode.add(fnNode);
         }
         popScope();
         currentClass = null;
@@ -195,8 +199,8 @@ public class ScopeBuilder implements ASTVisitor {
     @Override
     public Void visit(ClassNode node) {
         pushScope(node);
-        node.constructor.forEach(this::visit);
-        node.methods.forEach(this::visit);
+        node.constructorNode.forEach(this::visit);
+        node.methodNode.forEach(this::visit);
         popScope();
         return null;
     }
@@ -205,7 +209,7 @@ public class ScopeBuilder implements ASTVisitor {
     public Void visit(FunctionNode node) {
         pushScope(node);
         currentFunction = node;
-        visit(node.suite);
+        visit(node.suiteNode);
         currentFunction = null;
         popScope();
         return null;

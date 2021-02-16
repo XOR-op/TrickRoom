@@ -49,6 +49,10 @@ public class BasicBlock {
         setTerminator(new Ret(ope));
     }
 
+    public void setVoidRetTerminator(){
+        setTerminator(Ret.voidRet());
+    }
+
     public void appendPhi(Phi phi) {
         phiCollection.add(phi);
         phi.parentBlock = this;
@@ -76,7 +80,7 @@ public class BasicBlock {
         return later;
     }
 
-    public void setTerminator(IRInst terInst) {
+    private void setTerminator(IRInst terInst) {
         assert terminatorInst == null && terInst.isTerminal();
         terminatorInst = terInst;
         terInst.parentBlock = this;

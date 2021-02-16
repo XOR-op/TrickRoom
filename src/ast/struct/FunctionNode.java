@@ -8,11 +8,11 @@ import java.util.ArrayList;
 public class FunctionNode extends ASTNode {
     public Type returnType;
     public String funcId;
-    public ArrayList<DeclarationNode> parameters;
-    public SuiteNode suite;
+    public ArrayList<DeclarationNode> parameterNode;
+    public SuiteNode suiteNode;
     public FunctionNode(String name){
         this.funcId=name;
-        parameters=new ArrayList<>();
+        parameterNode =new ArrayList<>();
     }
     @Override
     public Object accept(ASTVisitor visitor) {

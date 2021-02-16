@@ -37,8 +37,8 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         FunctionNode fn = new FunctionNode(ctx.Identifier().getText());
         fn.setPos(ctx);
         fn.returnType = (ctx.returnType().VOID_KW() != null) ? TypeConst.Void : iterateVarType(ctx.returnType().varType());
-        fn.suite = (SuiteNode) visitSuite(ctx.suite());
-        fn.parameters = iterateFunctionParamDef(ctx.functionParamDef());
+        fn.suiteNode = (SuiteNode) visitSuite(ctx.suite());
+        fn.parameterNode = iterateFunctionParamDef(ctx.functionParamDef());
         return fn;
     }
 
@@ -57,13 +57,13 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         ClassNode cn = new ClassNode(ctx.Identifier().getText());
         cn.setPos(ctx);
         for (var sctx : ctx.functionDef())
-            cn.methods.add((FunctionNode) visitFunctionDef(sctx));
+            cn.methodNode.add((FunctionNode) visitFunctionDef(sctx));
 
         for (var sctx : ctx.declarationStatement())
-            iterateDeclExpr(sctx.declExpr(), cn.members);
+            iterateDeclExpr(sctx.declExpr(), cn.memberNode);
 
         for (var sctx : ctx.constructorDefinition())
-            cn.constructor.add((FunctionNode) visitConstructorDefinition(sctx));
+            cn.constructorNode.add((FunctionNode) visitConstructorDefinition(sctx));
 
         return cn;
     }
@@ -74,8 +74,8 @@ public class ASTBuilder extends AbstractParseTreeVisitor<ASTNode> implements MxS
         var fn = new FunctionNode(ctx.Identifier().getText());
         fn.setPos(ctx);
         fn.returnType = TypeConst.Void;
-        fn.suite = (SuiteNode) visitSuite(ctx.suite());
-        fn.parameters = iterateFunctionParamDef(ctx.functionParamDef());
+        fn.suiteNode = (SuiteNode) visitSuite(ctx.suite());
+        fn.parameterNode = iterateFunctionParamDef(ctx.functionParamDef());
         return fn;
     }
 

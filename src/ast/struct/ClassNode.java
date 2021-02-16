@@ -7,15 +7,15 @@ import java.util.ArrayList;
 
 public class ClassNode extends ASTNode {
     public ClassType cls;
-    public ArrayList<DeclarationNode> members;
-    public ArrayList<FunctionNode> methods;
-    public ArrayList<FunctionNode> constructor;
+    public ArrayList<DeclarationNode> memberNode;
+    public ArrayList<FunctionNode> methodNode;
+    public ArrayList<FunctionNode> constructorNode;
     public ClassNode(String name){
         cls=new ClassType(this);
         cls.id=name;
-        constructor=new ArrayList<>();
-        members=new ArrayList<>();
-        methods=new ArrayList<>();
+        constructorNode =new ArrayList<>();
+        memberNode =new ArrayList<>();
+        methodNode =new ArrayList<>();
     }
 
     @Override

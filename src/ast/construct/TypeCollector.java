@@ -60,9 +60,9 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public Void visit(ClassNode node) {
         boolean will = checkIn(node);
-        node.members.forEach(this::visit);
-        node.constructor.forEach(this::visit);
-        node.methods.forEach(this::visit);
+        node.memberNode.forEach(this::visit);
+        node.constructorNode.forEach(this::visit);
+        node.methodNode.forEach(this::visit);
         checkOut(will);
         return null;
     }
@@ -70,7 +70,7 @@ public class TypeCollector implements ASTVisitor {
     @Override
     public Void visit(FunctionNode node) {
         boolean will = checkIn(node);
-        visit(node.suite);
+        visit(node.suiteNode);
         checkOut(will);
         return null;
     }

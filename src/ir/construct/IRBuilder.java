@@ -2,8 +2,8 @@ package ir.construct;
 
 import ast.ASTVisitor;
 import ast.struct.*;
-import ast.type.ClassType;
 import ast.type.ArrayObjectType;
+import ast.type.ClassType;
 import ast.type.FunctionType;
 import ast.type.TypeConst;
 import ast.scope.FileScope;
@@ -68,9 +68,7 @@ public class IRBuilder implements ASTVisitor {
             return inst.dest;
         } else if (node.lhs.type.isArray() || node.rhs.type.isArray()) {
             // array pointer cmp
-            assert (node.lhs.type.isArray() && node.rhs.type.equals(TypeConst.Null)) ||
-                    (node.rhs.type.isArray() && node.lhs.type.equals(TypeConst.Null));
-            IROperand operand = (IROperand) (node.lhs.type.isArray() ? node.lhs.accept(this) : node.rhs.accept(this));
+            IROperand operand = (IROperand) (node.rhs instanceof LiteralNode ? node.lhs.accept(this) : node.rhs.accept(this));
             var cmp = new Compare(Compare.getCmpOpEnum(node.lexerSign), new Register(Cst.bool), operand, new NullptrConstant((PointerType) operand.type));
             curBlock.appendInst(cmp);
             return cmp.dest;
@@ -156,28 +154,36 @@ public class IRBuilder implements ASTVisitor {
         if (node.func == FunctionType.arraySize) {
             // inline array.size()
             assert node.callee instanceof MemberNode;
-            var ptr=(Register) ((MemberNode) node.callee).object.accept(this);
-            if(!((PointerType)ptr.type).subType().equals(Cst.int32)){
-                var cast=new BitCast(new Register(new PointerType(Cst.int32)),ptr);
+            var ptr = (Register) ((MemberNode) node.callee).object.accept(this);
+            if (!((PointerType) ptr.type).subType().equals(Cst.int32)) {
+                var cast = new BitCast(new Register(new PointerType(Cst.int32)), ptr);
                 curBlock.appendInst(cast);
-                ptr=cast.dest;
+                ptr = cast.dest;
             }
-            var indexing=new GetElementPtr(new Register(ptr.type),ptr,new IntConstant(-1),new IntConstant(0));
-            var load=new Load(new Register(Cst.int32),indexing.dest);
+            var indexing = new GetElementPtr(new Register(ptr.type), ptr, new IntConstant(-1), new IntConstant(0));
+            var load = new Load(new Register(Cst.int32), indexing.dest);
             return load.dest;
         } else if (node.func.isGlobal()) {
             call = new Call(new Register(info.resolveType(node.func.returnType)), info.getFunction(node.func.id));
             node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
         } else {
-            // method where callee is MemberNode
-            assert node.callee instanceof MemberNode;
-            ExprNode object = ((MemberNode) node.callee).object;
-            Function f = object.type.equals(TypeConst.String) ?
-                    info.getStringMethod(((MemberNode) node.callee).member) :
-                    info.getClassMethod(object.type.id, node.func.id);
-            call = new Call(new Register(f.retTy), f);
-            call.push((IROperand) object.accept(this));
-            node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
+            if(node.callee instanceof IdentifierNode){
+                // implicit this
+                Function f=info.getClassMethod(curClass.id,((IdentifierNode) node.callee).id);
+                call=new Call(new Register(f.retTy),f);
+                call.push(visit(new ThisNode()));
+                node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
+            }else {
+                // method where callee is MemberNode
+                assert node.callee instanceof MemberNode;
+                ExprNode object = ((MemberNode) node.callee).object;
+                Function f = object.type.equals(TypeConst.String) ?
+                        info.getStringMethod(((MemberNode) node.callee).member) :
+                        info.getClassMethod(object.type.id, node.func.id);
+                call = new Call(new Register(f.retTy), f);
+                call.push((IROperand) object.accept(this));
+                node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
+            }
         }
         curBlock.appendInst(call);
         return call.dest;
@@ -187,7 +193,7 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(MemberNode node) {
         // will called only when accessing member variables
         var indexing = new GetElementPtr(new Register(info.resolveType(node.type)), (Register) node.object.accept(this), new IntConstant(0),
-                ((StructureType) (info.resolveType(node.object.type))).getMemberIndex(node.member)
+                ((info.resolveClass((ClassType) node.object.type))).getMemberIndex(node.member)
         );
         var loading = new Load(new Register(info.resolveType(node.type)), indexing.dest);
         curBlock.appendInst(indexing).appendInst(loading);
@@ -226,9 +232,11 @@ public class IRBuilder implements ASTVisitor {
         if (level < dims.size() - 1) {
             // initialize subarray
             var beforeLoop = curBlock;
-            var cond = new BasicBlock("cond");
-            var loopBody = new BasicBlock("body");
-            var afterLoop = new BasicBlock("after");
+            var cond = new BasicBlock("imp_cond"+blockSuffix);
+            var loopBody = new BasicBlock("imp_body"+blockSuffix);
+            var afterLoop = new BasicBlock("imp_after"+blockSuffix);
+            curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
+            blockSuffix++;
             IRDestedInst incrVar = new Assign(new Register(new PointerType(elementType)), returnCast.dest);
             IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
                     returnCast.dest, dims.get(level), new IntConstant(0));
@@ -325,9 +333,9 @@ public class IRBuilder implements ASTVisitor {
             return inst.dest;
         } else {
             assert node instanceof MemberNode;
-            var indexing = new GetElementPtr(new Register(inferType), (IROperand) ((MemberNode) node).object.accept(this),
-                    new IntConstant(0), ((StructureType) (info.resolveType(((MemberNode) node).object.type)))
-                    .getMemberIndex(((MemberNode) node).member));
+            var mNode = (MemberNode) node;
+            var indexing = new GetElementPtr(new Register(inferType), (IROperand) mNode.object.accept(this),
+                    new IntConstant(0), info.resolveClass((ClassType) (mNode.object.type)).getMemberIndex(mNode.member));
             curBlock.appendInst(indexing);
             return indexing.dest;
         }
@@ -363,27 +371,61 @@ public class IRBuilder implements ASTVisitor {
         curFunc = curClass == null ? info.getFunction(node.funcId) : info.getClassMethod(curClass.id, node.funcId);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;
-        node.suite.accept(this);
-        if (curFunc.returnBlocks.isEmpty()) {
-            curBlock.setRetTerminator(new Register(new PointerType(curFunc.retTy), "this"));
-            curFunc.exitBlock = curBlock;
-        } else if (curFunc.returnBlocks.size() == 1) {
-            curFunc.exitBlock = curFunc.returnBlocks.get(0);
+        node.suiteNode.accept(this);
+        if (curFunc.retTy.equals(Cst.void_t)) {
+            if (!curBlock.hasTerminal()) {
+                // implicit return
+                curFunc.returnBlocks.add(curBlock);
+                curBlock.setVoidRetTerminator();
+            }
+            if (curFunc.returnBlocks.size() == 1) {
+                curFunc.exitBlock = curFunc.returnBlocks.get(0);
+            } else {
+                var exit = new BasicBlock("exit");
+                exit.setVoidRetTerminator();
+                curFunc.returnBlocks.forEach(b -> {
+                    b.terminatorInst = null;
+                    b.setJumpTerminator(exit);
+                });
+                curFunc.addBlock(exit);
+                curFunc.exitBlock = exit;
+            }
         } else {
-            var exit = new BasicBlock("exit");
-            var returnValue = new Register(new PointerType(curFunc.retTy), Cst.RETURN_VAL);
-            curFunc.addAlloca(returnValue);
-            var loading = new Load(new Register(curFunc.retTy), returnValue);
-            exit.appendInst(loading).setRetTerminator(loading.dest);
-            curFunc.returnBlocks.forEach(b -> {
-                IROperand ope = ((Ret) b.terminatorInst).value;
-                b.terminatorInst = null;
-                b.appendInst(new Store(ope, returnValue));
-                b.setJumpTerminator(exit);
-            });
-            curFunc.addBlock(exit);
-            curFunc.exitBlock = exit;
+            if (curFunc.returnBlocks.isEmpty()) {
+                // for constructor
+                curBlock.setRetTerminator(new Register(new PointerType(curFunc.retTy), "this"));
+                curFunc.exitBlock = curBlock;
+            } else if (curFunc.returnBlocks.size() == 1) {
+                curFunc.exitBlock = curFunc.returnBlocks.get(0);
+            } else {
+                var exit = new BasicBlock("exit");
+                var returnValue = new Register(new PointerType(curFunc.retTy), Cst.RETURN_VAL);
+                curFunc.addAlloca(returnValue);
+                var loading = new Load(new Register(curFunc.retTy), returnValue);
+                exit.appendInst(loading).setRetTerminator(loading.dest);
+                curFunc.returnBlocks.forEach(b -> {
+                    IROperand ope = ((Ret) b.terminatorInst).value;
+                    b.terminatorInst = null;
+                    b.appendInst(new Store(ope, returnValue));
+                    b.setJumpTerminator(exit);
+                });
+                curFunc.addBlock(exit);
+                curFunc.exitBlock = exit;
+            }
         }
+        for(boolean removeFlag=true;removeFlag;){
+            removeFlag=false;
+            var iter=curFunc.blocks.iterator();
+            while (iter.hasNext()){
+                var bb=iter.next();
+                if(bb.prevs.isEmpty()&&bb!=curFunc.entryBlock){
+                    removeFlag=true;
+                    bb.nexts.forEach(n->n.prevs.remove(bb));
+                    iter.remove();
+                }
+            }
+        }
+
         new SSAConverter(curFunc).SSAConstruct();
         curFunc = null;
         return null;
@@ -412,8 +454,8 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(ClassNode node) {
         curClass = node.cls;
-        node.methods.forEach(m -> m.accept(this));
-        node.constructor.forEach(c -> c.accept(this));
+        node.methodNode.forEach(m -> m.accept(this));
+        node.constructorNode.forEach(c -> c.accept(this));
         curClass = null;
         return null;
     }
@@ -498,7 +540,10 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(ReturnNode node) {
         curFunc.addReturn(curBlock);
-        curBlock.setRetTerminator((IROperand) node.returnExpr.accept(this));
+        if (node.returnExpr == null)
+            curBlock.setVoidRetTerminator();
+        else
+            curBlock.setRetTerminator((IROperand) node.returnExpr.accept(this));
         return null;
     }
 
