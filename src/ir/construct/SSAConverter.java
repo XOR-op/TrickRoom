@@ -168,7 +168,7 @@ public class SSAConverter {
         });
         bb.insts.forEach(irInst -> {
             irInst.renameOperand(this::getRenaming);
-            if (irInst instanceof IRDestedInst && ((IRDestedInst) irInst).namedDest())
+            if (irInst.containsDest() && ((IRDestedInst) irInst).namedDest())
                 ((IRDestedInst) irInst).renameDest(r -> allocNewRenaming(r, modifiedSet));
         });
         bb.terminatorInst.renameOperand(this::getRenaming);

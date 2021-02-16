@@ -24,7 +24,7 @@ public class Assign extends IRDestedInst{
             return new Binary(Binary.BinInstEnum.add,dest,src,new IntConstant(0)).tell();
         else {
             assert dest.type instanceof PointerType;
-            return new GetElementPtr(dest,src,new IntConstant(0),new IntConstant(0)).tell();
+            return new GetElementPtr(dest,src,new IntConstant(0)).tell();
         }
     }
 

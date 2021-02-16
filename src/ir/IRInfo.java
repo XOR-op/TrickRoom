@@ -1,6 +1,5 @@
 package ir;
 
-import ast.Symbol;
 import ast.type.*;
 import ast.scope.FileScope;
 import ir.operand.GlobalVar;
@@ -19,6 +18,7 @@ public class IRInfo {
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private final HashSet<Function> globalFunction = new HashSet<>();
     private int strCounter = 0;
+    private Function init=null,main=null;
 
     public IRInfo(FileScope scope) {
         // global functions
@@ -127,17 +127,16 @@ public class IRInfo {
         if (TypeConst.Int.equals(tp)) return Cst.int32;
         else if (TypeConst.Bool.equals(tp)) return Cst.bool;
         else if (TypeConst.Void.equals(tp)) return Cst.void_t;
-        else if (TypeConst.Null.equals(tp)) {
-            throw new IllegalStateException();
-        } else if (TypeConst.String.equals(tp)) {
+        else if (TypeConst.String.equals(tp)) {
             return Cst.str;
         } else if (tp instanceof ClassType) {
             return new PointerType(types.get(tp.id));
         } else if (tp.isArray()) {
-            var struct = new StructureType(Cst.ARRAY_TYPE + tp.id);
-            struct.addMember(new Register(Cst.int32, "size"));
-            struct.addMember(new Register(resolveType(((ArrayObjectType) tp).elementType), "element"));
-            return new PointerType(struct);
+            var type=resolveType(((ArrayObjectType)tp).elementType);
+            if(type instanceof PointerType)
+                return new PointerType(((PointerType) type).baseType, tp.dim()+1);
+            else
+                return new PointerType(type,tp.dim());
         } else throw new IllegalStateException();
     }
 
@@ -182,5 +181,21 @@ public class IRInfo {
                 builder.append(v.tell()).append('\n');
         });
         return builder.toString();
+    }
+
+    public Function getInit() {
+        return init;
+    }
+
+    public void setInit(Function init) {
+        this.init = init;
+    }
+
+    public Function getMain() {
+        return main;
+    }
+
+    public void setMain(Function main) {
+        this.main = main;
     }
 }

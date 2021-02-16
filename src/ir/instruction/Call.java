@@ -25,7 +25,7 @@ public class Call extends IRDestedInst{
     public String tell() {
         StringJoiner sj=new StringJoiner(", ","(",")");
         args.forEach(arg->sj.add(arg.type.tell()+" "+arg.tell()));
-        return dest+" = call "+function.retTy+" @"+function.name+sj.toString();
+        return (dest==null?"":(dest+" = "))+"call "+function.retTy+" @"+function.name+sj.toString();
     }
 
     @Override
@@ -41,5 +41,10 @@ public class Call extends IRDestedInst{
         for(int i=0;i<args.size();++i){
             args.set(i,Register.replace(replace,args.get(i)));
         }
+    }
+
+    @Override
+    public boolean containsDest() {
+        return dest!=null;
     }
 }

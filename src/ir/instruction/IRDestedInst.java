@@ -15,4 +15,9 @@ public abstract class IRDestedInst extends IRInst{
         dest= (Register) Register.replace(replace,dest);
     }
     public boolean namedDest(){return !dest.isAnonymous();}
+
+    @Override
+    public boolean containsDest() {
+        return true;
+    }
 }

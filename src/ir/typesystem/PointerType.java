@@ -19,6 +19,12 @@ public class PointerType extends IRType {
         }
     }
 
+    public PointerType(IRType base, int dim){
+        assert !(base instanceof PointerType);
+        baseType=base;
+        this.dim=dim;
+    }
+
     public IRType subType() {
         if (dim == 1) return baseType;
         else {
