@@ -23,7 +23,7 @@ public class Register extends IROperand {
     public String name;
 
     public Register(IRType ty) {
-        this.name = "ANONY_"+(counter++);
+        this.name = "_$"+(counter++);
         type = ty;
         isAnonymous = true;
     }
@@ -70,6 +70,6 @@ public class Register extends IROperand {
 
     @Override
     public String tell() {
-        return "%"+ (renaming==0?"":("rem_"+renaming+"."))+ name;
+        return "%"+ (renaming==0?"":("_"+renaming+"$_"))+ name;
     }
 }

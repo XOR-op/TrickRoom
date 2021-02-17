@@ -1,6 +1,7 @@
 package ir.instruction;
 
 import ir.BasicBlock;
+import ir.operand.IROperand;
 import ir.operand.Register;
 
 import java.util.ArrayList;
@@ -9,16 +10,16 @@ import java.util.function.Function;
 
 public class Phi extends IRDestedInst {
     public class Source {
-        public Register reg;
+        public IROperand val;
         public BasicBlock block;
 
-        public Source(Register r, BasicBlock b) {
-            reg = r;
+        public Source(IROperand v, BasicBlock b) {
+            val = v;
             block = b;
         }
 
         public String tell() {
-            return "[" + reg + ", %" + block + "]";
+            return "[" + val + ", %" + block + "]";
         }
     }
 
@@ -29,8 +30,13 @@ public class Phi extends IRDestedInst {
         dest = reg.copy();
     }
 
-    public void append(Register reg, BasicBlock blk) {
+    public Phi append(IROperand reg, BasicBlock blk) {
+        // internal phi cannot be overwritten by generated phi
+        for(var s:arguments){
+            if(blk==s.block)return this;
+        }
         arguments.add(new Source(reg, blk));
+        return this;
     }
 
     @Override

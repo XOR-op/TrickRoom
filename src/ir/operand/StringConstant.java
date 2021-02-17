@@ -22,10 +22,10 @@ public class StringConstant extends IROperand{
     }
 
     public String toDefinition(){
-        String converted=value.replace("\n","\\0A")
-                .replace("\\","\\5C")
-                .replace("\t","\\09")
-                .replace("\"","\\22");
+        String converted=value.replace("\\","\\5C")
+                .replace("\n","\\0A")
+                .replace("\"","\\22")
+                .replace("\t","\\09");
         return "@"+name+" = private unnamed_addr constant [ "+length+" x i8 ] "+"c\""+converted+"\\00\", align 1";
     }
 }

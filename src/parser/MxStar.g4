@@ -193,16 +193,3 @@ ESCAPE_DB_QUOTATION: '\\"';
 ESCAPE_BACKSLASH: '\\\\';
 
 Identifier: [a-zA-Z][a-zA-Z0-9_]*;
-/*
- // Expression atomExp: Identifier | Constant | newExpression | L_PARENTNESS expression
- R_PARENTNESS; trailerExp: atomExp | trailerExp (funcCall | indexAccess | memberAccess);
- postUnaryExp: trailerExp | postUnaryExp SELF_PLUS | postUnaryExp SELF_MINUS; unaryExp: postUnaryExp
- | <assoc = right>UnaryOp unaryExp; multiplicativeExp: unaryExp | multiplicativeExp MultiplicativeOp
- unaryExp; additiveExp: multiplicativeExp | additiveExp AdditiveOp multiplicativeExp; relationalExp:
- additiveExp | relationalExp RelationalCmpOp additiveExp; equalityExp: relationalExp | equalityExp
- EqualityCmpOp relationalExp; arithAndExp: equalityExp | arithAndExp AND_ARI equalityExp;
- arithXorExp: arithAndExp | arithXorExp XOR_ARI arithAndExp; arithOrExp: arithXorExp | arithOrExp
- OR_ARI arithXorExp; logicAndExp: arithOrExp | logicAndExp AND_LOGIC arithOrExp; logicOrExp:
- logicAndExp | logicOrExp OR_LOGIC logicAndExp; assignmentExp: logicOrExp | <assoc =
- right>assignmentExp ASSIGNMENT logicOrExp; expression: assignmentExp;
- */

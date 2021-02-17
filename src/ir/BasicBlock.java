@@ -35,7 +35,7 @@ public class BasicBlock {
         setNextBlock(next2);
     }
 
-    public void setBranchTerminator(Register cond, BasicBlock trueBlock, BasicBlock falseBlock) {
+    public void setBranchTerminator(IROperand cond, BasicBlock trueBlock, BasicBlock falseBlock) {
         setTerminator(new Branch(cond, trueBlock, falseBlock));
         setNextBlock(trueBlock, falseBlock);
     }

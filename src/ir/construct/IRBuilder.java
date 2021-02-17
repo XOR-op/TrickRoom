@@ -53,7 +53,7 @@ public class IRBuilder implements ASTVisitor {
                 curBlock.appendInst(store);
             }
         });
-        var callMain=new Call(new Register(Cst.int32), info.getFunction("main"));
+        var callMain = new Call(new Register(Cst.int32), info.getFunction("main"));
         curBlock.appendInst(callMain);
         curBlock.setRetTerminator(callMain.dest);
         curFunc.exitBlock = curBlock;
@@ -92,12 +92,58 @@ public class IRBuilder implements ASTVisitor {
         } else {
             var binst = Binary.getIntBinOpEnum(node.lexerSign);
             if (binst != null) {
-                // binary instruction
-                var inst = new Binary(binst, new Register(info.resolveType(node.type)),
-                        (IROperand) node.lhs.accept(this), (IROperand) node.rhs.accept(this)
-                );
-                curBlock.appendInst(inst);
-                return inst.dest;
+                // short circuit
+                switch (binst) {
+                    case logic_and-> {
+                        BasicBlock second=new BasicBlock("and_second"+blockSuffix);
+                        BasicBlock after=new BasicBlock("and_after"+blockSuffix);
+                        curFunc.addBlock(second).addBlock(after);
+                        Phi phi=new Phi(new Register(Cst.bool));
+                        blockSuffix++;
+
+                        IROperand left=(IROperand) node.lhs.accept(this);
+                        curBlock.setBranchTerminator(left,second,after);
+                        phi.append(left,curBlock);
+
+                        curBlock=second;
+                        IROperand right=(IROperand) node.rhs.accept(this);
+                        curBlock.setJumpTerminator(after);
+                        phi.append(right,curBlock);
+
+                        curBlock=after;
+                        curBlock.appendPhi(phi);
+                        return phi.dest;
+                    }
+                    case logic_or -> {
+                        BasicBlock second=new BasicBlock("or_second"+blockSuffix);
+                        BasicBlock after=new BasicBlock("or_after"+blockSuffix);
+                        curFunc.addBlock(second).addBlock(after);
+                        Phi phi=new Phi(new Register(Cst.bool));
+                        blockSuffix++;
+
+                        IROperand left=(IROperand) node.lhs.accept(this);
+                        curBlock.setBranchTerminator(left,after,second);
+                        phi.append(left,curBlock);
+
+                        curBlock=second;
+                        IROperand right=(IROperand) node.rhs.accept(this);
+                        curBlock.setJumpTerminator(after);
+                        phi.append(right,curBlock);
+
+                        curBlock=after;
+                        curBlock.appendPhi(phi);
+                        return phi.dest;
+                    }
+                    default -> {
+                        // binary instruction
+                        var inst = new Binary(binst, new Register(info.resolveType(node.type)),
+                                (IROperand) node.lhs.accept(this), (IROperand) node.rhs.accept(this)
+                        );
+                        curBlock.appendInst(inst);
+                        return inst.dest;
+                    }
+                }
+
             } else {
                 // compare instruction
                 var cinst = Compare.getCmpOpEnum(node.lexerSign);
@@ -255,7 +301,6 @@ public class IRBuilder implements ASTVisitor {
 
         if (level < dims.size() - 1) {
             // initialize subarray
-            var beforeLoop = curBlock;
             var cond = new BasicBlock("imp_cond" + blockSuffix);
             var loopBody = new BasicBlock("imp_body" + blockSuffix);
             var afterLoop = new BasicBlock("imp_after" + blockSuffix);
@@ -267,15 +312,16 @@ public class IRBuilder implements ASTVisitor {
             IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), phi.dest, endAddr.dest);
             IRDestedInst incrPtr = new GetElementPtr(new Register(new PointerType(elementType)), phi.dest, new IntConstant(1));
 
-            beforeLoop.appendInst(endAddr);
-            beforeLoop.setJumpTerminator(cond);
+            curBlock.appendInst(endAddr);
+            curBlock.setJumpTerminator(cond);
+            phi.append(returnCast.dest, curBlock);
             cond.appendPhi(phi);
             cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
             curBlock = loopBody;
 
-            arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
+            Register initDone=arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
+            curBlock.appendInst(new Store(initDone,phi.dest));
 
-            phi.append(returnCast.dest, beforeLoop);
             phi.append(incrPtr.dest, curBlock);
             curBlock.appendInst(incrPtr);
             curBlock.setJumpTerminator(cond);
@@ -475,7 +521,7 @@ public class IRBuilder implements ASTVisitor {
     public Object visit(DeclarationNode node) {
         var varReg = new Register(info.resolveType(node.sym.getType()), node.sym.nameAsReg);
         curFunc.declareVar(varReg);
-        curFunc.entryBlock.insertInstFromHead(new Assign(varReg,new UndefConstant(varReg.type)));
+        curFunc.entryBlock.insertInstFromHead(new Assign(varReg, new UndefConstant(varReg.type)));
         if (node.expr != null) {
             var expr = (IROperand) node.expr.accept(this);
             regAssign(varReg, expr);
@@ -575,8 +621,11 @@ public class IRBuilder implements ASTVisitor {
         curFunc.addReturn(curBlock);
         if (node.returnExpr == null)
             curBlock.setVoidRetTerminator();
-        else
-            curBlock.setRetTerminator((IROperand) node.returnExpr.accept(this));
+        else {
+            // due to side effect of accept, two statements cannot be merged
+            var val=(IROperand) node.returnExpr.accept(this);
+            curBlock.setRetTerminator(val);
+        }
         return null;
     }
 

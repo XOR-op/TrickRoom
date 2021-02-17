@@ -1,6 +1,5 @@
 package ir.typesystem;
 
-import ir.Cst;
 import ir.operand.IROperand;
 import ir.operand.NullptrConstant;
 
@@ -31,7 +30,8 @@ public class PointerType extends IRType {
 
     @Override
     public int size() {
-        return 4;
+        // for debug purpose, you may modify this
+        return 8;
     }
 
     @Override
