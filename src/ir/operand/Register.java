@@ -45,7 +45,12 @@ public class Register extends IROperand {
         this.isAnonymous=false;
     }
 
-    public Register copy(){return rename(0);}
+    public Register copy(){
+        var rt=new Register(type,name);
+        rt.isAnonymous=isAnonymous;
+        rt.renaming=renaming;
+        return rt;
+    }
 
     public boolean isAnonymous() {
         return isAnonymous;
@@ -65,6 +70,6 @@ public class Register extends IROperand {
 
     @Override
     public String tell() {
-        return "%"+ (renaming==0?"":"rem.")+ name + (renaming == 0 ? "" :  "."+ renaming);
+        return "%"+ (renaming==0?"":("rem_"+renaming+"."))+ name;
     }
 }

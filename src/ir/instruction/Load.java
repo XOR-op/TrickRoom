@@ -26,4 +26,9 @@ public class Load extends IRDestedInst{
     public void renameOperand(Function<Register, Register> replace) {
         address=Register.replace(replace,address);
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
 }

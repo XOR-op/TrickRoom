@@ -42,20 +42,20 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(RootNode node) {
         // global init
-        curFunc=new Function(Cst.INIT,Cst.void_t);
+        curFunc = new Function(Cst.INIT, Cst.void_t);
         info.setInit(curFunc);
-        curBlock=curFunc.entryBlock;
-        node.globalVars.forEach(decl->{
+        curBlock = curFunc.entryBlock;
+        node.globalVars.forEach(decl -> {
             if (decl.expr != null) {
                 var varReg = new GlobalVar(new PointerType(info.resolveType(decl.sym.getType())), decl.sym.nameAsReg);
                 var expr = (IROperand) decl.expr.accept(this);
-                var store=new Store(expr,varReg);
+                var store = new Store(expr, varReg);
                 curBlock.appendInst(store);
             }
         });
         curBlock.setVoidRetTerminator();
-        curFunc.exitBlock=curBlock;
-        curFunc=null;
+        curFunc.exitBlock = curBlock;
+        curFunc = null;
         node.classes.forEach(cls -> cls.accept(this));
         node.functions.forEach(func -> func.accept(this));
         return null;
@@ -77,7 +77,7 @@ public class IRBuilder implements ASTVisitor {
                 case "+" -> f = info.getStringMethod("concat");
                 default -> throw new IllegalStateException("Unexpected value: " + node.lexerSign);
             }
-            var inst = new Call(new Register(Cst.bool), f);
+            var inst = new Call(new Register(node.lexerSign.equals("+") ? Cst.str : Cst.bool), f);
             inst.push((IROperand) node.lhs.accept(this)).push((IROperand) node.rhs.accept(this));
             curBlock.appendInst(inst);
             return inst.dest;
@@ -163,7 +163,9 @@ public class IRBuilder implements ASTVisitor {
         }
     }
 
-    private Register withType(IRType ty){return ty.equals(Cst.void_t)?null:new Register(ty);}
+    private Register withType(IRType ty) {
+        return ty.equals(Cst.void_t) ? null : new Register(ty);
+    }
 
     @Override
     public Register visit(FuncCallNode node) {
@@ -185,13 +187,13 @@ public class IRBuilder implements ASTVisitor {
             call = new Call(withType(info.resolveType(node.func.returnType)), info.getFunction(node.func.id));
             node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
         } else {
-            if(node.callee instanceof IdentifierNode){
+            if (node.callee instanceof IdentifierNode) {
                 // implicit this
-                Function f=info.getClassMethod(curClass.id,((IdentifierNode) node.callee).id);
-                call=new Call(withType(f.retTy),f);
+                Function f = info.getClassMethod(curClass.id, ((IdentifierNode) node.callee).id);
+                call = new Call(withType(f.retTy), f);
                 call.push(visit(new ThisNode()));
                 node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
-            }else {
+            } else {
                 // method where callee is MemberNode
                 assert node.callee instanceof MemberNode;
                 ExprNode object = ((MemberNode) node.callee).object;
@@ -210,7 +212,7 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Register visit(MemberNode node) {
         // will called only when accessing member variables
-        var indexing = new GetElementPtr(new Register(info.resolveType(node.type)), (Register) node.object.accept(this), new IntConstant(0),
+        var indexing = new GetElementPtr(new Register(new PointerType(info.resolveType(node.type))), (Register) node.object.accept(this), new IntConstant(0),
                 ((info.resolveClass((ClassType) node.object.type))).getMemberIndex(node.member)
         );
         var loading = new Load(new Register(info.resolveType(node.type)), indexing.dest);
@@ -237,6 +239,7 @@ public class IRBuilder implements ASTVisitor {
                 new IntConstant(Cst.int32.size()), arrayWidth.dest);
         var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
         alloc.push(calcSize.dest);
+
         // calculate real array address
         IRDestedInst trueArrayAddress = new GetElementPtr(new Register(new PointerType(Cst.byte_t)), alloc.dest,
                 new IntConstant(4));
@@ -247,24 +250,32 @@ public class IRBuilder implements ASTVisitor {
         curBlock.appendInst(arrayWidth).appendInst(calcSize).appendInst(alloc);
         curBlock.appendInst(cast).appendInst(storeSize);
         curBlock.appendInst(trueArrayAddress).appendInst(returnCast);
+
         if (level < dims.size() - 1) {
             // initialize subarray
             var beforeLoop = curBlock;
-            var cond = new BasicBlock("imp_cond"+blockSuffix);
-            var loopBody = new BasicBlock("imp_body"+blockSuffix);
-            var afterLoop = new BasicBlock("imp_after"+blockSuffix);
+            var cond = new BasicBlock("imp_cond" + blockSuffix);
+            var loopBody = new BasicBlock("imp_body" + blockSuffix);
+            var afterLoop = new BasicBlock("imp_after" + blockSuffix);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
-            IRDestedInst incrVar = new Assign(new Register(new PointerType(elementType)), returnCast.dest);
+            Phi phi = new Phi(new Register(new PointerType(elementType)));
             IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
                     returnCast.dest, dims.get(level));
-            IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), incrVar.dest, endAddr.dest);
-            beforeLoop.appendInst(incrVar).appendInst(endAddr);
+            IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), phi.dest, endAddr.dest);
+            IRDestedInst incrPtr = new GetElementPtr(new Register(new PointerType(elementType)), phi.dest, new IntConstant(1));
+
+            beforeLoop.appendInst(endAddr);
             beforeLoop.setJumpTerminator(cond);
+            cond.appendPhi(phi);
             cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
             curBlock = loopBody;
+
             arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
-            curBlock.appendInst(new GetElementPtr(incrVar.dest, incrVar.dest, new IntConstant(1)));
+
+            phi.append(returnCast.dest, beforeLoop);
+            phi.append(incrPtr.dest, curBlock);
+            curBlock.appendInst(incrPtr);
             curBlock.setJumpTerminator(cond);
             curBlock = afterLoop;
         } // we assume no initialization is needed for the most internal elements
@@ -352,18 +363,18 @@ public class IRBuilder implements ASTVisitor {
         } else {
             assert node instanceof MemberNode;
             var mNode = (MemberNode) node;
-            var indexing = new GetElementPtr(new Register(inferType), (IROperand) mNode.object.accept(this),
+            var indexing = new GetElementPtr(new Register(new PointerType(inferType)), (IROperand) mNode.object.accept(this),
                     new IntConstant(0), info.resolveClass((ClassType) (mNode.object.type)).getMemberIndex(mNode.member));
             curBlock.appendInst(indexing);
             return indexing.dest;
         }
     }
 
-    private void regAssign(Register lhs,IROperand rhs){
+    private void regAssign(Register lhs, IROperand rhs) {
         curFunc.defineVar(lhs, curBlock);
-        if(rhs instanceof Register&&((Register) rhs).isAnonymous()){
-            ((Register)rhs).replaceWith(lhs.name);
-        }else {
+        if (rhs instanceof Register && ((Register) rhs).isAnonymous()) {
+            ((Register) rhs).replaceWith(lhs.name);
+        } else {
             var inst = new Assign(lhs, rhs);
             curBlock.appendInst(inst);
         }
@@ -375,7 +386,7 @@ public class IRBuilder implements ASTVisitor {
         IROperand rhs = (IROperand) node.rhs.accept(this);
         if (directlyAccessible(node.lhs)) {
             Register lhs = (Register) node.lhs.accept(this);
-            regAssign(lhs,rhs);
+            regAssign(lhs, rhs);
         } else {
             Register ptr = locate(node.lhs);
             var inst = new Store(rhs, ptr);
@@ -389,7 +400,7 @@ public class IRBuilder implements ASTVisitor {
         Register.reset(1);
         blockSuffix = 1;
         curFunc = curClass == null ? info.getFunction(node.funcId) : info.getClassMethod(curClass.id, node.funcId);
-        if(node.funcId.equals("main"))info.setMain(curFunc);
+        if (node.funcId.equals("main")) info.setMain(curFunc);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;
         node.suiteNode.accept(this);
@@ -413,9 +424,9 @@ public class IRBuilder implements ASTVisitor {
             }
         } else {
             if (curFunc.returnBlocks.isEmpty()) {
-                if(node.funcId.equals("main")){
+                if (node.funcId.equals("main")) {
                     curBlock.setRetTerminator(new IntConstant(0));
-                }else {
+                } else {
                     // for constructor
                     curBlock.setRetTerminator(new Register(new PointerType(curFunc.retTy), "this"));
                 }
@@ -438,14 +449,14 @@ public class IRBuilder implements ASTVisitor {
                 curFunc.exitBlock = exit;
             }
         }
-        for(boolean removeFlag=true;removeFlag;){
-            removeFlag=false;
-            var iter=curFunc.blocks.iterator();
-            while (iter.hasNext()){
-                var bb=iter.next();
-                if(bb.prevs.isEmpty()&&bb!=curFunc.entryBlock){
-                    removeFlag=true;
-                    bb.nexts.forEach(n->n.prevs.remove(bb));
+        for (boolean removeFlag = true; removeFlag; ) {
+            removeFlag = false;
+            var iter = curFunc.blocks.iterator();
+            while (iter.hasNext()) {
+                var bb = iter.next();
+                if (bb.prevs.isEmpty() && bb != curFunc.entryBlock) {
+                    removeFlag = true;
+                    bb.nexts.forEach(n -> n.prevs.remove(bb));
                     iter.remove();
                 }
             }
@@ -462,7 +473,7 @@ public class IRBuilder implements ASTVisitor {
         curFunc.declareVar(varReg);
         if (node.expr != null) {
             var expr = (IROperand) node.expr.accept(this);
-            regAssign(varReg,expr);
+            regAssign(varReg, expr);
         }
         return null;
     }

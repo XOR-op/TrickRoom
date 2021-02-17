@@ -18,4 +18,6 @@ public abstract class IRInst {
     public boolean isTerminal(){return false;}
 
     public boolean containsDest(){return false;}
+
+    public abstract boolean hasSideEffect();
 }

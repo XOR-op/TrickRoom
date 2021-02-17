@@ -32,6 +32,11 @@ public class Compare extends IRDestedInst{
         operand2=Register.replace(replace,operand2);
     }
 
+    @Override
+    public boolean hasSideEffect() {
+        return false;
+    }
+
     public static CmpEnum getCmpOpEnum(String s){
         switch (s){
             case "=="->{return CmpEnum.eq;}

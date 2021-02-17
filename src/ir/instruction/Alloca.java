@@ -38,4 +38,9 @@ public class Alloca extends IRDestedInst{
         // do nothing
     }
 
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
+
 }

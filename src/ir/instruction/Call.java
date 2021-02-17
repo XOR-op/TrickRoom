@@ -47,4 +47,9 @@ public class Call extends IRDestedInst{
     public boolean containsDest() {
         return dest!=null;
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
 }

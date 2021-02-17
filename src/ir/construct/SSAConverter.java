@@ -51,13 +51,13 @@ public class SSAConverter {
     }
 
     private BasicBlock intersect(BasicBlock i, BasicBlock j) {
-        while (i!=j) {
+        while (i != j) {
             while (order.get(i) > order.get(j)) {
-                assert iDoms.get(i)!=null;
+                assert iDoms.get(i) != null;
                 i = iDoms.get(i);
             }
             while (order.get(j) > order.get(i)) {
-                assert iDoms.get(j)!=null;
+                assert iDoms.get(j) != null;
                 j = iDoms.get(j);
             }
         }
@@ -75,8 +75,8 @@ public class SSAConverter {
             for (int cur = 1; cur < blocksByOrder.size(); ++cur) {
                 var curBlock = blocksByOrder.get(cur);
                 var iter = curBlock.prevs.iterator();
-                BasicBlock newIDom=iter.next();
-                while (iDoms.get(newIDom)==null)newIDom=iter.next(); // pick first processed one
+                BasicBlock newIDom = iter.next();
+                while (iDoms.get(newIDom) == null) newIDom = iter.next(); // pick first processed one
                 while (iter.hasNext()) {
                     var onePrev = iter.next();
                     if (iDoms.get(onePrev) != null)
@@ -129,7 +129,7 @@ public class SSAConverter {
         int i = renamingCounter.get(var.name);
         renamingCounter.put(var.name, i + 1);
         var renaming = var.rename(i);
-        assert renaming!=null;
+        assert renaming != null;
         // one bb one def
         if (modified.contains(var.name))
             namingStack.get(var.name).pop();
@@ -148,11 +148,12 @@ public class SSAConverter {
             return var;
         }
     }
-    public void variableRenaming(){
+
+    public void variableRenaming() {
         func.varDefs.forEach((v, s) -> {
             renamingCounter.put(v, 1);
-            var stk=new Stack<Register>();
-            stk.push(new Register(func.varType.get(v),v));
+            var stk = new Stack<Register>();
+            stk.push(new Register(func.varType.get(v), v));
             namingStack.put(v, stk);
         });
         func.parameters.forEach(r -> {
@@ -164,7 +165,9 @@ public class SSAConverter {
     private void variableRenaming(BasicBlock bb) {
         var modifiedSet = new HashSet<String>();
         bb.phiCollection.forEach(phi -> {
-            phi.renameDest(allocNewRenaming(phi.dest, modifiedSet));
+            // ignore arrayNew phi
+            if(phi.namedDest())
+                phi.renameDest(allocNewRenaming(phi.dest, modifiedSet));
         });
         bb.insts.forEach(irInst -> {
             irInst.renameOperand(this::getRenaming);
@@ -174,13 +177,14 @@ public class SSAConverter {
         bb.terminatorInst.renameOperand(this::getRenaming);
         bb.nexts.forEach(nbb -> {
             nbb.phiCollection.forEach(p -> {
-                p.append(getRenaming(p.dest),bb);
+                if(p.namedDest())
+                    p.append(getRenaming(p.dest), bb);
             });
         });
         // iterate successor
         domTree.get(bb).forEach(this::variableRenaming);
-        modifiedSet.forEach(v->{
-            assert namingStack.get(v).size()>1;
+        modifiedSet.forEach(v -> {
+            assert namingStack.get(v).size() > 1;
         });
         // pop current basic block's modified renaming
         modifiedSet.forEach(v -> namingStack.get(v).pop());

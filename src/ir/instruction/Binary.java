@@ -27,6 +27,11 @@ public class Binary extends IRDestedInst{
         operand2=Register.replace(replace,operand2);
     }
 
+    @Override
+    public boolean hasSideEffect() {
+        return false;
+    }
+
     public Binary(BinInstEnum inst,Register dest,IROperand op1,IROperand op2){
         this.inst=inst;
         this.dest=dest;

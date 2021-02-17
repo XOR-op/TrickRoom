@@ -30,7 +30,6 @@ public class Phi extends IRDestedInst {
     }
 
     public void append(Register reg, BasicBlock blk) {
-        assert reg.name.equals(dest.name);
         arguments.add(new Source(reg, blk));
     }
 
@@ -49,5 +48,10 @@ public class Phi extends IRDestedInst {
     @Override
     public void renameOperand(Function<Register, Register> replace) {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean hasSideEffect() {
+        return false;
     }
 }

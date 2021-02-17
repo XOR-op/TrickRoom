@@ -40,4 +40,9 @@ public class GetElementPtr extends IRDestedInst{
         if(offset!=null)
             offset=Register.replace(replace,offset);
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return false;
+    }
 }

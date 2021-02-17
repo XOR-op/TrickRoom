@@ -31,4 +31,9 @@ public class BitCast extends IRDestedInst {
     public void renameOperand(Function<Register, Register> replace) {
         from=Register.replace(replace,from);
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return false;
+    }
 }

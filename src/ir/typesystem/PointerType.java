@@ -19,19 +19,14 @@ public class PointerType extends IRType {
         }
     }
 
-    public PointerType(IRType base, int dim){
+    public PointerType(IRType base, int dim) {
         assert !(base instanceof PointerType);
-        baseType=base;
-        this.dim=dim;
+        baseType = base;
+        this.dim = dim;
     }
 
     public IRType subType() {
-        if (dim == 1) return baseType;
-        else {
-            var rt = new PointerType(this);
-            rt.dim = dim - 1;
-            return rt;
-        }
+        return dim == 1 ? baseType : new PointerType(baseType, dim - 1);
     }
 
     @Override
@@ -41,7 +36,7 @@ public class PointerType extends IRType {
 
     @Override
     public String tell() {
-        return baseType == null ? "nullptr*" : (baseType + "*".repeat(dim));
+        return baseType + "*".repeat(dim);
     }
 
     @Override
@@ -49,7 +44,4 @@ public class PointerType extends IRType {
         return new NullptrConstant(new PointerType(baseType));
     }
 
-    public static PointerType baseArrayType() {
-        return new PointerType(Cst.int32);
-    }
 }

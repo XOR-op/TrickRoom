@@ -29,4 +29,9 @@ public class Store extends IRInst{
         address=Register.replace(replace,address);
         source=Register.replace(replace,source);
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
 }

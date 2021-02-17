@@ -31,4 +31,9 @@ public class Jump extends IRInst{
     public boolean isTerminal() {
         return true;
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
 }

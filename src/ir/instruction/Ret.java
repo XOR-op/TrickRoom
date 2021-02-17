@@ -35,4 +35,9 @@ public class Ret extends IRInst{
     public boolean isTerminal() {
         return true;
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return true;
+    }
 }

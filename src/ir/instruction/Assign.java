@@ -37,4 +37,9 @@ public class Assign extends IRDestedInst{
     public void renameOperand(Function<Register, Register> replace) {
         src=Register.replace(replace,src);
     }
+
+    @Override
+    public boolean hasSideEffect() {
+        return false;
+    }
 }
