@@ -4,6 +4,7 @@ import ir.Cst;
 import ir.operand.IROperand;
 import ir.operand.IntConstant;
 import ir.operand.Register;
+import ir.operand.UndefConstant;
 import ir.typesystem.PointerType;
 
 import java.util.function.Function;
@@ -19,7 +20,6 @@ public class Assign extends IRDestedInst{
 
     @Override
     public String tell() {
-//        return ANSI_CYAN+dest.type+" "+dest+ " = pseudo mv from "+src.type+" "+src+ANSI_RESET;
         if(dest.type.equals(Cst.int32)||dest.type.equals(Cst.bool))
             return new Binary(Binary.BinInstEnum.add,dest,src,new IntConstant(0)).tell();
         else {

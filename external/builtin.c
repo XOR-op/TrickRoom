@@ -36,6 +36,10 @@ const char* _gbl_toString(int i){
     return buf;
 }
 
+char* _gbl_malloc(int size){
+    return malloc(size);
+}
+
 int _str_length(const char* str){
     return strlen(str);
 }

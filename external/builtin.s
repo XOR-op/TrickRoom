@@ -1,6 +1,6 @@
 	.section	__TEXT,__text,regular,pure_instructions
 	.build_version macos, 10, 15	sdk_version 10, 15, 4
-	.globl	__gbl_print             ## -- Begin function _gbl_print
+	.globl	__gbl_print                     ## -- Begin function _gbl_print
 	.p2align	4, 0x90
 __gbl_print:                            ## @_gbl_print
 	.cfi_startproc
@@ -21,7 +21,7 @@ __gbl_print:                            ## @_gbl_print
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_println           ## -- Begin function _gbl_println
+	.globl	__gbl_println                   ## -- Begin function _gbl_println
 	.p2align	4, 0x90
 __gbl_println:                          ## @_gbl_println
 	.cfi_startproc
@@ -42,7 +42,7 @@ __gbl_println:                          ## @_gbl_println
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_printInt          ## -- Begin function _gbl_printInt
+	.globl	__gbl_printInt                  ## -- Begin function _gbl_printInt
 	.p2align	4, 0x90
 __gbl_printInt:                         ## @_gbl_printInt
 	.cfi_startproc
@@ -63,7 +63,7 @@ __gbl_printInt:                         ## @_gbl_printInt
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_printlnInt        ## -- Begin function _gbl_printlnInt
+	.globl	__gbl_printlnInt                ## -- Begin function _gbl_printlnInt
 	.p2align	4, 0x90
 __gbl_printlnInt:                       ## @_gbl_printlnInt
 	.cfi_startproc
@@ -84,7 +84,7 @@ __gbl_printlnInt:                       ## @_gbl_printlnInt
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_getString         ## -- Begin function _gbl_getString
+	.globl	__gbl_getString                 ## -- Begin function _gbl_getString
 	.p2align	4, 0x90
 __gbl_getString:                        ## @_gbl_getString
 	.cfi_startproc
@@ -95,22 +95,20 @@ __gbl_getString:                        ## @_gbl_getString
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movl	$1024, %edi             ## imm = 0x400
+	movl	$1024, %edi                     ## imm = 0x400
 	callq	_malloc
 	movq	%rax, -8(%rbp)
 	movq	-8(%rbp), %rsi
 	leaq	L_.str(%rip), %rdi
 	movb	$0, %al
 	callq	_scanf
-	movq	-8(%rbp), %rcx
-	movl	%eax, -12(%rbp)         ## 4-byte Spill
-	movq	%rcx, %rax
+	movq	-8(%rbp), %rax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_getInt            ## -- Begin function _gbl_getInt
+	.globl	__gbl_getInt                    ## -- Begin function _gbl_getInt
 	.p2align	4, 0x90
 __gbl_getInt:                           ## @_gbl_getInt
 	.cfi_startproc
@@ -125,15 +123,13 @@ __gbl_getInt:                           ## @_gbl_getInt
 	leaq	-4(%rbp), %rsi
 	movb	$0, %al
 	callq	_scanf
-	movl	-4(%rbp), %ecx
-	movl	%eax, -8(%rbp)          ## 4-byte Spill
-	movl	%ecx, %eax
+	movl	-4(%rbp), %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__gbl_toString          ## -- Begin function _gbl_toString
+	.globl	__gbl_toString                  ## -- Begin function _gbl_toString
 	.p2align	4, 0x90
 __gbl_toString:                         ## @_gbl_toString
 	.cfi_startproc
@@ -143,27 +139,44 @@ __gbl_toString:                         ## @_gbl_toString
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	subq	$32, %rsp
+	subq	$16, %rsp
 	movl	%edi, -4(%rbp)
 	movl	$16, %edi
 	callq	_malloc
-	xorl	%esi, %esi
-	movq	$-1, %rdx
 	movq	%rax, -16(%rbp)
 	movq	-16(%rbp), %rdi
 	movl	-4(%rbp), %r8d
+	xorl	%esi, %esi
+	movq	$-1, %rdx
 	leaq	L_.str.2(%rip), %rcx
 	movb	$0, %al
 	callq	___sprintf_chk
-	movq	-16(%rbp), %rcx
-	movl	%eax, -20(%rbp)         ## 4-byte Spill
-	movq	%rcx, %rax
-	addq	$32, %rsp
+	movq	-16(%rbp), %rax
+	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_length            ## -- Begin function _str_length
+	.globl	__gbl_malloc                    ## -- Begin function _gbl_malloc
+	.p2align	4, 0x90
+__gbl_malloc:                           ## @_gbl_malloc
+	.cfi_startproc
+## %bb.0:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
+	movl	%edi, -4(%rbp)
+	movslq	-4(%rbp), %rdi
+	callq	_malloc
+	addq	$16, %rsp
+	popq	%rbp
+	retq
+	.cfi_endproc
+                                        ## -- End function
+	.globl	__str_length                    ## -- Begin function _str_length
 	.p2align	4, 0x90
 __str_length:                           ## @_str_length
 	.cfi_startproc
@@ -183,7 +196,7 @@ __str_length:                           ## @_str_length
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_substring         ## -- Begin function _str_substring
+	.globl	__str_substring                 ## -- Begin function _str_substring
 	.p2align	4, 0x90
 __str_substring:                        ## @_str_substring
 	.cfi_startproc
@@ -194,41 +207,37 @@ __str_substring:                        ## @_str_substring
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$32, %rsp
-	movq	%rdi, -8(%rbp)
-	movl	%esi, -12(%rbp)
-	movl	%edx, -16(%rbp)
-	movl	-16(%rbp), %eax
-	subl	-12(%rbp), %eax
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -4(%rbp)
+	movl	%edx, -8(%rbp)
+	movl	-8(%rbp), %eax
+	subl	-4(%rbp), %eax
 	addl	$1, %eax
-	movslq	%eax, %rcx
-	shlq	$0, %rcx
-	movq	%rcx, %rdi
+	movslq	%eax, %rdi
+	shlq	$0, %rdi
 	callq	_malloc
+	movq	%rax, -16(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-24(%rbp), %rsi
+	movslq	-4(%rbp), %rax
+	addq	%rax, %rsi
+	movl	-8(%rbp), %eax
+	subl	-4(%rbp), %eax
+	movslq	%eax, %rdx
 	movq	$-1, %rcx
-	movq	%rax, -24(%rbp)
-	movq	-24(%rbp), %rdi
-	movq	-8(%rbp), %rax
-	movslq	-12(%rbp), %r8
-	addq	%r8, %rax
-	movl	-16(%rbp), %edx
-	subl	-12(%rbp), %edx
-	movslq	%edx, %rdx
-	movq	%rax, %rsi
 	callq	___memcpy_chk
-	movq	-24(%rbp), %rcx
-	movl	-16(%rbp), %r9d
-	subl	-12(%rbp), %r9d
-	movslq	%r9d, %rdx
-	movb	$0, (%rcx,%rdx)
-	movq	-24(%rbp), %rcx
-	movq	%rax, -32(%rbp)         ## 8-byte Spill
-	movq	%rcx, %rax
+	movq	-16(%rbp), %rax
+	movl	-8(%rbp), %ecx
+	subl	-4(%rbp), %ecx
+	movslq	%ecx, %rcx
+	movb	$0, (%rax,%rcx)
+	movq	-16(%rbp), %rax
 	addq	$32, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_parseInt          ## -- Begin function _str_parseInt
+	.globl	__str_parseInt                  ## -- Begin function _str_parseInt
 	.p2align	4, 0x90
 __str_parseInt:                         ## @_str_parseInt
 	.cfi_startproc
@@ -239,21 +248,19 @@ __str_parseInt:                         ## @_str_parseInt
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rdi
+	movq	%rdi, -16(%rbp)
+	movq	-16(%rbp), %rdi
 	leaq	L_.str.2(%rip), %rsi
-	leaq	-12(%rbp), %rdx
+	leaq	-4(%rbp), %rdx
 	movb	$0, %al
 	callq	_sscanf
-	movl	-12(%rbp), %ecx
-	movl	%eax, -16(%rbp)         ## 4-byte Spill
-	movl	%ecx, %eax
+	movl	-4(%rbp), %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_concat            ## -- Begin function _str_concat
+	.globl	__str_concat                    ## -- Begin function _str_concat
 	.p2align	4, 0x90
 __str_concat:                           ## @_str_concat
 	.cfi_startproc
@@ -263,30 +270,27 @@ __str_concat:                           ## @_str_concat
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	subq	$48, %rsp
-	movq	%rdi, -8(%rbp)
+	subq	$32, %rsp
+	movq	%rdi, -24(%rbp)
 	movq	%rsi, -16(%rbp)
-	movl	$1024, %edi             ## imm = 0x400
+	movl	$1024, %edi                     ## imm = 0x400
 	callq	_malloc
+	movq	%rax, -8(%rbp)
+	movq	-8(%rbp), %rdi
+	movq	-24(%rbp), %rsi
 	movq	$-1, %rdx
-	movq	%rax, -24(%rbp)
-	movq	-24(%rbp), %rdi
-	movq	-8(%rbp), %rsi
 	callq	___strcpy_chk
-	movq	$-1, %rdx
-	movq	-24(%rbp), %rdi
+	movq	-8(%rbp), %rdi
 	movq	-16(%rbp), %rsi
-	movq	%rax, -32(%rbp)         ## 8-byte Spill
+	movq	$-1, %rdx
 	callq	___strcat_chk
-	movq	-24(%rbp), %rcx
-	movq	%rax, -40(%rbp)         ## 8-byte Spill
-	movq	%rcx, %rax
-	addq	$48, %rsp
+	movq	-8(%rbp), %rax
+	addq	$32, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_ord               ## -- Begin function _str_ord
+	.globl	__str_ord                       ## -- Begin function _str_ord
 	.p2align	4, 0x90
 __str_ord:                              ## @_str_ord
 	.cfi_startproc
@@ -296,16 +300,18 @@ __str_ord:                              ## @_str_ord
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -8(%rbp)
-	movl	%esi, -12(%rbp)
-	movq	-8(%rbp), %rax
-	movslq	-12(%rbp), %rcx
+	subq	$16, %rsp
+	movq	%rdi, -16(%rbp)
+	movl	%esi, -4(%rbp)
+	movq	-16(%rbp), %rax
+	movslq	-4(%rbp), %rcx
 	movsbl	(%rax,%rcx), %eax
+	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_eq                ## -- Begin function _str_eq
+	.globl	__str_eq                        ## -- Begin function _str_eq
 	.p2align	4, 0x90
 __str_eq:                               ## @_str_eq
 	.cfi_startproc
@@ -316,21 +322,21 @@ __str_eq:                               ## @_str_eq
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	sete	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	sete	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_ne                ## -- Begin function _str_ne
+	.globl	__str_ne                        ## -- Begin function _str_ne
 	.p2align	4, 0x90
 __str_ne:                               ## @_str_ne
 	.cfi_startproc
@@ -341,21 +347,21 @@ __str_ne:                               ## @_str_ne
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	setne	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	setne	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_lt                ## -- Begin function _str_lt
+	.globl	__str_lt                        ## -- Begin function _str_lt
 	.p2align	4, 0x90
 __str_lt:                               ## @_str_lt
 	.cfi_startproc
@@ -366,21 +372,21 @@ __str_lt:                               ## @_str_lt
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	setl	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	setl	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_le                ## -- Begin function _str_le
+	.globl	__str_le                        ## -- Begin function _str_le
 	.p2align	4, 0x90
 __str_le:                               ## @_str_le
 	.cfi_startproc
@@ -391,21 +397,21 @@ __str_le:                               ## @_str_le
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	setle	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	setle	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_gt                ## -- Begin function _str_gt
+	.globl	__str_gt                        ## -- Begin function _str_gt
 	.p2align	4, 0x90
 __str_gt:                               ## @_str_gt
 	.cfi_startproc
@@ -416,21 +422,21 @@ __str_gt:                               ## @_str_gt
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	setg	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	setg	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function
-	.globl	__str_ge                ## -- Begin function _str_ge
+	.globl	__str_ge                        ## -- Begin function _str_ge
 	.p2align	4, 0x90
 __str_ge:                               ## @_str_ge
 	.cfi_startproc
@@ -441,15 +447,15 @@ __str_ge:                               ## @_str_ge
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rdi
-	movq	-16(%rbp), %rsi
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -8(%rbp)
+	movq	-16(%rbp), %rdi
+	movq	-8(%rbp), %rsi
 	callq	_strcmp
 	cmpl	$0, %eax
-	setge	%cl
-	andb	$1, %cl
-	movzbl	%cl, %eax
+	setge	%al
+	andb	$1, %al
+	movzbl	%al, %eax
 	addq	$16, %rsp
 	popq	%rbp
 	retq
@@ -467,6 +473,5 @@ L_.str.2:                               ## @.str.2
 
 L_.str.3:                               ## @.str.3
 	.asciz	"%d\n"
-
 
 .subsections_via_symbols

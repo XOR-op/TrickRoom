@@ -42,7 +42,7 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(RootNode node) {
         // global init
-        curFunc = new Function(Cst.INIT, Cst.void_t);
+        curFunc = new Function(Cst.INIT, Cst.int32);
         info.setInit(curFunc);
         curBlock = curFunc.entryBlock;
         node.globalVars.forEach(decl -> {
@@ -53,7 +53,9 @@ public class IRBuilder implements ASTVisitor {
                 curBlock.appendInst(store);
             }
         });
-        curBlock.setVoidRetTerminator();
+        var callMain=new Call(new Register(Cst.int32), info.getFunction("main"));
+        curBlock.appendInst(callMain);
+        curBlock.setRetTerminator(callMain.dest);
         curFunc.exitBlock = curBlock;
         curFunc = null;
         node.classes.forEach(cls -> cls.accept(this));
@@ -69,7 +71,7 @@ public class IRBuilder implements ASTVisitor {
             Function f;
             switch (node.lexerSign) {
                 case "==" -> f = info.getStringMethod("eq");
-                case "!=" -> f = info.getStringMethod("neq");
+                case "!=" -> f = info.getStringMethod("ne");
                 case "<" -> f = info.getStringMethod("lt");
                 case ">" -> f = info.getStringMethod("gt");
                 case "<=" -> f = info.getStringMethod("le");
@@ -237,7 +239,7 @@ public class IRBuilder implements ASTVisitor {
                 dims.get(level), new IntConstant(elementType.size()));
         IRDestedInst calcSize = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32),
                 new IntConstant(Cst.int32.size()), arrayWidth.dest);
-        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
+        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction("malloc"));
         alloc.push(calcSize.dest);
 
         // calculate real array address
@@ -287,7 +289,7 @@ public class IRBuilder implements ASTVisitor {
         // return pointer to newed object
         // allocate heap with i8* returned
         if (node.isClass) {
-            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
+            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction("malloc"));
             var classType = info.resolveType(node.classNew.type);
             alloc.push(new IntConstant(info.resolveClass((ClassType) node.classNew.type).size()));
             var cast = new BitCast(new Register(classType), alloc.dest);
@@ -403,7 +405,9 @@ public class IRBuilder implements ASTVisitor {
         if (node.funcId.equals("main")) info.setMain(curFunc);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;
+
         node.suiteNode.accept(this);
+
         if (curFunc.retTy.equals(Cst.void_t)) {
             if (!curBlock.hasTerminal()) {
                 // implicit return
@@ -471,6 +475,7 @@ public class IRBuilder implements ASTVisitor {
     public Object visit(DeclarationNode node) {
         var varReg = new Register(info.resolveType(node.sym.getType()), node.sym.nameAsReg);
         curFunc.declareVar(varReg);
+        curFunc.entryBlock.insertInstFromHead(new Assign(varReg,new UndefConstant(varReg.type)));
         if (node.expr != null) {
             var expr = (IROperand) node.expr.accept(this);
             regAssign(varReg, expr);

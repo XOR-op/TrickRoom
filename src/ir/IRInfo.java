@@ -18,7 +18,7 @@ public class IRInfo {
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private final HashSet<Function> globalFunction = new HashSet<>();
     private int strCounter = 0;
-    private Function init=null,main=null;
+    private Function init = null, main = null;
 
     public IRInfo(FileScope scope) {
         // global functions
@@ -29,7 +29,7 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
+        addBuiltinFunction(new PointerType(Cst.byte_t), "malloc").addParam(Cst.int32, "len");
         // string methods
         addStringMethod(Cst.int32, "length");
         addStringMethod(Cst.int32, "parseInt");
@@ -38,7 +38,7 @@ public class IRInfo {
         // operator overloading
         addStringMethod(Cst.str, "concat").addParam(Cst.str, "rhs");
         addStrCmp("eq");
-        addStrCmp("neq");
+        addStrCmp("ne");
         addStrCmp("lt");
         addStrCmp("le");
         addStrCmp("gt");
@@ -52,7 +52,7 @@ public class IRInfo {
     }
 
     private Function addStringMethod(IRType ret, String name) {
-        var f = new Function(name, ret, true);
+        var f = new Function("_str_"+name, ret, true);
         f.addParam(Cst.str, "lhs");
         functions.put(Cst.STR_FUNC + name, f);
         stringMethods.put(name, Cst.STR_FUNC + name);
@@ -61,7 +61,7 @@ public class IRInfo {
     }
 
     private Function addBuiltinFunction(IRType ret, String name) {
-        var f = new Function(name, ret, true);
+        var f = new Function("_gbl_"+name, ret, true);
         functions.put(name, f);
         globalFunction.add(f);
         return f;
@@ -92,10 +92,6 @@ public class IRInfo {
                 addFunction(func);
         });
         scope.globalVarTable.forEach((s, v) -> {
-            //todo
-//            var glo= v.initExpr==null?
-//                    new GlobalVar(resolveType(v.getType()),v.nameAsReg):
-//                    new GlobalVar(resolveType(v.getType()),v.nameAsReg,ConstantEvaluator.evaluate(v.initExpr));
             var glo = new GlobalVar(resolveType(v.getType()), v.nameAsReg);
             globalVars.put(s, glo);
         });
@@ -132,11 +128,11 @@ public class IRInfo {
         } else if (tp instanceof ClassType) {
             return new PointerType(types.get(tp.id));
         } else if (tp.isArray()) {
-            var type=resolveType(((ArrayObjectType)tp).elementType);
-            if(type instanceof PointerType)
-                return new PointerType(((PointerType) type).baseType, tp.dim()+1);
+            var type = resolveType(((ArrayObjectType) tp).elementType);
+            if (type instanceof PointerType)
+                return new PointerType(((PointerType) type).baseType, tp.dim() + 1);
             else
-                return new PointerType(type,tp.dim());
+                return new PointerType(type, tp.dim());
         } else throw new IllegalStateException();
     }
 
@@ -176,7 +172,7 @@ public class IRInfo {
         );
         builder.append('\n');
 
-
+        builder.append(init.tell()).append('\n');
 
         functions.forEach((k, v) -> {
             if (!v.isBuiltin())

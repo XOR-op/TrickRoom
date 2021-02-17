@@ -92,6 +92,16 @@ declare i32 @__sprintf_chk(i8*, i32, i64, i8*, ...) #1
 declare i64 @llvm.objectsize.i64.p0i8(i8*, i1 immarg, i1 immarg, i1 immarg) #3
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
+define i8* @_gbl_malloc(i32) #0 {
+  %2 = alloca i32, align 4
+  store i32 %0, i32* %2, align 4
+  %3 = load i32, i32* %2, align 4
+  %4 = sext i32 %3 to i64
+  %5 = call i8* @malloc(i64 %4) #5
+  ret i8* %5
+}
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
 define i32 @_str_length(i8*) #0 {
   %2 = alloca i8*, align 8
   store i8* %0, i8** %2, align 8
