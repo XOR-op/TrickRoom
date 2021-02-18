@@ -94,43 +94,43 @@ public class IRBuilder implements ASTVisitor {
             if (binst != null) {
                 // short circuit
                 switch (binst) {
-                    case logic_and-> {
-                        BasicBlock second=new BasicBlock("and_second"+blockSuffix);
-                        BasicBlock after=new BasicBlock("and_after"+blockSuffix);
+                    case logic_and -> {
+                        BasicBlock second = new BasicBlock("and_second" + blockSuffix);
+                        BasicBlock after = new BasicBlock("and_after" + blockSuffix);
                         curFunc.addBlock(second).addBlock(after);
-                        Phi phi=new Phi(new Register(Cst.bool));
+                        Phi phi = new Phi(new Register(Cst.bool));
                         blockSuffix++;
 
-                        IROperand left=(IROperand) node.lhs.accept(this);
-                        curBlock.setBranchTerminator(left,second,after);
-                        phi.append(left,curBlock);
+                        IROperand left = (IROperand) node.lhs.accept(this);
+                        curBlock.setBranchTerminator(left, second, after);
+                        phi.append(left, curBlock);
 
-                        curBlock=second;
-                        IROperand right=(IROperand) node.rhs.accept(this);
+                        curBlock = second;
+                        IROperand right = (IROperand) node.rhs.accept(this);
                         curBlock.setJumpTerminator(after);
-                        phi.append(right,curBlock);
+                        phi.append(right, curBlock);
 
-                        curBlock=after;
+                        curBlock = after;
                         curBlock.appendPhi(phi);
                         return phi.dest;
                     }
                     case logic_or -> {
-                        BasicBlock second=new BasicBlock("or_second"+blockSuffix);
-                        BasicBlock after=new BasicBlock("or_after"+blockSuffix);
+                        BasicBlock second = new BasicBlock("or_second" + blockSuffix);
+                        BasicBlock after = new BasicBlock("or_after" + blockSuffix);
                         curFunc.addBlock(second).addBlock(after);
-                        Phi phi=new Phi(new Register(Cst.bool));
+                        Phi phi = new Phi(new Register(Cst.bool));
                         blockSuffix++;
 
-                        IROperand left=(IROperand) node.lhs.accept(this);
-                        curBlock.setBranchTerminator(left,after,second);
-                        phi.append(left,curBlock);
+                        IROperand left = (IROperand) node.lhs.accept(this);
+                        curBlock.setBranchTerminator(left, after, second);
+                        phi.append(left, curBlock);
 
-                        curBlock=second;
-                        IROperand right=(IROperand) node.rhs.accept(this);
+                        curBlock = second;
+                        IROperand right = (IROperand) node.rhs.accept(this);
                         curBlock.setJumpTerminator(after);
-                        phi.append(right,curBlock);
+                        phi.append(right, curBlock);
 
-                        curBlock=after;
+                        curBlock = after;
                         curBlock.appendPhi(phi);
                         return phi.dest;
                     }
@@ -178,37 +178,37 @@ public class IRBuilder implements ASTVisitor {
             if (directlyAccessible(node.expr)) {
                 var target = (Register) node.expr.accept(this);
                 var move = new Assign(new Register(Cst.int32), target);
-                var incremental = new Binary(node.lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
+                var incremental = new Binary(node.lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
+                        target, target, new IntConstant(1));
                 curFunc.defineVar(target, curBlock);
                 curBlock.appendInst(move).appendInst(incremental);
                 return move.dest;
-            } else {
-                var ptr = locate(node.expr);
-                var load = new Load(new Register(Cst.int32), ptr);
-                var incre = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32), load.dest, new IntConstant(1));
-                var store = new Store(incre.dest, ptr);
-                curBlock.appendInst(load).appendInst(incre).appendInst(store);
-                return load.dest;
-            }
+            } else
+                return unarySelfOp(node.expr,node.lexerSign,false);
         }
+    }
+
+    private Register unarySelfOp(ExprNode expr,String lexerSign,boolean isPrefix){
+        var ptr = locate(expr);
+        var load = new Load(new Register(Cst.int32), ptr);
+        var incre = new Binary(lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
+                new Register(Cst.int32), load.dest, new IntConstant(1));
+        var store = new Store(incre.dest, ptr);
+        curBlock.appendInst(load).appendInst(incre).appendInst(store);
+        return isPrefix?incre.dest:load.dest;
     }
 
     @Override
     public Register visit(PrefixLeftValueNode node) {
         if (directlyAccessible(node.expr)) {
             var target = (Register) node.expr.accept(this);
-            var inst = new Binary(node.sign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub, target, target, new IntConstant(1));
+            var inst = new Binary(node.sign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
+                    target, target, new IntConstant(1));
             curFunc.defineVar(target, curBlock);
             curBlock.appendInst(inst);
             return inst.dest;
-        } else {
-            var ptr = locate(node.expr);
-            var load = new Load(new Register(Cst.int32), ptr);
-            var incre = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32), load.dest, new IntConstant(1));
-            var store = new Store(incre.dest, ptr);
-            curBlock.appendInst(load).appendInst(incre).appendInst(store);
-            return incre.dest;
-        }
+        } else
+            return unarySelfOp(node.expr,node.sign,true);
     }
 
     private Register withType(IRType ty) {
@@ -319,8 +319,8 @@ public class IRBuilder implements ASTVisitor {
             cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
             curBlock = loopBody;
 
-            Register initDone=arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
-            curBlock.appendInst(new Store(initDone,phi.dest));
+            Register initDone = arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
+            curBlock.appendInst(new Store(initDone, phi.dest));
 
             phi.append(incrPtr.dest, curBlock);
             curBlock.appendInst(incrPtr);
@@ -623,7 +623,7 @@ public class IRBuilder implements ASTVisitor {
             curBlock.setVoidRetTerminator();
         else {
             // due to side effect of accept, two statements cannot be merged
-            var val=(IROperand) node.returnExpr.accept(this);
+            var val = (IROperand) node.returnExpr.accept(this);
             curBlock.setRetTerminator(val);
         }
         return null;
