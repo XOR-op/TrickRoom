@@ -31,7 +31,7 @@ public class PointerType extends IRType {
     @Override
     public int size() {
         // for debug purpose, you may modify this
-        return 8;
+        return 4;
     }
 
     @Override
