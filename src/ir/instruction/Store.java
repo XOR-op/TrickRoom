@@ -6,8 +6,8 @@ import ir.operand.Register;
 import java.util.function.Function;
 
 public class Store extends IRInst{
-    private IROperand address;
-    private IROperand source;
+    public IROperand address;
+    public IROperand source;
     public Store(IROperand src,IROperand addr){
         address=addr;
         source=src;

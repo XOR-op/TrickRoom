@@ -1,4 +1,4 @@
-package riscv.operand;
+package assembly.operand;
 
 public class Imm extends RVOperand{
 

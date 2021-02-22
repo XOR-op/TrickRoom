@@ -512,7 +512,6 @@ public class IRBuilder implements ASTVisitor {
             }
         }
 
-        new SSAConverter(curFunc).SSAConstruct();
         curFunc = null;
         return null;
     }

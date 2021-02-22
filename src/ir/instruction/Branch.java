@@ -15,6 +15,11 @@ public class Branch extends IRInst{
         falseBranch=fb;
     }
 
+    public void replaceBranch(BasicBlock from,BasicBlock to){
+        if(trueBranch==from)trueBranch=to;
+        if(falseBranch==from)falseBranch=to;
+    }
+
     @Override
     public String tell() {
         return "br i1 "+condition+", label %"+ trueBranch.getBlockName()+", label %"+falseBranch.getBlockName();

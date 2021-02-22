@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 public class BitCast extends IRDestedInst {
 
-    private IROperand from;
+    public IROperand from;
     private IRType to;
 
     public BitCast(Register dst, IROperand frm) {

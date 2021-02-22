@@ -9,6 +9,7 @@ import ir.typesystem.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.Consumer;
 
 public class IRInfo {
     private final HashMap<String, Function> functions = new HashMap<>();
@@ -52,7 +53,7 @@ public class IRInfo {
     }
 
     private Function addStringMethod(IRType ret, String name) {
-        var f = new Function("_str_"+name, ret, true);
+        var f = new Function("_str_" + name, ret, true);
         f.addParam(Cst.str, "lhs");
         functions.put(Cst.STR_FUNC + name, f);
         stringMethods.put(name, Cst.STR_FUNC + name);
@@ -61,7 +62,7 @@ public class IRInfo {
     }
 
     private Function addBuiltinFunction(IRType ret, String name) {
-        var f = new Function("_gbl_"+name, ret, true);
+        var f = new Function("_gbl_" + name, ret, true);
         functions.put(name, f);
         globalFunction.add(f);
         return f;
@@ -195,5 +196,9 @@ public class IRInfo {
 
     public void setMain(Function main) {
         this.main = main;
+    }
+
+    public void forEachFunction(Consumer<Function> f) {
+        functions.forEach((k, v) -> f.accept(v));
     }
 }

@@ -5,16 +5,22 @@ import ir.operand.Register;
 
 import java.util.function.Function;
 
-public class Jump extends IRInst{
+public class Jump extends IRInst {
+
     // unconditional branch
-    private BasicBlock target;
-    public Jump(BasicBlock tgt){
-        target=tgt;
+    private final BasicBlock target;
+
+    public Jump(BasicBlock tgt) {
+        target = tgt;
+    }
+
+    public BasicBlock getTarget() {
+        return target;
     }
 
     @Override
     public String tell() {
-        return "br label %"+target.getBlockName();
+        return "br label %" + target.getBlockName();
     }
 
     @Override
@@ -36,4 +42,5 @@ public class Jump extends IRInst{
     public boolean hasSideEffect() {
         return true;
     }
+
 }

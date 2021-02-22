@@ -19,10 +19,23 @@ public class BasicBlock {
     }
 
     public BasicBlock appendInst(IRInst newInst) {
-        assert !hasTerminal();
         insts.add(newInst);
         newInst.parentBlock = this;
         return this;
+    }
+
+    public BasicBlock createBetweenPrev(BasicBlock prev){
+        assert prevs.contains(prev);
+        assert prev.terminatorInst instanceof Branch;
+        BasicBlock newBlk=new BasicBlock("copyF"+prev.blockName+"T"+blockName);
+        prevs.remove(prev);
+        prevs.add(newBlk);
+        ((Branch)prev.terminatorInst).replaceBranch(prev,newBlk);
+        prev.nexts.remove(this);
+        prev.nexts.add(newBlk);
+        newBlk.prevs.add(prev);
+        newBlk.setJumpTerminator(this);
+        return newBlk;
     }
 
     public void setNextBlock(BasicBlock next) {
@@ -64,20 +77,6 @@ public class BasicBlock {
 
     public void defVariable(Register reg) {
         definition.add(reg.name);
-    }
-
-    @Deprecated
-    public BasicBlock split(String name) {
-        /*
-         * split this basic block into two blocks
-         * the prior contains all instructions of the original one, while the later contains nothing
-         */
-        var later = new BasicBlock(name);
-        later.nexts = this.nexts;
-        this.nexts = new HashSet<>();
-        this.nexts.add(later);
-        later.prevs.add(this);
-        return later;
     }
 
     private void setTerminator(IRInst terInst) {

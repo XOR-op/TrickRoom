@@ -6,7 +6,7 @@ import ir.operand.Register;
 import java.util.function.Function;
 
 public class Load extends IRDestedInst{
-    private IROperand address;
+    public IROperand address;
     public Load(Register dst,IROperand addr){
         dest=dst;
         address=addr;

@@ -58,14 +58,21 @@ public class Register extends IROperand {
 
     public boolean sameNaming(IROperand rhs){return rhs instanceof Register&&name.equals(((Register)rhs).name);}
 
-    public static IROperand replace(Function<Register,Register> rep,IROperand operand){
+    public static IROperand replace(Function<Register,Register> mapping,IROperand operand){
         if(operand instanceof Register&& !((Register) operand).isAnonymous())
-            return rep.apply((Register) operand);
+            return mapping.apply((Register) operand);
         else return operand;
+    }
+
+    public String identifier(){
+        return name+"^"+renaming;
     }
 
     public boolean equals(Register rhs){
         return name.equals(rhs.name)&&renaming== rhs.renaming;
+    }
+    public boolean equals(IROperand rhs){
+        return rhs instanceof Register&&equals((Register) rhs);
     }
 
     @Override

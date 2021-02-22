@@ -25,10 +25,9 @@ public class StructureType extends IRType {
         return this;
     }
 
-    @Deprecated
-    public int getMemberOffset(String mem) {
+    public int getMemberOffset(int which) {
         int off = 0;
-        for (int idx = 0; idx < members.size() && !members.get(idx).name.equals(mem); ++idx) {
+        for (int idx = 0; idx < which; ++idx) {
             off += members.get(idx).type.size();
         }
         return off;

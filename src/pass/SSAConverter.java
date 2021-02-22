@@ -1,4 +1,4 @@
-package ir.construct;
+package pass;
 
 
 import ir.BasicBlock;
@@ -9,9 +9,8 @@ import ir.operand.Register;
 
 import java.util.*;
 
-public class SSAConverter {
+public class SSAConverter extends FunctionPass {
     // dominance
-    private final Function func;
     private final HashMap<BasicBlock, Integer> order = new HashMap<>();
     private final ArrayList<BasicBlock> blocksByOrder = new ArrayList<>();
     private final HashMap<BasicBlock, BasicBlock> iDoms = new HashMap<>();
@@ -24,20 +23,21 @@ public class SSAConverter {
     private final HashMap<String, Stack<Register>> namingStack = new HashMap<>();
 
     public SSAConverter(Function f) {
-        func = f;
+        super(f);
         maxOrder = f.blocks.size();
         reversePostorder();
         calculateDom();
     }
 
-    public void SSAConstruct() {
+    @Override
+    public void run() {
         calcDominanceFrontier();
         phiInsertion();
         variableRenaming();
     }
 
     private void reversePostorder() {
-        reversePostorder(func.entryBlock, new HashSet<>());
+        reversePostorder(irFunc.entryBlock, new HashSet<>());
         Collections.reverse(blocksByOrder);
     }
 
@@ -65,11 +65,11 @@ public class SSAConverter {
     }
 
     public void calculateDom() {
-        func.blocks.forEach(b -> {
+        irFunc.blocks.forEach(b -> {
             domTree.put(b, new HashSet<>());
         });
         blocksByOrder.forEach(b -> iDoms.put(b, null));
-        iDoms.put(func.entryBlock, func.entryBlock);
+        iDoms.put(irFunc.entryBlock, irFunc.entryBlock);
         for (boolean flag = true; flag; ) {
             flag = false;
             for (int cur = 1; cur < blocksByOrder.size(); ++cur) {
@@ -95,7 +95,7 @@ public class SSAConverter {
     }
 
     public void calcDominanceFrontier() {
-        func.blocks.forEach(b -> dominanceFrontier.put(b, new ArrayList<>()));
+        irFunc.blocks.forEach(b -> dominanceFrontier.put(b, new ArrayList<>()));
         for (var block : blocksByOrder) {
             if (block.prevs.size() > 1) {
                 for (var prev : block.prevs) {
@@ -107,14 +107,14 @@ public class SSAConverter {
     }
 
     public void phiInsertion() {
-        func.varDefs.forEach((variable, defsRef) -> {
+        irFunc.varDefs.forEach((variable, defsRef) -> {
             var added = new HashSet<BasicBlock>();
             var defs = new LinkedList<>(defsRef);
             while (!defs.isEmpty()) {
                 BasicBlock oneDef = defs.pop();
                 for (var frontier : dominanceFrontier.get(oneDef)) {
                     if (!added.contains(frontier)) {
-                        frontier.appendPhi(new Phi(new Register(func.varType.get(variable), variable)));
+                        frontier.appendPhi(new Phi(new Register(irFunc.varType.get(variable), variable)));
                         added.add(frontier);
                         if (!defs.contains(frontier)) {
                             defs.add(frontier);
@@ -150,23 +150,23 @@ public class SSAConverter {
     }
 
     public void variableRenaming() {
-        func.varDefs.forEach((v, s) -> {
+        irFunc.varDefs.forEach((v, s) -> {
             renamingCounter.put(v, 1);
             var stk = new Stack<Register>();
-            stk.push(new Register(func.varType.get(v), v));
+            stk.push(new Register(irFunc.varType.get(v), v));
             namingStack.put(v, stk);
         });
-        func.parameters.forEach(r -> {
+        irFunc.parameters.forEach(r -> {
             namingStack.get(r.name).push(r);
         });
-        variableRenaming(func.entryBlock);
+        variableRenaming(irFunc.entryBlock);
     }
 
     private void variableRenaming(BasicBlock bb) {
         var modifiedSet = new HashSet<String>();
         bb.phiCollection.forEach(phi -> {
             // ignore arrayNew phi
-            if(phi.namedDest())
+            if (phi.namedDest())
                 phi.renameDest(allocNewRenaming(phi.dest, modifiedSet));
         });
         bb.insts.forEach(irInst -> {
@@ -177,7 +177,7 @@ public class SSAConverter {
         bb.terminatorInst.renameOperand(this::getRenaming);
         bb.nexts.forEach(nbb -> {
             nbb.phiCollection.forEach(p -> {
-                if(p.namedDest())
+                if (p.namedDest())
                     p.append(getRenaming(p.dest), bb);
             });
         });
