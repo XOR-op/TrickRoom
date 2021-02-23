@@ -7,7 +7,7 @@ import ir.typesystem.PointerType;
 
 import java.util.*;
 
-public class Function {
+public class IRFunction {
     public String name;
     public IRType retTy;
     public ArrayList<BasicBlock> blocks = new ArrayList<>();
@@ -18,7 +18,7 @@ public class Function {
     public ArrayList<BasicBlock> returnBlocks = new ArrayList<>();
     private final boolean isBuiltin;
 
-    public Function(String name, IRType returnType, boolean isBuiltin) {
+    public IRFunction(String name, IRType returnType, boolean isBuiltin) {
         this.name = name;
         this.isBuiltin = isBuiltin;
         retTy = returnType;
@@ -27,11 +27,11 @@ public class Function {
         blocks.add(entryBlock);
     }
 
-    public Function(String name, IRType returnType) {
+    public IRFunction(String name, IRType returnType) {
         this(name, returnType, false);
     }
 
-    public Function addParam(Register reg) {
+    public IRFunction addParam(Register reg) {
         parameters.add(reg);
         varDefs.put(reg.name, new HashSet<>());
         varType.put(reg.name, reg.type);
@@ -42,7 +42,7 @@ public class Function {
         returnBlocks.add(bb);
     }
 
-    public Function addParam(IRType ty, String name) {
+    public IRFunction addParam(IRType ty, String name) {
         return addParam(new Register(ty, name));
     }
 
@@ -58,7 +58,7 @@ public class Function {
         varType.put(reg.name, reg.type);
     }
 
-    public Function addBlock(BasicBlock bl) {
+    public IRFunction addBlock(BasicBlock bl) {
         blocks.add(bl);
         return this;
     }

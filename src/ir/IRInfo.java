@@ -12,14 +12,14 @@ import java.util.HashSet;
 import java.util.function.Consumer;
 
 public class IRInfo {
-    private final HashMap<String, Function> functions = new HashMap<>();
+    private final HashMap<String, IRFunction> functions = new HashMap<>();
     private final HashMap<String, StructureType> types = new HashMap<>();
     private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
     private final HashMap<String, String> stringMethods = new HashMap<>();
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
-    private final HashSet<Function> globalFunction = new HashSet<>();
+    private final HashSet<IRFunction> globalFunction = new HashSet<>();
     private int strCounter = 0;
-    private Function init = null, main = null;
+    private IRFunction init = null, main = null;
 
     public IRInfo(FileScope scope) {
         // global functions
@@ -52,8 +52,8 @@ public class IRInfo {
         addStringMethod(Cst.bool, name).addParam(Cst.str, "rhs");
     }
 
-    private Function addStringMethod(IRType ret, String name) {
-        var f = new Function("_str_" + name, ret, true);
+    private IRFunction addStringMethod(IRType ret, String name) {
+        var f = new IRFunction("_str_" + name, ret, true);
         f.addParam(Cst.str, "lhs");
         functions.put(Cst.STR_FUNC + name, f);
         stringMethods.put(name, Cst.STR_FUNC + name);
@@ -61,8 +61,8 @@ public class IRInfo {
         return f;
     }
 
-    private Function addBuiltinFunction(IRType ret, String name) {
-        var f = new Function("_gbl_" + name, ret, true);
+    private IRFunction addBuiltinFunction(IRType ret, String name) {
+        var f = new IRFunction("_gbl_" + name, ret, true);
         functions.put(name, f);
         globalFunction.add(f);
         return f;
@@ -73,11 +73,11 @@ public class IRInfo {
         return Cst.STRUCT + className + "." + functionName;
     }
 
-    public Function getStringMethod(String name) {
+    public IRFunction getStringMethod(String name) {
         return functions.get(stringMethods.get(name));
     }
 
-    public Function getClassMethod(String cls, String func) {
+    public IRFunction getClassMethod(String cls, String func) {
         return functions.get(classMethodInterpretation(cls, func));
     }
 
@@ -99,8 +99,8 @@ public class IRInfo {
     }
 
 
-    private Function addMethod(ClassType cls, FunctionType func) {
-        var f = new Function(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
+    private IRFunction addMethod(ClassType cls, FunctionType func) {
+        var f = new IRFunction(classMethodInterpretation(cls.id, func.id), resolveType(func.returnType));
         f.addParam(new Register(resolveType(cls), "this"));
         func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.nameAsReg)));
         functions.put(f.name, f);
@@ -115,7 +115,7 @@ public class IRInfo {
     }
 
     public void addFunction(FunctionType func) {
-        var f = new Function(func.id, resolveType(func.returnType));
+        var f = new IRFunction(func.id, resolveType(func.returnType));
         func.parameters.forEach(param -> f.addParam(new Register(resolveType(param.getType()), param.nameAsReg)));
         functions.put(f.name, f);
     }
@@ -141,7 +141,7 @@ public class IRInfo {
         return types.get(cls.id);
     }
 
-    public Function getFunction(String ft) {
+    public IRFunction getFunction(String ft) {
         return functions.get(ft);
     }
 
@@ -182,23 +182,23 @@ public class IRInfo {
         return builder.toString();
     }
 
-    public Function getInit() {
+    public IRFunction getInit() {
         return init;
     }
 
-    public void setInit(Function init) {
+    public void setInit(IRFunction init) {
         this.init = init;
     }
 
-    public Function getMain() {
+    public IRFunction getMain() {
         return main;
     }
 
-    public void setMain(Function main) {
+    public void setMain(IRFunction main) {
         this.main = main;
     }
 
-    public void forEachFunction(Consumer<Function> f) {
+    public void forEachFunction(Consumer<IRFunction> f) {
         functions.forEach((k, v) -> f.accept(v));
     }
 }

@@ -8,11 +8,11 @@ public class StoreData extends RVInst{
     private Imm imm;
     private WidthType wt;
 
-    public StoreData(WidthType wt, RVRegister addr, RVRegister src, Imm imm){
+    public StoreData(WidthType wt, RVRegister addr, RVRegister src, Imm offset){
         this.wt=wt;
         this.rs1=addr;
         this.rs2=src;
-        this.imm=imm;
+        this.imm=offset;
     }
 
     @Override

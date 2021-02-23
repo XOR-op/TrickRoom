@@ -2,6 +2,7 @@ package assembly.construct;
 
 import assembly.AsmBlock;
 import assembly.AsmFunction;
+import assembly.RVInfo;
 import assembly.instruction.*;
 import assembly.operand.Imm;
 import assembly.operand.PhysicalRegister;
@@ -9,10 +10,12 @@ import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 import ir.BasicBlock;
 import ir.Cst;
-import ir.Function;
+import ir.IRFunction;
 import ir.IRInfo;
 import ir.instruction.*;
+import ir.instruction.Branch;
 import ir.instruction.Call;
+import ir.instruction.Jump;
 import ir.operand.BoolConstant;
 import ir.operand.IROperand;
 import ir.operand.IntConstant;
@@ -20,14 +23,22 @@ import ir.operand.Register;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
 
+import java.util.HashMap;
+
+/*
+    delay register restoration to Stage Register Allocation
+ */
 public class AsmBuilder {
     private final IRInfo ir;
+    private RVInfo info;
     private AsmBlock curBlock;
     private AsmFunction curFunc;
 
+    private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
+
     private class NameGenerator {
         private int n = 0;
-        private String prefix;
+        private final String prefix;
 
         public NameGenerator(String prefix) {
             this.prefix = prefix;
@@ -38,22 +49,86 @@ public class AsmBuilder {
         }
     }
 
+    private class BlockMapping {
+        private HashMap<BasicBlock, AsmBlock> mapping = new HashMap<>();
+        private AsmFunction asmFunc;
+
+        public BlockMapping(AsmFunction asmFunc, IRFunction irFunc) {
+            this.asmFunc = asmFunc;
+            irFunc.blocks.forEach(block -> {
+                var curBlk = getBlock(block);
+                block.prevs.forEach(p -> curBlk.addPrev(getBlock(p)));
+                block.nexts.forEach(p -> curBlk.addNext(getBlock(p)));
+            });
+            this.asmFunc.setEntry(getBlock(irFunc.entryBlock));
+        }
+
+        public AsmBlock getBlock(BasicBlock blk) {
+            if (mapping.containsKey(blk)) return mapping.get(blk);
+            else {
+                var asmBlk = new AsmBlock(blk.getBlockName());
+                mapping.put(blk, asmBlk);
+                asmFunc.addBlock(asmBlk);
+                return asmBlk;
+            }
+        }
+    }
+
     private NameGenerator ng;
+    private BlockMapping curBlockMapping;
+
 
     public AsmBuilder(IRInfo irInfo) {
         ir = irInfo;
     }
 
-    private void buildFunction(AsmFunction asmFunc, Function irFunc) {
+    private void buildFunction(AsmFunction asmFunc, IRFunction irFunc) {
         ng = new NameGenerator("asm.virtualReg");
+        curBlockMapping = new BlockMapping(asmFunc, irFunc);
+        curFunc = asmFunc;
+        irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
+        curFunc = null;
     }
 
     private void buildBlock(AsmBlock asmBlock, BasicBlock irBlock) {
+        curBlock = asmBlock;
         irBlock.insts.forEach(irInst -> {
-            if (!(irInst instanceof Compare) || irInst != irBlock.insts.getLast())
+            if (!((irInst instanceof Compare) && irBlock.terminatorInst instanceof Branch && irInst != irBlock.insts.getLast()))
                 buildInst(irInst);
         });
-
+        // build terminal instruction
+        if (irBlock.terminatorInst instanceof Branch) {
+            var irBranch = (Branch) irBlock.terminatorInst;
+            Compare irCmp = (irBlock.insts.getLast() instanceof Compare) ? ((Compare) irBlock.insts.getLast()) : null;
+            if (irCmp != null && irCmp.dest == irBranch.condition) {
+                // coalesce cmp and branch
+                RVInst.RelaType rt;
+                switch (((Compare) irBlock.insts.getLast()).type) {
+                    case eq -> rt = RVInst.RelaType.eq;
+                    case ne -> rt = RVInst.RelaType.ne;
+                    case sle -> rt = RVInst.RelaType.le;
+                    case sge -> rt = RVInst.RelaType.ge;
+                    case slt -> rt = RVInst.RelaType.lt;
+                    case sgt -> rt = RVInst.RelaType.gt;
+                    default -> throw new IllegalStateException();
+                }
+                curBlock.addInst(new RVBranch(rt, false, getRegister(irCmp.operand1), getRegister(irCmp.operand2),
+                        curBlockMapping.getBlock(irBranch.trueBranch), curBlockMapping.getBlock(irBranch.falseBranch)));
+            } else {
+                curBlock.addInst(new RVBranch(RVInst.RelaType.ne, false, getRegister(irBranch.condition), PhysicalRegister.Zero(),
+                        curBlockMapping.getBlock(irBranch.trueBranch), curBlockMapping.getBlock(irBranch.falseBranch)));
+            }
+        } else if (irBlock.terminatorInst instanceof Jump) {
+            curBlock.addInst(new assembly.instruction.Jump(curBlockMapping.getBlock(((Jump) irBlock.terminatorInst).getTarget())));
+        } else {
+            assert irBlock.terminatorInst instanceof Ret;
+            var val = ((Ret) irBlock.terminatorInst).value;
+            if (val != null) {
+                curBlock.addInst(copyToReg(PhysicalRegister.get("a0"), val));
+            }
+            // notice: no restoration here
+        }
+        curBlock = null;
     }
 
     private void buildInst(IRInst inst) {
@@ -81,6 +156,14 @@ public class AsmBuilder {
         }
     }
 
+    private RVInst copyToReg(RVRegister target, IROperand op) {
+        if (op instanceof Register) return new Move(target, getRegister(op));
+        else {
+            int val = (op instanceof IntConstant) ? ((IntConstant) op).value : ((((BoolConstant) op).value) ? 1 : 0);
+            return new LoadImm(target, val);
+        }
+    }
+
     private void buildAlloca(Alloca inst) {
         // todo
     }
@@ -93,7 +176,7 @@ public class AsmBuilder {
         assert !(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant);
         var ct = Computation.getCompType(inst.inst);
         var rd = new VirtualRegister(inst.dest);
-        VirtualRegister rs1 = null, rs2 = null;
+        VirtualRegister rs1, rs2 = null;
         Imm imm = null;
         if (inst.operand1 instanceof IntConstant) {
             switch (ct) {
@@ -124,13 +207,54 @@ public class AsmBuilder {
     }
 
     private void buildCall(Call inst) {
-        // todo
+        for (int i = 0; i < Integer.min(inst.args.size(), 8); ++i) {
+            var op = inst.args.get(i);
+            var target = PhysicalRegister.get(10 + i);
+            curBlock.addInst(copyToReg(target, op));
+        }
+        if (inst.args.size() >= 8) {
+            // store to the sp
+            int curOff = 0;
+            for (int i = 8; i < inst.args.size(); ++i) {
+                curBlock.addInst(new StoreData(RVInst.WidthType.w, PhysicalRegister.get("sp"),
+                        getRegister(inst.args.get(i)), new Imm(curOff)));
+                curOff += 4;
+            }
+            curBlock.addInst(new RVCall(info.getFunc(inst.function)));
+            if (inst.containsDest()) {
+                curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("s0")));
+            }
+        }
     }
 
     private void buildCompare(Compare inst) {
         var rs1 = getRegister(inst.operand1);
         var rs2 = getRegister(inst.operand2);
-        // todo
+        switch (inst.type) {
+            case slt -> curBlock.addInst(new Computation(getRegister(inst.dest), Computation.CompType.slt, rs1, rs2));
+            case sgt -> curBlock.addInst(new Computation(getRegister(inst.dest), Computation.CompType.slt, rs2, rs1));
+            case eq -> {
+                var xor = new Computation(ng.gen(), Computation.CompType.xor, rs1, rs2);
+                curBlock.addInst(xor);
+                curBlock.addInst(new SetZ(getRegister(inst.dest), SetZ.SetType.seqz, xor.rd));
+            }
+            case ne -> {
+                var xor = new Computation(ng.gen(), Computation.CompType.xor, rs1, rs2);
+                curBlock.addInst(xor);
+                curBlock.addInst(new SetZ(getRegister(inst.dest), SetZ.SetType.snez, xor.rd));
+            }
+            case sle -> {
+                var gt = new Computation(ng.gen(), Computation.CompType.slt, rs2, rs1);
+                curBlock.addInst(gt);
+                curBlock.addInst(new Computation(getRegister(inst.dest), Computation.CompType.xor, gt.rd, new Imm(1)));
+            }
+            case sge -> {
+                var lt = new Computation(ng.gen(), Computation.CompType.slt, rs1, rs2);
+                curBlock.addInst(lt);
+                curBlock.addInst(new Computation(getRegister(inst.dest), Computation.CompType.xor, lt.rd, new Imm(1)));
+            }
+            default -> throw new IllegalStateException();
+        }
     }
 
     private void buildGetElementPtr(GetElementPtr inst) {

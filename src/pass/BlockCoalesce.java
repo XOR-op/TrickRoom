@@ -1,14 +1,14 @@
 package pass;
 
 import ir.BasicBlock;
-import ir.Function;
+import ir.IRFunction;
 import ir.instruction.Jump;
 
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class BlockCoalesce extends FunctionPass {
-    public BlockCoalesce(Function f) {
+    public BlockCoalesce(IRFunction f) {
         super(f);
     }
 

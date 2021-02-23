@@ -1,7 +1,7 @@
 package pass;
 
 import ir.BasicBlock;
-import ir.Function;
+import ir.IRFunction;
 import ir.instruction.Assign;
 import ir.operand.IROperand;
 import ir.operand.Register;
@@ -29,7 +29,7 @@ public class SSADestructor extends FunctionPass {
 
     private final HashMap<BasicBlock, ParallelCopy> blockToCopy = new HashMap<>();
 
-    public SSADestructor(Function ssaFunc) {
+    public SSADestructor(IRFunction ssaFunc) {
         super(ssaFunc);
     }
 

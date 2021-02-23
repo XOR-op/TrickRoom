@@ -2,14 +2,13 @@ package ir.construct;
 
 import ast.ASTVisitor;
 import ast.struct.*;
-import ast.type.ArrayObjectType;
 import ast.type.ClassType;
 import ast.type.FunctionType;
 import ast.type.TypeConst;
 import ast.scope.FileScope;
 import ir.BasicBlock;
 import ir.Cst;
-import ir.Function;
+import ir.IRFunction;
 import ir.IRInfo;
 import ir.instruction.*;
 import ir.operand.*;
@@ -20,7 +19,7 @@ import java.util.Stack;
 
 public class IRBuilder implements ASTVisitor {
     private ClassType curClass;
-    private Function curFunc = null;
+    private IRFunction curFunc = null;
     private BasicBlock curBlock = null;
     private final Stack<BasicBlock> UpdBlockStack = new Stack<>();
     private final Stack<BasicBlock> AfterLoopStack = new Stack<>();
@@ -42,7 +41,7 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(RootNode node) {
         // global init
-        curFunc = new Function(Cst.INIT, Cst.int32);
+        curFunc = new IRFunction(Cst.INIT, Cst.int32);
         info.setInit(curFunc);
         curBlock = curFunc.entryBlock;
         node.globalVars.forEach(decl -> {
@@ -68,7 +67,7 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(BinaryExprNode node) {
         if (node.lhs.type.equals(TypeConst.String) || node.rhs.type.equals(TypeConst.String)) {
             // implicit function
-            Function f;
+            IRFunction f;
             switch (node.lexerSign) {
                 case "==" -> f = info.getStringMethod("eq");
                 case "!=" -> f = info.getStringMethod("ne");
@@ -237,7 +236,7 @@ public class IRBuilder implements ASTVisitor {
         } else {
             if (node.callee instanceof IdentifierNode) {
                 // implicit this
-                Function f = info.getClassMethod(curClass.id, ((IdentifierNode) node.callee).id);
+                IRFunction f = info.getClassMethod(curClass.id, ((IdentifierNode) node.callee).id);
                 call = new Call(withType(f.retTy), f);
                 call.push(visit(new ThisNode()));
                 node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
@@ -245,7 +244,7 @@ public class IRBuilder implements ASTVisitor {
                 // method where callee is MemberNode
                 assert node.callee instanceof MemberNode;
                 ExprNode object = ((MemberNode) node.callee).object;
-                Function f = object.type.equals(TypeConst.String) ?
+                IRFunction f = object.type.equals(TypeConst.String) ?
                         info.getStringMethod(((MemberNode) node.callee).member) :
                         info.getClassMethod(object.type.id, node.func.id);
                 call = new Call(withType(f.retTy), f);

@@ -13,13 +13,14 @@ public class Computation extends RVInst{
         return ct+(imm==null?" ":"i ")+rd+","+rs1+","+(imm==null?imm:rs2);
     }
 
-    public enum CompType{
-        add,sub,mul,div,rem,slt,xor,or,and,sll,srl,sra
+    public enum CompType {
+        add, sub, mul, div, rem, slt, xor, or, and, sll, srl, sra
     }
-
     public RVRegister rd,rs1,rs2;
     public Imm imm;
     public CompType ct;
+
+    protected Computation(){}
 
     private Computation(RVRegister rd, CompType type, RVRegister rs1, RVRegister rs2, Imm imm){
         this.ct=type;
@@ -54,4 +55,5 @@ public class Computation extends RVInst{
         }
         return ct;
     }
+
 }

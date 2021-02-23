@@ -1,11 +1,13 @@
 package pass;
 
+import ir.IRFunction;
+
 public abstract class FunctionPass {
     public abstract void run();
 
-    public ir.Function irFunc;
+    public IRFunction irFunc;
 
-    public FunctionPass(ir.Function f) {
+    public FunctionPass(IRFunction f) {
         irFunc = f;
     }
 }

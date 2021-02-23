@@ -1,6 +1,6 @@
 package ir.instruction;
 
-import ir.Function;
+import ir.IRFunction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.StringJoiner;
 
 public class Call extends IRDestedInst{
-    public Function function;
+    public IRFunction function;
     public ArrayList<IROperand> args;
-    public Call(Register dst, Function func){
+    public Call(Register dst, IRFunction func){
         assert func!=null;
         function=func;
         args=new ArrayList<>();

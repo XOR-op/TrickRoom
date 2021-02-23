@@ -2,7 +2,7 @@ package pass;
 
 
 import ir.BasicBlock;
-import ir.Function;
+import ir.IRFunction;
 import ir.instruction.IRDestedInst;
 import ir.instruction.Phi;
 import ir.operand.Register;
@@ -22,7 +22,7 @@ public class SSAConverter extends FunctionPass {
     private final HashMap<String, Integer> renamingCounter = new HashMap<>();
     private final HashMap<String, Stack<Register>> namingStack = new HashMap<>();
 
-    public SSAConverter(Function f) {
+    public SSAConverter(IRFunction f) {
         super(f);
         maxOrder = f.blocks.size();
         reversePostorder();

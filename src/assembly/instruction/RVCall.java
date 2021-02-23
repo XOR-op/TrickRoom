@@ -2,11 +2,11 @@ package assembly.instruction;
 
 import assembly.AsmFunction;
 
-public class Call extends RVInst{
+public class RVCall extends RVInst{
 
     private AsmFunction dest;
 
-    public Call(AsmFunction func){
+    public RVCall(AsmFunction func){
         dest=func;
     }
 

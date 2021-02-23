@@ -7,8 +7,8 @@ import ir.operand.Register;
 import java.util.function.Function;
 
 public class Branch extends IRInst{
-    private BasicBlock trueBranch,falseBranch;
-    private IROperand condition;
+    public BasicBlock trueBranch,falseBranch;
+    public IROperand condition;
     public Branch(IROperand cond,BasicBlock tb,BasicBlock fb){
         condition=cond;
         trueBranch=tb;

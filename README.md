@@ -11,11 +11,13 @@ The precise grammar definition can be referenced in MxStar.g4 in the repository.
 ## Command Options
 #### -fsyntax-only
 only do semantic check
-#### -llvm
-generate llvm code
+#### -emit-llvm
+generate llvm IR code
 #### -O2
 do optimization
 #### -i $FILE
-get input from file instead from stdin
+redirect input from stdin to file
+#### -o $FILE
+redirect output from stdout to file
 ## Technique Specs
 todo
