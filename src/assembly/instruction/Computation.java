@@ -7,10 +7,24 @@ import assembly.operand.VirtualRegister;
 import ir.instruction.Binary;
 import ir.operand.IntConstant;
 
+import java.util.function.Consumer;
+
 public class Computation extends RVInst{
     @Override
     public String tell() {
-        return ct+(imm==null?" ":"i ")+rd+","+rs1+","+(imm==null?imm:rs2);
+        return ct+(imm==null?" ":"i ")+rd+","+rs1+","+(imm!=null?imm:rs2);
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<RVRegister> consumer) {
+        consumer.accept(rs1);
+        if(rs2!=null)
+            consumer.accept(rs2);
+    }
+
+    @Override
+    public void forEachRegDest(Consumer<RVRegister> consumer) {
+        consumer.accept(rd);
     }
 
     public enum CompType {

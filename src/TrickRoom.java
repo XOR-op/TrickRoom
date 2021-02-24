@@ -1,3 +1,4 @@
+import assembly.construct.AsmBuilder;
 import ast.construct.ASTBuilder;
 import ast.construct.ParsingErrorHandler;
 import ast.construct.ScopeBuilder;
@@ -11,6 +12,9 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
+import pass.ConstantDeducer;
+import pass.SSAConverter;
+import pass.SSADestructor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -114,9 +118,11 @@ public class TrickRoom {
         try {
             RootNode rootNode = astGen();
             collectType(rootNode);
-            if (llvmGenFlag) llvmGen(rootNode);
-            if (assemblyGenFlag) assemblyGen(rootNode);
-            if (optimizationFlag) optimize();
+            if (llvmGenFlag || assemblyGenFlag) {
+                var info = llvmGen(rootNode);
+                if (optimizationFlag) optimize(info);
+                if (assemblyGenFlag) assemblyGen(info);
+            }
         } catch (SemanticException e) {
             if (verb == Verbose.DEBUG) {
                 e.printStackTrace();
@@ -145,19 +151,31 @@ public class TrickRoom {
     private IRInfo llvmGen(RootNode rootNode) {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
+        info.forEachFunction(f -> new SSAConverter(f).invoke());
         try {
-            os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
+            if (llvmGenFlag)
+                os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             System.err.println(e);
         }
         return info;
     }
 
-    private void assemblyGen(RootNode rootNode) {
-        throw new UnimplementedError();
+    private void assemblyGen(IRInfo irInfo) {
+        var builder = new AsmBuilder(irInfo);
+        var info = builder.constructAssembly();
+        try {
+            os.write(info.tell().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            System.err.println(e);
+        }
     }
 
-    private void optimize() {
+    private void optimize(IRInfo info) {
+        info.forEachFunction(f -> {
+            new SSADestructor(f).invoke();
+            new ConstantDeducer(f).invoke();
+        });
         throw new UnimplementedError();
     }
 

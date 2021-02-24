@@ -23,7 +23,7 @@ public class Register extends IROperand {
     public String name;
 
     public Register(IRType ty) {
-        this.name = "_$"+(counter++);
+        this.name = "_A_"+(counter++);
         type = ty;
         isAnonymous = true;
     }
@@ -65,7 +65,7 @@ public class Register extends IROperand {
     }
 
     public String identifier(){
-        return name+"^"+renaming;
+        return name+"_"+renaming;
     }
 
     public boolean equals(Register rhs){

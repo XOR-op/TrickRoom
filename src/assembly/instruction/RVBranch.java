@@ -4,6 +4,8 @@ import assembly.AsmBlock;
 import assembly.operand.RVRegister;
 import exception.UnimplementedError;
 
+import java.util.function.Consumer;
+
 public class RVBranch extends RVInst {
 
     private RelaType rt;
@@ -22,7 +24,18 @@ public class RVBranch extends RVInst {
 
     @Override
     public String tell() {
-        throw new UnimplementedError();
-//        return "b"+rt+(isUnsigned?"u":"")+" "+rs1+", "+rs2+", "+trueDest;
+//        throw new UnimplementedError();
+        return "b"+rt+(isUnsigned?"u":"")+" "+rs1+", "+rs2+", "+trueDest.getName()+" ;else "+falseDest.getName();
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<RVRegister> consumer) {
+        consumer.accept(rs1);
+        consumer.accept(rs2);
+    }
+
+    @Override
+    public void forEachRegDest(Consumer<RVRegister> consumer) {
+        // do nothing
     }
 }

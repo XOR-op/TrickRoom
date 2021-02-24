@@ -7,7 +7,7 @@ import ir.operand.Register;
 import java.util.*;
 
 public class BasicBlock {
-    private final String blockName;
+    public final String blockName;
     public LinkedList<IRInst> insts = new LinkedList<>();
     public IRInst terminatorInst = null;
     public Set<Phi> phiCollection = new HashSet<>();
@@ -24,10 +24,7 @@ public class BasicBlock {
         return this;
     }
 
-    public BasicBlock createBetweenPrev(BasicBlock prev){
-        assert prevs.contains(prev);
-        assert prev.terminatorInst instanceof Branch;
-        BasicBlock newBlk=new BasicBlock("copyF"+prev.blockName+"T"+blockName);
+    public void createBetweenPrev(BasicBlock prev,BasicBlock newBlk){
         prevs.remove(prev);
         prevs.add(newBlk);
         ((Branch)prev.terminatorInst).replaceBranch(prev,newBlk);
@@ -35,7 +32,6 @@ public class BasicBlock {
         prev.nexts.add(newBlk);
         newBlk.prevs.add(prev);
         newBlk.setJumpTerminator(this);
-        return newBlk;
     }
 
     public void setNextBlock(BasicBlock next) {

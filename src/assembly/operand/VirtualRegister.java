@@ -14,9 +14,14 @@ public class VirtualRegister extends RVRegister {
         name=irReg.identifier();
     }
 
+    @Override
+    public boolean equals(RVRegister rhs){
+        return (rhs instanceof VirtualRegister)&&((VirtualRegister) rhs).name.equals(name);
+    }
 
     @Override
     public String tell() {
-        throw new IllegalStateException();
+        return name;
+//        throw new IllegalStateException();
     }
 }

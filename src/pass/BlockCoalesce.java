@@ -42,7 +42,7 @@ public class BlockCoalesce extends FunctionPass {
     }
 
     @Override
-    public void run() {
+    protected void run() {
         while (true) {
             var list = dfs();
             if (list.isEmpty()) return;

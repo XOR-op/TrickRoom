@@ -16,10 +16,7 @@ import ir.instruction.*;
 import ir.instruction.Branch;
 import ir.instruction.Call;
 import ir.instruction.Jump;
-import ir.operand.BoolConstant;
-import ir.operand.IROperand;
-import ir.operand.IntConstant;
-import ir.operand.Register;
+import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
 
@@ -29,10 +26,11 @@ import java.util.HashMap;
     delay register restoration to Stage Register Allocation
  */
 public class AsmBuilder {
-    private final IRInfo ir;
-    private RVInfo info;
+    private IRInfo irInfo;
+    private RVInfo rvInfo;
     private AsmBlock curBlock;
     private AsmFunction curFunc;
+    private final HashMap<String, VirtualRegister> nameToVirReg = new HashMap<>();
 
     private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
 
@@ -79,8 +77,41 @@ public class AsmBuilder {
 
 
     public AsmBuilder(IRInfo irInfo) {
-        ir = irInfo;
+        this.irInfo = irInfo;
+        rvInfo = new RVInfo(irInfo);
     }
+
+    public RVInfo constructAssembly() {
+        irInfo.forEachFunction(f -> {
+            if (!f.isBuiltin())
+                buildFunction(rvInfo.getFunc(f), f);
+        });
+        return rvInfo;
+    }
+
+    private RVRegister getRegister(IROperand operand) {
+        if (operand instanceof Register) {
+            var name = ((Register) operand).identifier();
+            if (!nameToVirReg.containsKey(name))
+                nameToVirReg.put(name, new VirtualRegister(name));
+            return nameToVirReg.get(name);
+        } else {
+            int i = (operand instanceof IntConstant) ? ((IntConstant) operand).value :
+                    (((BoolConstant) operand).value ? 1 : 0);
+            var inst = new LoadImm(ng.gen(), i);
+            curBlock.addInst(inst);
+            return inst.rd;
+        }
+    }
+
+    private RVInst copyToReg(RVRegister target, IROperand op) {
+        if (op instanceof Register) return new Move(target, getRegister(op));
+        else {
+            int val = (op instanceof IntConstant) ? ((IntConstant) op).value : ((((BoolConstant) op).value) ? 1 : 0);
+            return new LoadImm(target, val);
+        }
+    }
+
 
     private void buildFunction(AsmFunction asmFunc, IRFunction irFunc) {
         ng = new NameGenerator("asm.virtualReg");
@@ -126,14 +157,14 @@ public class AsmBuilder {
             if (val != null) {
                 curBlock.addInst(copyToReg(PhysicalRegister.get("a0"), val));
             }
+            curBlock.addInst(new Return());
             // notice: no restoration here
         }
         curBlock = null;
     }
 
     private void buildInst(IRInst inst) {
-        if (inst instanceof Alloca) buildAlloca((Alloca) inst);
-        else if (inst instanceof Assign) buildAssign((Assign) inst);
+        if (inst instanceof Assign) buildAssign((Assign) inst);
         else if (inst instanceof Binary) buildBinary((Binary) inst);
         else if (inst instanceof BitCast) buildBitCast((BitCast) inst);
         else if (inst instanceof Call) buildCall((Call) inst);
@@ -141,59 +172,38 @@ public class AsmBuilder {
         else if (inst instanceof GetElementPtr) buildGetElementPtr((GetElementPtr) inst);
         else if (inst instanceof Load) buildLoad((Load) inst);
         else if (inst instanceof Store) buildStore((Store) inst);
-        else throw new IllegalStateException();
+        else throw new IllegalStateException(((Object) inst).toString());
     }
 
-    private RVRegister getRegister(IROperand operand) {
-        if (operand instanceof Register) {
-            return new VirtualRegister(((Register) operand).identifier());
-        } else {
-            int i = (operand instanceof IntConstant) ? ((IntConstant) operand).value :
-                    (((BoolConstant) operand).value ? 1 : 0);
-            var inst = new LoadImm(ng.gen(), i);
-            curBlock.addInst(inst);
-            return inst.rd;
-        }
-    }
-
-    private RVInst copyToReg(RVRegister target, IROperand op) {
-        if (op instanceof Register) return new Move(target, getRegister(op));
-        else {
-            int val = (op instanceof IntConstant) ? ((IntConstant) op).value : ((((BoolConstant) op).value) ? 1 : 0);
-            return new LoadImm(target, val);
-        }
-    }
-
-    private void buildAlloca(Alloca inst) {
-        // todo
-    }
 
     private void buildAssign(Assign inst) {
-        curBlock.addInst(new Computation(getRegister(inst.dest), Computation.CompType.add, getRegister(inst.src), new Imm(0)));
+        if (inst.src instanceof UndefConstant) return;
+        curBlock.addInst(copyToReg(getRegister(inst.dest), inst.src));
     }
 
     private void buildBinary(Binary inst) {
+        // should be optimized
         assert !(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant);
         var ct = Computation.getCompType(inst.inst);
-        var rd = new VirtualRegister(inst.dest);
-        VirtualRegister rs1, rs2 = null;
+        var rd = getRegister(inst.dest);
+        RVRegister rs1, rs2 = null;
         Imm imm = null;
         if (inst.operand1 instanceof IntConstant) {
             switch (ct) {
                 case div, rem, sll, sra -> {
-                    rs1 = (VirtualRegister) getRegister(inst.operand1);
-                    rs2 = new VirtualRegister((Register) inst.operand2);
+                    rs1 = getRegister(inst.operand1);
+                    rs2 = getRegister(inst.operand2);
                 }
                 default -> {
-                    rs1 = new VirtualRegister((Register) inst.operand2);
+                    rs1 = getRegister(inst.operand2);
                     imm = new Imm(((IntConstant) inst.operand1).value);
                 }
             }
         } else {
             assert inst.operand1 instanceof Register;
-            rs1 = new VirtualRegister((Register) inst.operand1);
+            rs1 = getRegister(inst.operand1);
             if (inst.operand2 instanceof Register)
-                rs2 = new VirtualRegister((Register) inst.operand2);
+                rs2 = getRegister(inst.operand2);
             else imm = new Imm(((IntConstant) inst.operand2).value);
         }
         if (imm == null)
@@ -207,6 +217,7 @@ public class AsmBuilder {
     }
 
     private void buildCall(Call inst) {
+        // todo backup
         for (int i = 0; i < Integer.min(inst.args.size(), 8); ++i) {
             var op = inst.args.get(i);
             var target = PhysicalRegister.get(10 + i);
@@ -220,7 +231,7 @@ public class AsmBuilder {
                         getRegister(inst.args.get(i)), new Imm(curOff)));
                 curOff += 4;
             }
-            curBlock.addInst(new RVCall(info.getFunc(inst.function)));
+            curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
             if (inst.containsDest()) {
                 curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("s0")));
             }

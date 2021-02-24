@@ -3,6 +3,8 @@ package assembly.instruction;
 import assembly.operand.Imm;
 import assembly.operand.RVRegister;
 
+import java.util.function.Consumer;
+
 public class LoadData extends RVInst{
 
     private RVRegister rd,rs1;
@@ -19,5 +21,15 @@ public class LoadData extends RVInst{
     @Override
     public String tell() {
         return "l"+wt+" "+rd+",("+imm+")"+rs1;
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<RVRegister> consumer) {
+        consumer.accept(rs1);
+    }
+
+    @Override
+    public void forEachRegDest(Consumer<RVRegister> consumer) {
+        consumer.accept(rd);
     }
 }

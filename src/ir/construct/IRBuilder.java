@@ -484,14 +484,13 @@ public class IRBuilder implements ASTVisitor {
                 curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
                 var exit = new BasicBlock("exit");
-                var returnValue = new Register(new PointerType(curFunc.retTy), Cst.RETURN_VAL);
-                curFunc.addAlloca(returnValue);
-                var loading = new Load(new Register(curFunc.retTy), returnValue);
-                exit.appendInst(loading).setRetTerminator(loading.dest);
+                var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
+                curFunc.entryBlock.insertInstFromHead(new Assign(returnValue,new UndefConstant(returnValue.type)));
+                exit.setRetTerminator(returnValue);
                 curFunc.returnBlocks.forEach(b -> {
                     IROperand ope = ((Ret) b.terminatorInst).value;
                     b.terminatorInst = null;
-                    b.appendInst(new Store(ope, returnValue));
+                    b.appendInst(new Assign(returnValue,ope));
                     b.setJumpTerminator(exit);
                 });
                 curFunc.addBlock(exit);

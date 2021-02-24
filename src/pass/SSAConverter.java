@@ -30,7 +30,7 @@ public class SSAConverter extends FunctionPass {
     }
 
     @Override
-    public void run() {
+    protected void run() {
         calcDominanceFrontier();
         phiInsertion();
         variableRenaming();

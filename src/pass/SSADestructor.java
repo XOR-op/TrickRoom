@@ -34,20 +34,23 @@ public class SSADestructor extends FunctionPass {
     }
 
     @Override
-    public void run() {
+    protected void run() {
         // todo transformed-SSA support
         convSSADestruct();
     }
 
     private void convSSADestruct() {
+        // avoid ConcurrentModificationException
         var toAdd = new ArrayList<BasicBlock>();
         irFunc.blocks.forEach(oneBlk -> {
             HashMap<BasicBlock, ParallelCopy> prevToCopy = new HashMap<>();
+            var prevToAdd = new HashMap<BasicBlock, BasicBlock>();
             // split critical edges
             oneBlk.prevs.forEach(onePrev -> {
                 ParallelCopy pc = new ParallelCopy();
                 if (onePrev.nexts.size() > 1) {
-                    BasicBlock inter = oneBlk.createBetweenPrev(onePrev);
+                    var inter = new BasicBlock("copyF" + onePrev.blockName + "T" + oneBlk.blockName);
+                    prevToAdd.put(onePrev, inter);
                     prevToCopy.put(onePrev, pc);
                     blockToCopy.put(inter, pc);
                     toAdd.add(inter);
@@ -56,6 +59,7 @@ public class SSADestructor extends FunctionPass {
                     blockToCopy.put(onePrev, pc);
                 }
             });
+            prevToAdd.forEach(oneBlk::createBetweenPrev);
             oneBlk.phiCollection.forEach(onePhi -> {
                 onePhi.arguments.forEach(s -> prevToCopy.get(s.block).addPair(onePhi.dest, s.val));
             });
