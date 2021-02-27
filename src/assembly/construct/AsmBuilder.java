@@ -64,7 +64,7 @@ public class AsmBuilder {
         public AsmBlock getBlock(BasicBlock blk) {
             if (mapping.containsKey(blk)) return mapping.get(blk);
             else {
-                var asmBlk = new AsmBlock(blk.getBlockName());
+                var asmBlk = new AsmBlock(blk.getBlockName(), blk.loopDepth);
                 mapping.put(blk, asmBlk);
                 asmFunc.addBlock(asmBlk);
                 return asmBlk;

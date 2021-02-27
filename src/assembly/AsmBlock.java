@@ -11,11 +11,13 @@ public class AsmBlock {
     public String name;
     public final LinkedList<RVInst> instructions = new LinkedList<>();
     public final HashSet<AsmBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
+    public final int loopDepth;
 
     public HashSet<RVRegister> liveOut;
 
-    public AsmBlock(String name) {
+    public AsmBlock(String name, int loopDepth) {
         this.name = name;
+        this.loopDepth = loopDepth;
     }
 
     public void addInst(RVInst inst) {

@@ -13,9 +13,11 @@ public class BasicBlock {
     public Set<Phi> phiCollection = new HashSet<>();
     public Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
     public Set<String> definition = new HashSet<>();
+    public int loopDepth=0;
 
-    public BasicBlock(String name) {
+    public BasicBlock(String name,int depth) {
         blockName = "l." + name;
+        this.loopDepth=depth;
     }
 
     public BasicBlock appendInst(IRInst newInst) {
