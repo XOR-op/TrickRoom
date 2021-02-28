@@ -22,8 +22,8 @@ public class IRFunction {
         this.name = name;
         this.isBuiltin = isBuiltin;
         retTy = returnType;
-        entryBlock = new BasicBlock("entry");
-        exitBlock = new BasicBlock("exit");
+        entryBlock = new BasicBlock("entry",0);
+        exitBlock = new BasicBlock("exit",0);
         blocks.add(entryBlock);
     }
 

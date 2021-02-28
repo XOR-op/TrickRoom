@@ -18,4 +18,8 @@ public abstract class RVInst {
     public abstract void forEachRegSrc(Consumer<RVRegister> consumer);
 
     public abstract void forEachRegDest(Consumer<RVRegister> consumer);
+
+    public abstract void replaceRegSrc(RVRegister newReg, RVRegister oldReg);
+
+    public abstract void replaceRegDest(RVRegister newReg, RVRegister oldReg);
 }

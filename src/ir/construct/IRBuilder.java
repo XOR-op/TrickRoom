@@ -304,7 +304,7 @@ public class IRBuilder implements ASTVisitor {
             // initialize subarray
             var cond = new BasicBlock("imp_cond" + blockSuffix, loopDepth);
             var loopBody = new BasicBlock("imp_body" + blockSuffix, loopDepth);
-            var afterLoop = new BasicBlock("imp_after" + blockSuffix, loopDepth);
+            var afterLoop = new BasicBlock("imp_after" + blockSuffix, loopDepth - 1);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
             Phi phi = new Phi(new Register(new PointerType(elementType)));
@@ -555,7 +555,7 @@ public class IRBuilder implements ASTVisitor {
         var conditionBlock = new BasicBlock("cond" + blockSuffix, loopDepth);
         var loopBody = new BasicBlock("body" + blockSuffix, loopDepth);
         var updateBlock = new BasicBlock("upd" + blockSuffix, loopDepth);
-        var afterLoop = new BasicBlock("after" + blockSuffix, loopDepth);
+        var afterLoop = new BasicBlock("after" + blockSuffix, loopDepth - 1);
         blockSuffix++;
         AfterLoopStack.push(afterLoop);
         UpdBlockStack.push(updateBlock);

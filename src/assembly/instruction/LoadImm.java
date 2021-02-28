@@ -20,4 +20,9 @@ public class LoadImm extends Computation{
     public void forEachRegSrc(Consumer<RVRegister> consumer) {
         // do nothing
     }
+
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
 }

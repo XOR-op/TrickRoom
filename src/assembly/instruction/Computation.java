@@ -27,6 +27,17 @@ public class Computation extends RVInst{
         consumer.accept(rd);
     }
 
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        if(rs1==oldReg)rs1=newReg;
+        if(rs2==oldReg)rs2=newReg;
+    }
+
+    @Override
+    public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
+        if(rd==oldReg)rd=newReg;
+    }
+
     public enum CompType {
         add, sub, mul, div, rem, slt, xor, or, and, sll, srl, sra
     }

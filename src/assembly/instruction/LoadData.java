@@ -18,6 +18,8 @@ public class LoadData extends RVInst{
         this.imm=imm;
     }
 
+    public RVRegister getRd(){return rd;}
+
     @Override
     public String tell() {
         return "l"+wt+" "+rd+",("+imm+")"+rs1;
@@ -31,5 +33,15 @@ public class LoadData extends RVInst{
     @Override
     public void forEachRegDest(Consumer<RVRegister> consumer) {
         consumer.accept(rd);
+    }
+
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        if(rs1==oldReg)rs1=newReg;
+    }
+
+    @Override
+    public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
+        if(rd==oldReg)rd=newReg;
     }
 }

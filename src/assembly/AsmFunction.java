@@ -1,5 +1,6 @@
 package assembly;
 
+import assembly.operand.RVRegister;
 import ir.IRFunction;
 
 import java.util.ArrayList;
@@ -10,8 +11,8 @@ public class AsmFunction {
     public final int parameterCount;
     public ArrayList<AsmBlock> blocks = new ArrayList<>();
     public AsmBlock entry;
-    public int stackOffset = 0;
-    public final HashMap<String, Integer> varOffset = new HashMap<>();
+    private int stackOffset = 0;
+    private final HashMap<RVRegister, Integer> varOffset = new HashMap<>();
 
     public boolean isBuiltin() {
         return isBuiltin;
@@ -36,6 +37,17 @@ public class AsmFunction {
 
     public void setEntry(AsmBlock entry) {
         this.entry = entry;
+    }
+
+    public int addVarOnStack(RVRegister reg){
+        varOffset.put(reg,stackOffset);
+        stackOffset+=4;
+        return stackOffset-4;
+    }
+
+    public int getVarOffset(RVRegister reg){
+        assert varOffset.containsKey(reg);
+        return varOffset.get(reg);
     }
 
     public String tell() {

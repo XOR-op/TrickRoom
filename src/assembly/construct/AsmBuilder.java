@@ -55,8 +55,8 @@ public class AsmBuilder {
             this.asmFunc = asmFunc;
             irFunc.blocks.forEach(block -> {
                 var curBlk = getBlock(block);
-                block.prevs.forEach(p -> curBlk.addPrev(getBlock(p)));
-                block.nexts.forEach(p -> curBlk.addNext(getBlock(p)));
+                block.prevs.forEach(p -> curBlk.addPrevBlock(getBlock(p)));
+                block.nexts.forEach(p -> curBlk.addNextBlock(getBlock(p)));
             });
             this.asmFunc.setEntry(getBlock(irFunc.entryBlock));
         }

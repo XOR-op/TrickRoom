@@ -1,5 +1,9 @@
 package assembly.operand;
 
 public abstract class RVRegister extends RVOperand {
-    public abstract boolean equals(RVRegister rhs);
+    protected RVRegister color;
+
+    public void setColor(RVRegister color) {
+        this.color = color;
+    }
 }

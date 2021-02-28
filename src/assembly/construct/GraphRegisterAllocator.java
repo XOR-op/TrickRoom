@@ -1,40 +1,48 @@
 package assembly.construct;
 
 import assembly.AsmFunction;
+import assembly.instruction.LoadData;
 import assembly.instruction.Move;
+import assembly.instruction.RVInst;
+import assembly.instruction.StoreData;
+import assembly.operand.Imm;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
+import assembly.operand.VirtualRegister;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class GraphRegisterAllocator {
     /*
      * Based on the algorithm in Tiger Book
      */
+    private final List<Integer> colorList = new ArrayList<>();
     private final int REG_NUM = 27;
     private final AsmFunction asmFunc;
+    private int anonymousCounter = 0;
 
     // register structures
 
     private final HashMap<RVRegister, HashSet<RVRegister>> interferenceGraph = new HashMap<>();
     private final HashMap<RVRegister, Integer> degrees = new HashMap<>();
     private final HashMap<RVRegister, Integer> weights = new HashMap<>();
+    private final HashMap<RVRegister, Integer> color = new HashMap<>();
 
     private final HashSet<RVRegister>
             preColored = new HashSet<>(),
             initialList = new HashSet<>(),
             simplifyWorkList = new HashSet<>(),
             freezeWorkList = new HashSet<>(),
-            spillWorkList = new HashSet<>(),
+            highDegreeWorkList = new HashSet<>(),
             decidedSpillSet = new HashSet<>(),
             coalescedSet = new HashSet<>(),
             coloredSet = new HashSet<>();
 
-    private final HashSet<RVRegister> selectedRegisters = new HashSet<>();
+    private final Stack<RVRegister> selectedRegisterStack = new Stack<>();
 
     // move instructions
     private final HashSet<Move>
@@ -52,15 +60,25 @@ public class GraphRegisterAllocator {
     }
 
     private void init() {
+        colorList.clear();
         for (int i = 5; i <= 31; ++i) {
             var reg = PhysicalRegister.get(i);
             preColored.add(reg);
-            degrees.put(reg, Integer.MAX_VALUE);
+            weights.put(reg, Integer.MAX_VALUE);
+            colorList.add(i);
+            color.put(reg, i);
         }
-        asmFunc.blocks.forEach(blk->{
-            // todo calculate weight for each register
+        BiConsumer<RVRegister, Integer> plus = (reg, more) -> {
+            if (!weights.containsKey(reg)) weights.put(reg, 0);
+            weights.put(reg, weights.get(reg) + more);
+        };
+        asmFunc.blocks.forEach(blk -> {
+            blk.instructions.forEach(inst -> {
+                if (inst instanceof Move) return;
+                inst.forEachRegDest(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
+                inst.forEachRegSrc(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
+            });
         });
-
     }
 
     private void singleEdge(RVRegister rv1, RVRegister rv2) {
@@ -75,7 +93,7 @@ public class GraphRegisterAllocator {
     }
 
     private void addEdge(RVRegister rv1, RVRegister rv2) {
-        if (rv1.equals(rv2)) return;
+        if (rv1 == rv2) return;
         singleEdge(rv1, rv2);
         singleEdge(rv2, rv1);
     }
@@ -85,7 +103,26 @@ public class GraphRegisterAllocator {
     }
 
     public void run() {
-
+        init();
+        while (true) {
+            new LiveAnalyzer(asmFunc).run();
+            buildInterfere();
+            buildWorkList();
+            while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {
+                if (!simplifyWorkList.isEmpty()) simplify();
+                else if (!workListMoves.isEmpty()) coalesceValidMoves();
+                else if (!freezeWorkList.isEmpty()) freeze();
+                else selectHighDegree();
+            }
+            assignColor();
+            if (decidedSpillSet.isEmpty()) break;
+            else {
+                rewriteProgram();
+            }
+        }
+        color.forEach((reg, color) -> {
+            reg.setColor(PhysicalRegister.get(color));
+        });
     }
 
     private void buildInterfere() {
@@ -123,7 +160,7 @@ public class GraphRegisterAllocator {
     private void buildWorkList() {
         initialList.forEach(reg -> {
             if (degrees.get(reg) >= REG_NUM)
-                spillWorkList.add(reg);
+                highDegreeWorkList.add(reg);
             else if (isRegRelatedToMove(reg))
                 freezeWorkList.add(reg);
             else simplifyWorkList.add(reg);
@@ -140,7 +177,7 @@ public class GraphRegisterAllocator {
 
     private void forEachAdjacent(RVRegister reg, Consumer<RVRegister> consumer) {
         interferenceGraph.get(reg).forEach(r -> {
-            if (!selectedRegisters.contains(r) && !coalescedSet.contains(r))
+            if (!selectedRegisterStack.contains(r) && !coalescedSet.contains(r))
                 consumer.accept(r);
         });
     }
@@ -153,7 +190,7 @@ public class GraphRegisterAllocator {
             enableMoves(reg);
             forEachAdjacent(reg, this::enableMoves);
             // move to correct work list
-            spillWorkList.remove(reg);
+            highDegreeWorkList.remove(reg);
             if (moveRelation.containsKey(reg))
                 freezeWorkList.add(reg);
             else
@@ -165,7 +202,7 @@ public class GraphRegisterAllocator {
         var iter = simplifyWorkList.iterator();
         var reg = iter.next();
         iter.remove();
-        selectedRegisters.add(reg);
+        selectedRegisterStack.add(reg);
         forEachAdjacent(reg, this::decreaseDegree);
     }
 
@@ -213,7 +250,7 @@ public class GraphRegisterAllocator {
         if (freezeWorkList.contains(from))
             freezeWorkList.remove(from);
         else
-            spillWorkList.remove(from);
+            highDegreeWorkList.remove(from);
         coalescedSet.add(from);
         aliasMapping.put(from, to);
         moveRelation.get(to).addAll(moveRelation.get(from));
@@ -224,7 +261,7 @@ public class GraphRegisterAllocator {
         });
         if (degrees.get(to) >= REG_NUM && freezeWorkList.contains(to)) {
             freezeWorkList.remove(to);
-            spillWorkList.add(to);
+            highDegreeWorkList.add(to);
         }
     }
 
@@ -282,19 +319,94 @@ public class GraphRegisterAllocator {
         freezeRelatedMoves(reg);
     }
 
-    private RVRegister selectPolicy() {
-
+    private void selectHighDegree() {
+        // the earlier entering stack, the more probable spilled out
+        RVRegister selection = null;
+        double minCost = Double.POSITIVE_INFINITY;
+        for (var reg : highDegreeWorkList) {
+            double cost = ((double) weights.get(reg)) / degrees.get(reg);
+            if (cost < minCost) {
+                selection = reg;
+                minCost = cost;
+            }
+        }
+        assert selection != null;
+        highDegreeWorkList.remove(selection);
+        simplifyWorkList.add(selection);
+        freezeRelatedMoves(selection);
     }
 
-    private void selectToSpill() {
-        var reg = selectPolicy();
-        spillWorkList.remove(reg);
-        simplifyWorkList.add(reg);
-        freezeRelatedMoves(reg);
+    private void assignColor() {
+        while (!selectedRegisterStack.isEmpty()) {
+            var reg = selectedRegisterStack.pop();
+            var remainingColor = new HashSet<>(colorList);
+            forEachAdjacent(reg, adj -> {
+                var w = getAlias(adj);
+                if (coloredSet.contains(w) || preColored.contains(w)) {
+                    remainingColor.remove(color.get(w));
+                }
+            });
+            if (remainingColor.isEmpty()) {
+                decidedSpillSet.add(reg);
+            } else {
+                coloredSet.add(reg);
+                color.put(reg, remainingColor.iterator().next());
+            }
+        }
+        coalescedSet.forEach(reg -> {
+            color.put(reg, color.get(getAlias(reg)));
+        });
     }
 
     private void rewriteProgram() {
-
+        var newTemps = new ArrayList<RVRegister>();
+        decidedSpillSet.forEach(asmFunc::addVarOnStack);
+        asmFunc.blocks.forEach(block -> {
+            var iter = block.instructions.listIterator();
+            while (iter.hasNext()) {
+                var inst = iter.next();
+                inst.forEachRegSrc(reg -> {
+                    if (decidedSpillSet.contains(reg)) {
+                        if (inst instanceof Move) {
+                            iter.set(new LoadData(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg))));
+                        } else {
+                            var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
+                            var loading = new LoadData(tmp, RVInst.WidthType.w,
+                                    PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg)));
+                            inst.replaceRegSrc(loading.getRd(), reg);
+                            // insert before inst
+                            iter.previous();
+                            iter.add(loading);
+                            iter.next();
+                            newTemps.add(tmp);
+                            weights.put(tmp,0);
+                        }
+                    }
+                });
+                inst.forEachRegDest(reg -> {
+                    if (decidedSpillSet.contains(reg)) {
+                        if (inst instanceof Move) {
+                            iter.set(new StoreData(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new Imm(asmFunc.getVarOffset(reg))));
+                        } else {
+                            var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
+                            inst.replaceRegDest(tmp, reg);
+                            var storing = new StoreData(RVInst.WidthType.w, PhysicalRegister.get("sp"),
+                                    tmp, new Imm(asmFunc.getVarOffset(reg)));
+                            iter.add(storing);
+                            newTemps.add(tmp);
+                            weights.put(tmp,0);
+                        }
+                    }
+                });
+            }
+        });
+        decidedSpillSet.clear();
+        initialList.clear();
+        initialList.addAll(coloredSet);
+        initialList.addAll(coalescedSet);
+        initialList.addAll(newTemps);
+        coalescedSet.clear();
+        coloredSet.clear();
     }
 
 }

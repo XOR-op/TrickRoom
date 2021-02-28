@@ -30,4 +30,14 @@ public class RVCall extends RVInst {
     public void forEachRegDest(Consumer<RVRegister> consumer) {
         RVInfo.getCallerSave().forEach(consumer);
     }
+
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
+
+    @Override
+    public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
 }

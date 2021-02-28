@@ -10,6 +10,7 @@ public class PhysicalRegister extends RVRegister {
     private PhysicalRegister(int numbering, String name) {
         this.numbering = numbering;
         this.name = name;
+        color = this;
     }
 
 
@@ -63,8 +64,4 @@ public class PhysicalRegister extends RVRegister {
         assert count == 32;
     }
 
-    @Override
-    public boolean equals(RVRegister rhs) {
-        return (rhs instanceof PhysicalRegister) && numbering == ((PhysicalRegister) rhs).numbering;
-    }
 }

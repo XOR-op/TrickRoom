@@ -49,7 +49,7 @@ public class SSADestructor extends FunctionPass {
             oneBlk.prevs.forEach(onePrev -> {
                 ParallelCopy pc = new ParallelCopy();
                 if (onePrev.nexts.size() > 1) {
-                    var inter = new BasicBlock("copyF" + onePrev.blockName + "T" + oneBlk.blockName);
+                    var inter = new BasicBlock("copyF" + onePrev.blockName + "T" + oneBlk.blockName,oneBlk.loopDepth);
                     prevToAdd.put(onePrev, inter);
                     prevToCopy.put(onePrev, pc);
                     blockToCopy.put(inter, pc);

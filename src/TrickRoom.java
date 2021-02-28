@@ -121,7 +121,10 @@ public class TrickRoom {
             if (llvmGenFlag || assemblyGenFlag) {
                 var info = llvmGen(rootNode);
                 if (optimizationFlag) optimize(info);
-                if (assemblyGenFlag) assemblyGen(info);
+                if (assemblyGenFlag){
+                    postOptimization(info);
+                    assemblyGen(info);
+                }
             }
         } catch (SemanticException e) {
             if (verb == Verbose.DEBUG) {
@@ -161,9 +164,14 @@ public class TrickRoom {
         return info;
     }
 
+    private void optimize(IRInfo irInfo){
+        throw new UnimplementedError();
+    }
+
     private void assemblyGen(IRInfo irInfo) {
         var builder = new AsmBuilder(irInfo);
         var info = builder.constructAssembly();
+        info.registerAllocate();
         try {
             os.write(info.tell().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
@@ -171,12 +179,11 @@ public class TrickRoom {
         }
     }
 
-    private void optimize(IRInfo info) {
+    private void postOptimization(IRInfo info) {
         info.forEachFunction(f -> {
             new SSADestructor(f).invoke();
             new ConstantDeducer(f).invoke();
         });
-        throw new UnimplementedError();
     }
 
     private RootNode astGen() {

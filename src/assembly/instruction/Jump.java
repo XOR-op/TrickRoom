@@ -27,4 +27,14 @@ public class Jump extends RVInst {
     public void forEachRegDest(Consumer<RVRegister> consumer) {
         // do nothing
     }
+
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
+
+    @Override
+    public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
 }

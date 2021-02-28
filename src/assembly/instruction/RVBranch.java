@@ -38,4 +38,15 @@ public class RVBranch extends RVInst {
     public void forEachRegDest(Consumer<RVRegister> consumer) {
         // do nothing
     }
+
+    @Override
+    public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
+        if(rs1==oldReg)rs1=newReg;
+        if(rs2==oldReg)rs2=newReg;
+    }
+
+    @Override
+    public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
+        // do nothing
+    }
 }

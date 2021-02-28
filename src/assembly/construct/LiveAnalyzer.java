@@ -14,7 +14,7 @@ public class LiveAnalyzer {
      */
     private final HashMap<AsmBlock, HashSet<RVRegister>> allUses = new HashMap<>(), allDefs = new HashMap<>(),
             LiveOut = new HashMap<>(), LiveIn = new HashMap<>();
-    private final HashSet<AsmBlock> modified = new HashSet<>();
+    private final HashSet<AsmBlock> visited = new HashSet<>();
     private final AsmFunction asmFunc;
 
     private void buildDefAndUse(AsmBlock block) {
@@ -27,35 +27,40 @@ public class LiveAnalyzer {
             });
             inst.forEachRegDest(def::add);
         });
+        LiveIn.put(block, new HashSet<>());
+        LiveOut.put(block, new HashSet<>());
         allUses.put(block, use);
         allDefs.put(block, def);
     }
 
     private void update(AsmBlock block) {
-        boolean changeFlag = false;
-        for (var b : block.nexts) {
-            if (!LiveIn.containsKey(b)) return; // postpone calculation
-            if (modified.contains(b)) changeFlag = true;
+        if (visited.contains(block)) return;
+        visited.add(block);
+        var conjunction = new HashSet<RVRegister>();
+        block.nexts.forEach(n -> conjunction.addAll(LiveIn.get(n)));
+        LiveOut.put(block, conjunction);
+        var newLiveIn = new HashSet<>(conjunction);
+        newLiveIn.removeAll(allDefs.get(block));
+        newLiveIn.addAll(allUses.get(block));
+
+        if (!LiveIn.containsKey(block) || !newLiveIn.equals(LiveIn.get(block))) {
+            LiveIn.put(block, newLiveIn);
+            visited.removeAll(block.prevs);
         }
-        if (changeFlag) {
-            modified.add(block);
-            var conjunction = new HashSet<RVRegister>();
-            block.nexts.forEach(n -> conjunction.addAll(LiveIn.get(n)));
-            LiveOut.replace(block, conjunction);
-            var newLiveIn = new HashSet<>(conjunction);
-            newLiveIn.removeAll(allDefs.get(block));
-            newLiveIn.addAll(allUses.get(block));
-            LiveIn.replace(block, newLiveIn);
-        }
+        block.prevs.forEach(this::update);
     }
 
     public void run() {
         asmFunc.blocks.forEach(this::buildDefAndUse);
-        do {
-            modified.clear();
-            for (int i = asmFunc.blocks.size() - 1; i >= 0; --i)
-                update(asmFunc.blocks.get(i));
-        } while (!modified.isEmpty());
+        asmFunc.blocks.forEach(block -> {
+            if (block.nexts.isEmpty()) {
+                visited.add(block);
+                LiveIn.put(block, new HashSet<>(allUses.get(block)));
+            }
+        });
+        asmFunc.blocks.forEach(block -> {
+            if (block.nexts.isEmpty()) block.prevs.forEach(this::update);
+        });
         LiveOut.forEach((b, s) -> b.liveOut = s);
     }
 

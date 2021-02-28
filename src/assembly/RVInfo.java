@@ -1,5 +1,6 @@
 package assembly;
 
+import assembly.construct.GraphRegisterAllocator;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
 import ir.IRFunction;
@@ -31,6 +32,13 @@ public class RVInfo {
 
     public void forEachFunction(Consumer<AsmFunction> consumer) {
         funcCollection.forEach((k, f) -> consumer.accept(f));
+    }
+
+    public void registerAllocate() {
+        funcCollection.forEach((k, v) -> {
+            if(!v.isBuiltin())
+                new GraphRegisterAllocator(v).run();
+        });
     }
 
     public String tell() {

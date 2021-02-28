@@ -24,11 +24,11 @@ public class AsmBlock {
         instructions.add(inst);
     }
 
-    public void addPrev(AsmBlock prev) {
+    public void addPrevBlock(AsmBlock prev) {
         prevs.add(prev);
     }
 
-    public void addNext(AsmBlock next) {
+    public void addNextBlock(AsmBlock next) {
         nexts.add(next);
     }
 

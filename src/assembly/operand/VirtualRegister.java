@@ -15,13 +15,13 @@ public class VirtualRegister extends RVRegister {
     }
 
     @Override
-    public boolean equals(RVRegister rhs){
-        return (rhs instanceof VirtualRegister)&&((VirtualRegister) rhs).name.equals(name);
+    public String tell() {
+        assert color instanceof PhysicalRegister;
+        return color.tell();
     }
 
     @Override
-    public String tell() {
+    public String toString() {
         return name;
-//        throw new IllegalStateException();
     }
 }
