@@ -36,8 +36,8 @@ public class RVInfo {
 
     public void registerAllocate() {
         funcCollection.forEach((k, v) -> {
-            if(!v.isBuiltin())
-                new GraphRegisterAllocator(v).run();
+            if (!v.isBuiltin())
+                GraphRegisterAllocator.allocate(v);
         });
     }
 
@@ -57,7 +57,7 @@ public class RVInfo {
             callerSave = new HashSet<>();
             callerSave.add(PhysicalRegister.get("ra"));
             for (int i = 5; i <= 7; ++i) callerSave.add(PhysicalRegister.get(i));
-            for (int i = 11; i <= 17; ++i) callerSave.add(PhysicalRegister.get(i));
+            for (int i = 10; i <= 17; ++i) callerSave.add(PhysicalRegister.get(i));
             for (int i = 28; i <= 31; ++i) callerSave.add(PhysicalRegister.get(i));
         }
         return callerSave;

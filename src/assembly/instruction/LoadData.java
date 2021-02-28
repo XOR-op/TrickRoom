@@ -22,7 +22,7 @@ public class LoadData extends RVInst{
 
     @Override
     public String tell() {
-        return "l"+wt+" "+rd+",("+imm+")"+rs1;
+        return "l"+wt+" "+rd.tell()+",("+imm+")"+rs1.tell();
     }
 
     @Override

@@ -17,7 +17,7 @@ public class RVCall extends RVInst {
 
     @Override
     public String tell() {
-        return "call " + dest;
+        return "call " + dest.name;
     }
 
     @Override

@@ -10,6 +10,6 @@ public class Move extends Computation{
 
     @Override
     public String tell() {
-        return "mv "+rd+", "+rs1;
+        return "mv "+rd.tell()+", "+rs1.tell();
     }
 }

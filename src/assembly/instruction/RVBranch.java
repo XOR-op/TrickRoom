@@ -25,7 +25,7 @@ public class RVBranch extends RVInst {
     @Override
     public String tell() {
 //        throw new UnimplementedError();
-        return "b"+rt+(isUnsigned?"u":"")+" "+rs1+", "+rs2+", "+trueDest.getName()+" ;else "+falseDest.getName();
+        return "b"+rt+(isUnsigned?"u":"")+" "+rs1.tell()+", "+rs2.tell()+", "+trueDest.getName()+" ;else "+falseDest.getName();
     }
 
     @Override

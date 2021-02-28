@@ -17,6 +17,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class GraphRegisterAllocator {
+
+    public static void allocate(AsmFunction asmFunc) {
+        while (!new GraphRegisterAllocator(asmFunc).run()) ;
+    }
+
     /*
      * Based on the algorithm in Tiger Book
      */
@@ -59,14 +64,23 @@ public class GraphRegisterAllocator {
         this.asmFunc = asmFunc;
     }
 
-    private void init() {
-        colorList.clear();
+    private void build() {
+        preColored.clear();
+        initialList.clear();;
+        simplifyWorkList.clear();
+        freezeWorkList.clear();
+        highDegreeWorkList.clear();
+        decidedSpillSet.clear();
+        coalescedSet.clear();
+        coloredSet.clear();
+        moveRelation.clear();
+        aliasMapping.clear();
         for (int i = 5; i <= 31; ++i) {
             var reg = PhysicalRegister.get(i);
             preColored.add(reg);
             weights.put(reg, Integer.MAX_VALUE);
-            colorList.add(i);
             color.put(reg, i);
+            colorList.add(i);
         }
         BiConsumer<RVRegister, Integer> plus = (reg, more) -> {
             if (!weights.containsKey(reg)) weights.put(reg, 0);
@@ -74,10 +88,15 @@ public class GraphRegisterAllocator {
         };
         asmFunc.blocks.forEach(blk -> {
             blk.instructions.forEach(inst -> {
-                if (inst instanceof Move) return;
                 inst.forEachRegDest(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
                 inst.forEachRegSrc(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
+                inst.forEachRegSrc(initialList::add);
+                inst.forEachRegDest(initialList::add);
             });
+        });
+        initialList.forEach(reg -> {
+            degrees.put(reg, 0);
+            moveRelation.put(reg, new HashSet<>());
         });
     }
 
@@ -102,27 +121,25 @@ public class GraphRegisterAllocator {
         return interferenceGraph.containsKey(r1) && interferenceGraph.get(r1).contains(r2);
     }
 
-    public void run() {
-        init();
-        while (true) {
-            new LiveAnalyzer(asmFunc).run();
-            buildInterfere();
-            buildWorkList();
-            while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {
-                if (!simplifyWorkList.isEmpty()) simplify();
-                else if (!workListMoves.isEmpty()) coalesceValidMoves();
-                else if (!freezeWorkList.isEmpty()) freeze();
-                else selectHighDegree();
-            }
-            assignColor();
-            if (decidedSpillSet.isEmpty()) break;
-            else {
-                rewriteProgram();
-            }
+    public boolean run() {
+        build();
+        new LiveAnalyzer(asmFunc).run();
+        buildInterfere();
+        buildWorkList();
+        while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {
+            if (!simplifyWorkList.isEmpty()) simplify();
+            else if (!workListMoves.isEmpty()) coalesceValidMoves();
+            else if (!freezeWorkList.isEmpty()) freeze();
+            else selectHighDegree();
         }
-        color.forEach((reg, color) -> {
-            reg.setColor(PhysicalRegister.get(color));
-        });
+        assignColor();
+        if (decidedSpillSet.isEmpty()) {
+            color.forEach((reg, col) -> reg.setColor(PhysicalRegister.get(col)));
+            return true;
+        } else {
+            rewriteProgram();
+            return false;
+        }
     }
 
     private void buildInterfere() {
@@ -176,10 +193,12 @@ public class GraphRegisterAllocator {
     }
 
     private void forEachAdjacent(RVRegister reg, Consumer<RVRegister> consumer) {
-        interferenceGraph.get(reg).forEach(r -> {
-            if (!selectedRegisterStack.contains(r) && !coalescedSet.contains(r))
-                consumer.accept(r);
-        });
+        if (interferenceGraph.containsKey(reg)) {
+            interferenceGraph.get(reg).forEach(r -> {
+                if (!selectedRegisterStack.contains(r) && !coalescedSet.contains(r))
+                    consumer.accept(r);
+            });
+        }
     }
 
     private void decreaseDegree(RVRegister reg) {
@@ -379,7 +398,7 @@ public class GraphRegisterAllocator {
                             iter.add(loading);
                             iter.next();
                             newTemps.add(tmp);
-                            weights.put(tmp,0);
+                            weights.put(tmp, 0);
                         }
                     }
                 });
@@ -394,19 +413,12 @@ public class GraphRegisterAllocator {
                                     tmp, new Imm(asmFunc.getVarOffset(reg)));
                             iter.add(storing);
                             newTemps.add(tmp);
-                            weights.put(tmp,0);
+                            weights.put(tmp, 0);
                         }
                     }
                 });
             }
         });
-        decidedSpillSet.clear();
-        initialList.clear();
-        initialList.addAll(coloredSet);
-        initialList.addAll(coalescedSet);
-        initialList.addAll(newTemps);
-        coalescedSet.clear();
-        coloredSet.clear();
     }
 
 }

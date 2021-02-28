@@ -19,7 +19,7 @@ public class StoreData extends RVInst{
 
     @Override
     public String tell() {
-        return "s"+wt+" "+rs2+",("+imm+")"+rs1;
+        return "s"+wt+" "+rs2.tell()+",("+imm+")"+rs1.tell();
     }
 
     @Override

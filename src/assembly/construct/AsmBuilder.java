@@ -72,6 +72,10 @@ public class AsmBuilder {
         }
     }
 
+    private RVInst.WidthType resolveWidth(IROperand operand) {
+        return (operand.type.equals(Cst.bool) || operand.type.equals(Cst.byte_t)) ? RVInst.WidthType.b : RVInst.WidthType.w;
+    }
+
     private NameGenerator ng;
     private BlockMapping curBlockMapping;
 
@@ -117,6 +121,18 @@ public class AsmBuilder {
         ng = new NameGenerator("asm.virtualReg");
         curBlockMapping = new BlockMapping(asmFunc, irFunc);
         curFunc = asmFunc;
+        nameToVirReg.clear();
+        // store arguments
+        var entry = curBlockMapping.getBlock(irFunc.entryBlock);
+        entry.name=irFunc.name;
+        for (int i = 0; i < Integer.min(8, asmFunc.parameterCount); ++i) {
+            entry.addInst(new Move(getRegister(irFunc.parameters.get(i)), PhysicalRegister.get(10 + i)));
+        }
+        for (int i = 8; i < asmFunc.parameterCount; ++i) {
+            var reg = getRegister(irFunc.parameters.get(i));
+            entry.addInst(new LoadData(reg, resolveWidth(irFunc.parameters.get(i)),
+                    PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg))));
+        }
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -227,7 +243,7 @@ public class AsmBuilder {
             // store to the sp
             int curOff = 0;
             for (int i = 8; i < inst.args.size(); ++i) {
-                curBlock.addInst(new StoreData(RVInst.WidthType.w, PhysicalRegister.get("sp"),
+                curBlock.addInst(new StoreData(resolveWidth(inst.args.get(i)), PhysicalRegister.get("sp"),
                         getRegister(inst.args.get(i)), new Imm(curOff)));
                 curOff += 4;
             }
@@ -236,6 +252,9 @@ public class AsmBuilder {
                 curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("s0")));
             }
         }
+        curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
+        if(inst.containsDest())
+            curBlock.addInst(new Move(getRegister(inst.dest),PhysicalRegister.get("a0")));
     }
 
     private void buildCompare(Compare inst) {
@@ -292,13 +311,13 @@ public class AsmBuilder {
     }
 
     private void buildLoad(Load inst) {
-        var loading = new LoadData(getRegister(inst.dest), inst.dest.type.equals(Cst.byte_t) ? RVInst.WidthType.b : RVInst.WidthType.w,
+        var loading = new LoadData(getRegister(inst.dest), resolveWidth(inst.dest),
                 getRegister(inst.address), new Imm(0));
         curBlock.addInst(loading);
     }
 
     private void buildStore(Store inst) {
-        var storing = new StoreData(inst.source.type.equals(Cst.byte_t) ? RVInst.WidthType.b : RVInst.WidthType.w,
+        var storing = new StoreData(resolveWidth(inst.source),
                 getRegister(inst.address), getRegister(inst.source), new Imm(0));
         curBlock.addInst(storing);
     }

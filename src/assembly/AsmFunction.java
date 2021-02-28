@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class AsmFunction {
-    private String name;
+    public final String name;
     public final int parameterCount;
     public ArrayList<AsmBlock> blocks = new ArrayList<>();
     public AsmBlock entry;
@@ -56,7 +56,7 @@ public class AsmFunction {
         builder.append("\t.globl\t").append(name).append("\n");
         builder.append("\t.type\t").append(name).append(", @function\n");
         blocks.forEach(block -> builder.append(block.tell()));
-        builder.append("\t.size\t").append(name).append(", .-").append(name).append("\n");
+        builder.append("\t.size\t").append(name).append(", .-").append(name).append("\n\n");
         return builder.toString();
     }
 

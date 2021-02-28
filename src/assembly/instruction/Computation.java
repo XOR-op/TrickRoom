@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 public class Computation extends RVInst{
     @Override
     public String tell() {
-        return ct+(imm==null?" ":"i ")+rd+","+rs1+","+(imm!=null?imm:rs2);
+        return ct+(imm==null?" ":"i ")+rd.tell()+","+rs1.tell()+","+(imm!=null?imm:rs2.tell());
     }
 
     @Override

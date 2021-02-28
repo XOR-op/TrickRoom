@@ -13,7 +13,7 @@ public class LoadImm extends Computation{
 
     @Override
     public String tell() {
-        return "la "+imm;
+        return "addi "+rd.tell()+", zero, "+imm;
     }
 
     @Override

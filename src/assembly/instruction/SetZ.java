@@ -16,6 +16,6 @@ public class SetZ extends Computation{
 
     @Override
     public String tell() {
-        return st+" "+rd+", "+rs1;
+        return st+" "+rd.tell()+", "+rs1.tell();
     }
 }
