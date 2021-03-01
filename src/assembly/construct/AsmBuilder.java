@@ -87,8 +87,7 @@ public class AsmBuilder {
 
     public RVInfo constructAssembly() {
         irInfo.forEachFunction(f -> {
-            if (!f.isBuiltin())
-                buildFunction(rvInfo.getFunc(f), f);
+            buildFunction(rvInfo.getFunc(f), f);
         });
         return rvInfo;
     }
@@ -101,17 +100,24 @@ public class AsmBuilder {
             return nameToVirReg.get(name);
         } else {
             int i = (operand instanceof IntConstant) ? ((IntConstant) operand).value :
-                    (((BoolConstant) operand).value ? 1 : 0);
+                    ((operand instanceof NullptrConstant) ? 0 : (((BoolConstant) operand).value ? 1 : 0));
             var inst = new LoadImm(ng.gen(), i);
             curBlock.addInst(inst);
             return inst.rd;
         }
     }
 
+    private RVRegister getRegister(String name) {
+        if (!nameToVirReg.containsKey(name))
+            nameToVirReg.put(name, new VirtualRegister(name));
+        return nameToVirReg.get(name);
+    }
+
     private RVInst copyToReg(RVRegister target, IROperand op) {
         if (op instanceof Register) return new Move(target, getRegister(op));
         else {
-            int val = (op instanceof IntConstant) ? ((IntConstant) op).value : ((((BoolConstant) op).value) ? 1 : 0);
+            int val = (op instanceof IntConstant) ? ((IntConstant) op).value
+                    : (op instanceof NullptrConstant) ? 0 : ((((BoolConstant) op).value) ? 1 : 0);
             return new LoadImm(target, val);
         }
     }
@@ -124,15 +130,21 @@ public class AsmBuilder {
         nameToVirReg.clear();
         // store arguments
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
+        // load arguments
         entry.name = irFunc.name;
         for (int i = 0; i < Integer.min(8, asmFunc.parameterCount); ++i) {
             entry.addInst(new Move(getRegister(irFunc.parameters.get(i)), PhysicalRegister.get(10 + i)));
         }
         for (int i = 8; i < asmFunc.parameterCount; ++i) {
             var reg = getRegister(irFunc.parameters.get(i));
+            curFunc.addVarOnStack(reg);
             entry.addInst(new LoadData(reg, resolveWidth(irFunc.parameters.get(i)),
                     PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg))));
         }
+        // callee save
+        RVInfo.getCalleeSave().forEach(reg -> {
+            entry.addInst(new Move(getRegister("reserve." + reg.tell()), reg));
+        });
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -146,7 +158,8 @@ public class AsmBuilder {
         // build terminal instruction
         if (irBlock.terminatorInst instanceof Branch) {
             var irBranch = (Branch) irBlock.terminatorInst;
-            Compare irCmp = (irBlock.insts.getLast() instanceof Compare) ? ((Compare) irBlock.insts.getLast()) : null;
+            Compare irCmp = (!irBlock.insts.isEmpty() && irBlock.insts.getLast() instanceof Compare)
+                    ? ((Compare) irBlock.insts.getLast()) : null;
             if (irCmp != null && irCmp.dest == irBranch.condition) {
                 // coalesce cmp and branch
                 RVInst.RelaType rt;
@@ -173,8 +186,11 @@ public class AsmBuilder {
             if (val != null) {
                 curBlock.addInst(copyToReg(PhysicalRegister.get("a0"), val));
             }
+            // restoration
+            RVInfo.getCalleeSave().forEach(reg -> {
+                curBlock.addInst(new Move(reg, getRegister("reserve." + reg.tell())));
+            });
             curBlock.addInst(new Return());
-            // notice: no restoration here currently
         }
         curBlock = null;
     }
@@ -211,10 +227,14 @@ public class AsmBuilder {
                     rs2 = getRegister(inst.operand2);
                 }
                 default -> {
+                    // commutative
                     rs1 = getRegister(inst.operand2);
                     imm = new Imm(((IntConstant) inst.operand1).value);
                 }
             }
+        } else if (inst.operand1 instanceof BoolConstant) {
+            rs1 = getRegister(inst.operand2);
+            imm = new Imm(((BoolConstant) inst.operand1).value ? 1 : 0);
         } else {
             assert inst.operand1 instanceof Register;
             rs1 = getRegister(inst.operand1);

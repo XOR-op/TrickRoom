@@ -3,6 +3,7 @@ package assembly;
 import assembly.construct.GraphRegisterAllocator;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
+import ir.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
 import ir.typesystem.PointerType;
@@ -19,7 +20,7 @@ public class RVInfo {
 
     public RVInfo(IRInfo irInfo) {
         this.irInfo = irInfo;
-        irInfo.forEachFunction(f -> {
+        irInfo.forEachFunctionIncludingBuiltin(f -> {
             if (!f.isBuiltin())
                 funcCollection.put(f.name, new AsmFunction(f));
             else
@@ -35,7 +36,7 @@ public class RVInfo {
         funcCollection.forEach((k, f) -> consumer.accept(f));
     }
 
-    public void preOptimize(){
+    public void preOptimize() {
         funcCollection.forEach((k, func) -> {
             if (!func.isBuiltin())
                 new AsmOptimizer(func).run();
@@ -44,8 +45,17 @@ public class RVInfo {
 
     public void registerAllocate() {
         funcCollection.forEach((k, func) -> {
-            if (!func.isBuiltin())
+            if (!func.isBuiltin()) {
                 GraphRegisterAllocator.allocate(func);
+                new AsmOptimizer(func).run();
+            }
+        });
+    }
+
+    public void renameMain() {
+        forEachFunction(f -> {
+            if (f.name.equals("main")) f.name = "real.main";
+            else if (f.name.equals(Cst.INIT)) f.name = "main";
         });
     }
 

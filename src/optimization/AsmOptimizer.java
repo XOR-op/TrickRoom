@@ -21,6 +21,13 @@ public class AsmOptimizer {
                 iter.set(new Move(((Computation) inst).rd, ((Computation) inst).rs1));
             }
         }
+        iter = block.instructions.listIterator();
+        while (iter.hasNext()) {
+            var inst = iter.next();
+            if (inst instanceof Move && ((Move) inst).rd.getColor() != null && ((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor()) {
+                iter.remove();
+            }
+        }
     }
 
     public void run() {

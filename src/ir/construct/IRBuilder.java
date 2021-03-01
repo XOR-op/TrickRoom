@@ -450,7 +450,6 @@ public class IRBuilder implements ASTVisitor {
         Register.reset(1);
         blockSuffix = 1;
         curFunc = curClass == null ? info.getFunction(node.funcId) : info.getClassMethod(curClass.id, node.funcId);
-        if (node.funcId.equals("main")) info.setMain(curFunc);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;
 
@@ -489,6 +488,7 @@ public class IRBuilder implements ASTVisitor {
                 var exit = new BasicBlock("exit", loopDepth);
                 var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
                 curFunc.entryBlock.insertInstFromHead(new Assign(returnValue, new UndefConstant(returnValue.type)));
+                curFunc.declareVar(returnValue);
                 exit.setRetTerminator(returnValue);
                 curFunc.returnBlocks.forEach(b -> {
                     IROperand ope = ((Ret) b.terminatorInst).value;

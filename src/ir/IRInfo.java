@@ -19,7 +19,7 @@ public class IRInfo {
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private final HashSet<IRFunction> globalFunction = new HashSet<>();
     private int strCounter = 0;
-    private IRFunction init = null, main = null;
+    private IRFunction init = null;
 
     public IRInfo(FileScope scope) {
         // global functions
@@ -187,18 +187,19 @@ public class IRInfo {
     }
 
     public void setInit(IRFunction init) {
+        assert this.init == null;
         this.init = init;
-    }
-
-    public IRFunction getMain() {
-        return main;
-    }
-
-    public void setMain(IRFunction main) {
-        this.main = main;
+        functions.put(init.name, init);
     }
 
     public void forEachFunction(Consumer<IRFunction> f) {
+        functions.forEach((k, v) -> {
+            if (!v.isBuiltin())
+                f.accept(v);
+        });
+    }
+
+    public void forEachFunctionIncludingBuiltin(Consumer<IRFunction> f) {
         functions.forEach((k, v) -> f.accept(v));
     }
 }

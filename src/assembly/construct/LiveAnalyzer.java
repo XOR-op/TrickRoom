@@ -7,6 +7,8 @@ import assembly.operand.VirtualRegister;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class LiveAnalyzer {
     /*
@@ -33,7 +35,7 @@ public class LiveAnalyzer {
         allDefs.put(block, def);
     }
 
-    private void update(AsmBlock block) {
+    private void update(AsmBlock block, Queue<AsmBlock> queue) {
         if (visited.contains(block)) return;
         visited.add(block);
         var conjunction = new HashSet<RVRegister>();
@@ -47,7 +49,7 @@ public class LiveAnalyzer {
             LiveIn.put(block, newLiveIn);
             visited.removeAll(block.prevs);
         }
-        block.prevs.forEach(this::update);
+        queue.addAll(block.prevs);
     }
 
     public void run() {
@@ -58,9 +60,12 @@ public class LiveAnalyzer {
                 LiveIn.put(block, new HashSet<>(allUses.get(block)));
             }
         });
+        var workList = new LinkedList<AsmBlock>();
         asmFunc.blocks.forEach(block -> {
-            if (block.nexts.isEmpty()) block.prevs.forEach(this::update);
+            if (block.nexts.isEmpty()) workList.addAll(block.prevs);
         });
+        while (!workList.isEmpty())
+            update(workList.poll(), workList);
         LiveOut.forEach((b, s) -> b.liveOut = s);
     }
 

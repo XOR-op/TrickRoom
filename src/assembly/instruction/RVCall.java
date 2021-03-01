@@ -12,6 +12,7 @@ public class RVCall extends RVInst {
     private AsmFunction dest;
 
     public RVCall(AsmFunction func) {
+        assert func!=null;
         dest = func;
     }
 

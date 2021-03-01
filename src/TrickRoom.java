@@ -8,6 +8,7 @@ import ir.construct.IRBuilder;
 import exception.UnimplementedError;
 import exception.semantic.*;
 import ir.IRInfo;
+import optimization.BlockCoalesce;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
@@ -33,6 +34,8 @@ public class TrickRoom {
     private static final String VERBOSE = "-v";
     private static final String DEBUG = "-debug";
     private static final String OUTPUT_FILE = "-o";
+    private static final String HELP = "--help";
+    private static final String HELP_ABBR = "-h";
 
     private Verbose verb;
     private InputStream is;
@@ -108,6 +111,10 @@ public class TrickRoom {
                     }
                     case VERBOSE -> verb = Verbose.INFO;
                     case DEBUG -> verb = Verbose.DEBUG;
+                    case HELP,HELP_ABBR -> {
+                        System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
+                        System.exit(0);
+                    }
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -132,7 +139,11 @@ public class TrickRoom {
             }
             System.exit(-1);
         } catch (Exception e) {
-            throw e;
+            if (verb == Verbose.DEBUG) {
+                e.printStackTrace();
+            }else
+                System.err.println(e);
+            System.exit(-1);
         }
     }
 
@@ -165,7 +176,9 @@ public class TrickRoom {
     }
 
     private void optimize(IRInfo irInfo){
-        throw new UnimplementedError();
+        irInfo.forEachFunction(f->{
+            new BlockCoalesce(f).invoke();
+        });
     }
 
     private void assemblyGen(IRInfo irInfo) {
@@ -173,6 +186,7 @@ public class TrickRoom {
         var info = builder.constructAssembly();
         info.preOptimize();
         info.registerAllocate();
+        info.renameMain();
         try {
             os.write(info.tell().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
