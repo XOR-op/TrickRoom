@@ -1,4 +1,4 @@
-package pass;
+package optimization;
 
 import ir.IRFunction;
 import ir.instruction.Assign;

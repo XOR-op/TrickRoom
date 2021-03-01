@@ -6,4 +6,8 @@ public abstract class RVRegister extends RVOperand {
     public void setColor(RVRegister color) {
         this.color = color;
     }
+
+    public RVRegister getColor(){
+        return color;
+    }
 }

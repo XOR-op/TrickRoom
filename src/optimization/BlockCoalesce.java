@@ -1,4 +1,4 @@
-package pass;
+package optimization;
 
 import ir.BasicBlock;
 import ir.IRFunction;

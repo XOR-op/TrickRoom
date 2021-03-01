@@ -1,6 +1,7 @@
-package pass;
+package optimization;
 
 import ir.IRFunction;
+import ir.IRInfo;
 
 public abstract class FunctionPass {
     public IRFunction irFunc;

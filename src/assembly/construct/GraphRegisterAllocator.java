@@ -1,10 +1,8 @@
 package assembly.construct;
 
+import assembly.AsmBlock;
 import assembly.AsmFunction;
-import assembly.instruction.LoadData;
-import assembly.instruction.Move;
-import assembly.instruction.RVInst;
-import assembly.instruction.StoreData;
+import assembly.instruction.*;
 import assembly.operand.Imm;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
@@ -25,7 +23,7 @@ public class GraphRegisterAllocator {
     /*
      * Based on the algorithm in Tiger Book
      */
-    private final List<Integer> colorList = new ArrayList<>();
+    private final List<Integer> immutableColorList = new ArrayList<>();
     private final int REG_NUM = 27;
     private final AsmFunction asmFunc;
     private int anonymousCounter = 0;
@@ -60,29 +58,24 @@ public class GraphRegisterAllocator {
     private final HashMap<RVRegister, HashSet<Move>> moveRelation = new HashMap<>(); // mapping reg to all moves containing the reg
     private final HashMap<RVRegister, RVRegister> aliasMapping = new HashMap<>();
 
-    public GraphRegisterAllocator(AsmFunction asmFunc) {
+    private GraphRegisterAllocator(AsmFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 
     private void build() {
-        preColored.clear();
-        initialList.clear();;
-        simplifyWorkList.clear();
-        freezeWorkList.clear();
-        highDegreeWorkList.clear();
-        decidedSpillSet.clear();
-        coalescedSet.clear();
-        coloredSet.clear();
-        moveRelation.clear();
-        aliasMapping.clear();
-        for (int i = 5; i <= 31; ++i) {
+        for (int i = 0; i <= 31; ++i) {
             var reg = PhysicalRegister.get(i);
             preColored.add(reg);
-            weights.put(reg, Integer.MAX_VALUE);
             color.put(reg, i);
-            colorList.add(i);
+            weights.put(reg, Integer.MAX_VALUE);
+            degrees.put(reg, 0);
+            moveRelation.put(reg, new HashSet<>());
+        }
+        for (int i = 5; i <= 31; ++i) {
+            immutableColorList.add(i);
         }
         BiConsumer<RVRegister, Integer> plus = (reg, more) -> {
+            if (reg instanceof PhysicalRegister) return;
             if (!weights.containsKey(reg)) weights.put(reg, 0);
             weights.put(reg, weights.get(reg) + more);
         };
@@ -90,8 +83,12 @@ public class GraphRegisterAllocator {
             blk.instructions.forEach(inst -> {
                 inst.forEachRegDest(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
                 inst.forEachRegSrc(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
-                inst.forEachRegSrc(initialList::add);
-                inst.forEachRegDest(initialList::add);
+                inst.forEachRegSrc(reg -> {
+                    if (!preColored.contains(reg)) initialList.add(reg);
+                });
+                inst.forEachRegDest(reg -> {
+                    if (!preColored.contains(reg)) initialList.add(reg);
+                });
             });
         });
         initialList.forEach(reg -> {
@@ -121,7 +118,17 @@ public class GraphRegisterAllocator {
         return interferenceGraph.containsKey(r1) && interferenceGraph.get(r1).contains(r2);
     }
 
-    public boolean run() {
+    private void optimize(AsmBlock block) {
+        var iter = block.instructions.listIterator();
+        while (iter.hasNext()) {
+            var inst = iter.next();
+            if (inst instanceof Move && (coalescedMoves.contains(inst) ||
+                    (((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor()))) iter.remove();
+
+        }
+    }
+
+    private boolean run() {
         build();
         new LiveAnalyzer(asmFunc).run();
         buildInterfere();
@@ -134,6 +141,8 @@ public class GraphRegisterAllocator {
         }
         assignColor();
         if (decidedSpillSet.isEmpty()) {
+            // end optimization
+            asmFunc.blocks.forEach(this::optimize);
             color.forEach((reg, col) -> reg.setColor(PhysicalRegister.get(col)));
             return true;
         } else {
@@ -176,6 +185,7 @@ public class GraphRegisterAllocator {
 
     private void buildWorkList() {
         initialList.forEach(reg -> {
+            assert reg instanceof VirtualRegister;
             if (degrees.get(reg) >= REG_NUM)
                 highDegreeWorkList.add(reg);
             else if (isRegRelatedToMove(reg))
@@ -358,7 +368,7 @@ public class GraphRegisterAllocator {
     private void assignColor() {
         while (!selectedRegisterStack.isEmpty()) {
             var reg = selectedRegisterStack.pop();
-            var remainingColor = new HashSet<>(colorList);
+            var remainingColor = new HashSet<>(immutableColorList);
             forEachAdjacent(reg, adj -> {
                 var w = getAlias(adj);
                 if (coloredSet.contains(w) || preColored.contains(w)) {

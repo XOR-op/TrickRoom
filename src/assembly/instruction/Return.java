@@ -1,5 +1,7 @@
 package assembly.instruction;
 
+import assembly.RVInfo;
+import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
@@ -16,7 +18,7 @@ public class Return extends RVInst {
 
     @Override
     public void forEachRegSrc(Consumer<RVRegister> consumer) {
-        // do nothing
+        consumer.accept(PhysicalRegister.get("ra"));
     }
 
     @Override

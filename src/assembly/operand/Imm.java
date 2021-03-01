@@ -2,7 +2,7 @@ package assembly.operand;
 
 public class Imm extends RVOperand{
 
-    private int val;
+    public final int val;
 
     public Imm(int val){
         this.val=val;

@@ -7,6 +7,7 @@ import ir.IRFunction;
 import ir.IRInfo;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
+import optimization.AsmOptimizer;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,10 +35,17 @@ public class RVInfo {
         funcCollection.forEach((k, f) -> consumer.accept(f));
     }
 
+    public void preOptimize(){
+        funcCollection.forEach((k, func) -> {
+            if (!func.isBuiltin())
+                new AsmOptimizer(func).run();
+        });
+    }
+
     public void registerAllocate() {
-        funcCollection.forEach((k, v) -> {
-            if (!v.isBuiltin())
-                GraphRegisterAllocator.allocate(v);
+        funcCollection.forEach((k, func) -> {
+            if (!func.isBuiltin())
+                GraphRegisterAllocator.allocate(func);
         });
     }
 

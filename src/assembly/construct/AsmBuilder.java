@@ -124,7 +124,7 @@ public class AsmBuilder {
         nameToVirReg.clear();
         // store arguments
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
-        entry.name=irFunc.name;
+        entry.name = irFunc.name;
         for (int i = 0; i < Integer.min(8, asmFunc.parameterCount); ++i) {
             entry.addInst(new Move(getRegister(irFunc.parameters.get(i)), PhysicalRegister.get(10 + i)));
         }
@@ -174,7 +174,7 @@ public class AsmBuilder {
                 curBlock.addInst(copyToReg(PhysicalRegister.get("a0"), val));
             }
             curBlock.addInst(new Return());
-            // notice: no restoration here
+            // notice: no restoration here currently
         }
         curBlock = null;
     }
@@ -253,8 +253,8 @@ public class AsmBuilder {
             }
         }
         curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
-        if(inst.containsDest())
-            curBlock.addInst(new Move(getRegister(inst.dest),PhysicalRegister.get("a0")));
+        if (inst.containsDest())
+            curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
     }
 
     private void buildCompare(Compare inst) {

@@ -12,9 +12,9 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
-import pass.ConstantDeducer;
-import pass.SSAConverter;
-import pass.SSADestructor;
+import optimization.ConstantDeducer;
+import optimization.SSAConverter;
+import optimization.SSADestructor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -171,6 +171,7 @@ public class TrickRoom {
     private void assemblyGen(IRInfo irInfo) {
         var builder = new AsmBuilder(irInfo);
         var info = builder.constructAssembly();
+        info.preOptimize();
         info.registerAllocate();
         try {
             os.write(info.tell().getBytes(StandardCharsets.UTF_8));
