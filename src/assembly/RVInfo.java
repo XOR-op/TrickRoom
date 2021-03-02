@@ -54,13 +54,21 @@ public class RVInfo {
 
     public void renameMain() {
         forEachFunction(f -> {
-            if (f.name.equals("main")) f.name = "real.main";
-            else if (f.name.equals(Cst.INIT)) f.name = "main";
+            if (f.name.equals("main")){
+                f.name = "real.main";
+                f.entry.name="real.main";
+            }
+            else if (f.name.equals(Cst.INIT)){
+                f.name = "main";
+                f.entry.name="main";
+            }
         });
     }
 
     public String tell() {
         StringBuilder builder = new StringBuilder();
+        builder.append("\t.text\n");
+        builder.append("\t.align 2\n");
         forEachFunction(f -> {
             if (!f.isBuiltin())
                 builder.append(f.tell());

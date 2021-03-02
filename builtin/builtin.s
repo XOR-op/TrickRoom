@@ -181,7 +181,7 @@ _str_concat:
 	call	malloc
 	mv	a1,s0
 	mv	s0,a0
-	call	stpcpy
+	call	strcpy
 	mv	a1,s1
 	call	strcpy
 	lw	ra,12(sp)

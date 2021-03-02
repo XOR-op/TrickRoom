@@ -39,7 +39,7 @@ public class Computation extends RVInst {
     }
 
     public enum CompType {
-        SPECIFIC, add, sub, mul, div, rem, slt, xor, or, and, sll, srl, sra
+        SPECIFIC, add, sub, mul, div, rem, slt, xor, or, and, sll, sra
     }
 
     public RVRegister rd, rs1, rs2;

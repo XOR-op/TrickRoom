@@ -219,7 +219,7 @@ public class AsmBuilder {
         var ct = Computation.getCompType(inst.inst);
         var rd = getRegister(inst.dest);
         RVRegister rs1, rs2 = null;
-        Imm imm = null;
+        Integer imm = null;
         if (inst.operand1 instanceof IntConstant) {
             switch (ct) {
                 case div, rem, sll, sra -> {
@@ -229,23 +229,33 @@ public class AsmBuilder {
                 default -> {
                     // commutative
                     rs1 = getRegister(inst.operand2);
-                    imm = new Imm(((IntConstant) inst.operand1).value);
+                    imm = ((IntConstant) inst.operand1).value;
                 }
             }
         } else if (inst.operand1 instanceof BoolConstant) {
             rs1 = getRegister(inst.operand2);
-            imm = new Imm(((BoolConstant) inst.operand1).value ? 1 : 0);
+            imm = ((BoolConstant) inst.operand1).value ? 1 : 0;
         } else {
             assert inst.operand1 instanceof Register;
             rs1 = getRegister(inst.operand1);
             if (inst.operand2 instanceof Register)
                 rs2 = getRegister(inst.operand2);
-            else imm = new Imm(((IntConstant) inst.operand2).value);
+            else imm = ((IntConstant) inst.operand2).value;
         }
+        // rs1 now guaranteed
         if (imm == null)
             curBlock.addInst(new Computation(rd, ct, rs1, rs2));
-        else
-            curBlock.addInst(new Computation(rd, ct, rs1, imm));
+        else {
+            switch (ct) {
+                case add, slt, sll, sra, xor, or, and -> curBlock.addInst(new Computation(rd, ct, rs1, new Imm(imm)));
+                case sub -> curBlock.addInst(new Computation(rd, Computation.CompType.add, rs1, new Imm(-imm)));
+                default -> {
+                    var loadToReg = new LoadImm(ng.gen(), imm);
+                    curBlock.addInst(loadToReg);
+                    curBlock.addInst(new Computation(rd, ct, rs1, loadToReg.rd));
+                }
+            }
+        }
     }
 
     private void buildBitCast(BitCast inst) {
@@ -253,12 +263,7 @@ public class AsmBuilder {
     }
 
     private void buildCall(Call inst) {
-        // todo backup
-        for (int i = 0; i < Integer.min(inst.args.size(), 8); ++i) {
-            var op = inst.args.get(i);
-            var target = PhysicalRegister.get(10 + i);
-            curBlock.addInst(copyToReg(target, op));
-        }
+        // todo modify sp
         if (inst.args.size() >= 8) {
             // store to the sp
             int curOff = 0;

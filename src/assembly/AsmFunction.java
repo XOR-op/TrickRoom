@@ -39,25 +39,28 @@ public class AsmFunction {
         this.entry = entry;
     }
 
-    public int addVarOnStack(RVRegister reg){
-        varOffset.put(reg,stackOffset);
-        stackOffset+=4;
-        return stackOffset-4;
+    public int addVarOnStack(RVRegister reg) {
+        varOffset.put(reg, stackOffset);
+        stackOffset += 4;
+        return stackOffset - 4;
     }
 
-    public int getVarOffset(RVRegister reg){
+    public int getVarOffset(RVRegister reg) {
         assert varOffset.containsKey(reg);
         return varOffset.get(reg);
     }
 
     public String tell() {
         StringBuilder builder = new StringBuilder();
-        builder.append("\t.globl\t").append(name).append("\n");
-        builder.append("\t.type\t").append(name).append(", @function\n");
+        builder.append("\t.globl\t").append(getName()).append("\n");
+        builder.append("\t.type\t").append(getName()).append(", @function\n");
         blocks.forEach(block -> builder.append(block.tell()));
-        builder.append("\t.size\t").append(name).append(", .-").append(name).append("\n\n");
+        builder.append("\t.size\t").append(getName()).append(", .-").append(getName()).append("\n\n");
         return builder.toString();
     }
 
+    public String getName() {
+        return name.replace(".", "_2E_");
+    }
 
 }

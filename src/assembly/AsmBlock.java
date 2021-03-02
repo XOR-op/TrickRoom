@@ -33,12 +33,12 @@ public class AsmBlock {
     }
 
     public String getName() {
-        return name;
+        return name.replace(".","_2E_");
     }
 
     public String tell() {
         StringBuilder builder = new StringBuilder();
-        builder.append(name).append(":\n");
+        builder.append(getName()).append(":\n");
         instructions.forEach(inst -> builder.append("\t").append(inst.tell()).append('\n'));
         return builder.toString();
     }

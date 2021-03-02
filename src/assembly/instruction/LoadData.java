@@ -5,24 +5,26 @@ import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
 
-public class LoadData extends RVInst{
+public class LoadData extends RVInst {
 
-    private RVRegister rd,rs1;
+    private RVRegister rd, rs1;
     private Imm imm;
     private WidthType wt;
 
-    public LoadData(RVRegister rd, WidthType wt, RVRegister rs1, Imm imm){
-        this.rd=rd;
-        this.wt=wt;
-        this.rs1=rs1;
-        this.imm=imm;
+    public LoadData(RVRegister rd, WidthType wt, RVRegister rs1, Imm imm) {
+        this.rd = rd;
+        this.wt = wt;
+        this.rs1 = rs1;
+        this.imm = imm;
     }
 
-    public RVRegister getRd(){return rd;}
+    public RVRegister getRd() {
+        return rd;
+    }
 
     @Override
     public String tell() {
-        return "l"+wt+" "+rd.tell()+",("+imm+")"+rs1.tell();
+        return "l" + wt + " " + rd.tell() + "," + imm + "(" + rs1.tell() + ")";
     }
 
     @Override
@@ -37,11 +39,11 @@ public class LoadData extends RVInst{
 
     @Override
     public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
-        if(rs1==oldReg)rs1=newReg;
+        if (rs1 == oldReg) rs1 = newReg;
     }
 
     @Override
     public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
-        if(rd==oldReg)rd=newReg;
+        if (rd == oldReg) rd = newReg;
     }
 }
