@@ -2,10 +2,7 @@ package assembly.instruction;
 
 import assembly.operand.Imm;
 import assembly.operand.RVRegister;
-import assembly.operand.PhysicalRegister;
-import assembly.operand.VirtualRegister;
 import ir.instruction.Binary;
-import ir.operand.IntConstant;
 
 import java.util.function.Consumer;
 

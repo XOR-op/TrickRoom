@@ -4,10 +4,7 @@ import assembly.AsmBlock;
 import assembly.AsmFunction;
 import assembly.RVInfo;
 import assembly.instruction.*;
-import assembly.operand.Imm;
-import assembly.operand.PhysicalRegister;
-import assembly.operand.RVRegister;
-import assembly.operand.VirtualRegister;
+import assembly.operand.*;
 import ir.BasicBlock;
 import ir.Cst;
 import ir.IRFunction;
@@ -19,6 +16,7 @@ import ir.instruction.Jump;
 import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
+import utils.L;
 
 import java.util.HashMap;
 
@@ -30,7 +28,6 @@ public class AsmBuilder {
     private RVInfo rvInfo;
     private AsmBlock curBlock;
     private AsmFunction curFunc;
-    private final HashMap<String, VirtualRegister> nameToVirReg = new HashMap<>();
 
     private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
 
@@ -94,10 +91,19 @@ public class AsmBuilder {
 
     private RVRegister getRegister(IROperand operand) {
         if (operand instanceof Register) {
-            var name = ((Register) operand).identifier();
-            if (!nameToVirReg.containsKey(name))
-                nameToVirReg.put(name, new VirtualRegister(name));
-            return nameToVirReg.get(name);
+            if (operand instanceof GlobalVar) {
+                var addrReg = ng.gen();
+                var valReg = ng.gen();
+                curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) operand)));
+                curBlock.addInst(new LoadMem(valReg, resolveWidth(operand),
+                        addrReg, new AddrImm(AddrImm.Part.LO, (GlobalVar) operand)));
+                return valReg;
+            } else {
+                var name = ((Register) operand).identifier();
+                if (!curFunc.nameToVirReg.containsKey(name))
+                    curFunc.nameToVirReg.put(name, new VirtualRegister(name));
+                return curFunc.nameToVirReg.get(name);
+            }
         } else {
             int i = (operand instanceof IntConstant) ? ((IntConstant) operand).value :
                     ((operand instanceof NullptrConstant) ? 0 : (((BoolConstant) operand).value ? 1 : 0));
@@ -108,9 +114,9 @@ public class AsmBuilder {
     }
 
     private RVRegister getRegister(String name) {
-        if (!nameToVirReg.containsKey(name))
-            nameToVirReg.put(name, new VirtualRegister(name));
-        return nameToVirReg.get(name);
+        if (!curFunc.nameToVirReg.containsKey(name))
+            curFunc.nameToVirReg.put(name, new VirtualRegister(name));
+        return curFunc.nameToVirReg.get(name);
     }
 
     private RVInst copyToReg(RVRegister target, IROperand op) {
@@ -127,7 +133,6 @@ public class AsmBuilder {
         ng = new NameGenerator("asm.virtualReg");
         curBlockMapping = new BlockMapping(asmFunc, irFunc);
         curFunc = asmFunc;
-        nameToVirReg.clear();
         // store arguments
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
         // load arguments
@@ -138,8 +143,8 @@ public class AsmBuilder {
         for (int i = 8; i < asmFunc.parameterCount; ++i) {
             var reg = getRegister(irFunc.parameters.get(i));
             curFunc.addVarOnStack(reg);
-            entry.addInst(new LoadData(reg, resolveWidth(irFunc.parameters.get(i)),
-                    PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg))));
+            entry.addInst(new LoadMem(reg, resolveWidth(irFunc.parameters.get(i)),
+                    PhysicalRegister.get("sp"), new VirtualImm(4 * (i - 8))));
         }
         // callee save
         RVInfo.getCalleeSave().forEach(reg -> {
@@ -210,7 +215,13 @@ public class AsmBuilder {
 
     private void buildAssign(Assign inst) {
         if (inst.src instanceof UndefConstant) return;
-        curBlock.addInst(copyToReg(getRegister(inst.dest), inst.src));
+        if (inst.dest instanceof GlobalVar) {
+            var addrReg = ng.gen();
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.dest)));
+            curBlock.addInst(new StoreMem(resolveWidth(inst.dest), addrReg,
+                    getRegister(inst.src), new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.dest)));
+        } else
+            curBlock.addInst(copyToReg(getRegister(inst.dest), inst.src));
     }
 
     private void buildBinary(Binary inst) {
@@ -242,6 +253,12 @@ public class AsmBuilder {
                 rs2 = getRegister(inst.operand2);
             else imm = ((IntConstant) inst.operand2).value;
         }
+        if (imm != null && RVInfo.hasHigh(imm)) {
+            // check if exceed 12-bits
+            rs2 = ng.gen();
+            curBlock.addInst(new LoadImm(rs2, imm));
+            imm = null;
+        }
         // rs1 now guaranteed
         if (imm == null)
             curBlock.addInst(new Computation(rd, ct, rs1, rs2));
@@ -263,12 +280,23 @@ public class AsmBuilder {
     }
 
     private void buildCall(Call inst) {
-        // todo modify sp
-        if (inst.args.size() >= 8) {
+        for (int i = 0; i < Integer.min(8, inst.args.size()); ++i) {
+            var operand = inst.args.get(i);
+            if (operand instanceof StringConstant) {
+                var dest = PhysicalRegister.get("a" + i);
+                curBlock.addInst(new Lui(dest, new AddrImm(AddrImm.Part.HI, (StringConstant) operand)));
+                curBlock.addInst(new Computation(dest, Computation.CompType.add,
+                        dest, new AddrImm(AddrImm.Part.LO, (StringConstant) operand)));
+            } else
+                curBlock.addInst(new Move(PhysicalRegister.get("a" + i), getRegister(operand)));
+        }
+        if (inst.args.size() > 8) {
             // store to the sp
             int curOff = 0;
+            curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
+                    PhysicalRegister.get("sp"), new Imm(4 * (inst.args.size() - 8))));
             for (int i = 8; i < inst.args.size(); ++i) {
-                curBlock.addInst(new StoreData(resolveWidth(inst.args.get(i)), PhysicalRegister.get("sp"),
+                curBlock.addInst(new StoreMem(resolveWidth(inst.args.get(i)), PhysicalRegister.get("sp"),
                         getRegister(inst.args.get(i)), new Imm(curOff)));
                 curOff += 4;
             }
@@ -277,7 +305,14 @@ public class AsmBuilder {
                 curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("s0")));
             }
         }
+
         curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
+
+        if (inst.args.size() > 8) {
+            // restore sp
+            curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
+                    PhysicalRegister.get("sp"), new Imm(-4 * (inst.args.size() - 8))));
+        }
         if (inst.containsDest())
             curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
     }
@@ -336,14 +371,29 @@ public class AsmBuilder {
     }
 
     private void buildLoad(Load inst) {
-        var loading = new LoadData(getRegister(inst.dest), resolveWidth(inst.dest),
-                getRegister(inst.address), new Imm(0));
-        curBlock.addInst(loading);
+        if (inst.address instanceof GlobalVar) {
+            var addrReg = ng.gen();
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.address)));
+            curBlock.addInst(new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
+                    addrReg, new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.address)));
+
+        } else {
+            var loading = new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
+                    getRegister(inst.address), new Imm(0));
+            curBlock.addInst(loading);
+        }
     }
 
     private void buildStore(Store inst) {
-        var storing = new StoreData(resolveWidth(inst.source),
-                getRegister(inst.address), getRegister(inst.source), new Imm(0));
-        curBlock.addInst(storing);
+        if (inst.address instanceof GlobalVar) {
+            var addrReg = ng.gen();
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.address)));
+            curBlock.addInst(new StoreMem(resolveWidth(inst.source),
+                    addrReg, getRegister(inst.source), new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.address)));
+        } else {
+            var storing = new StoreMem(resolveWidth(inst.source),
+                    getRegister(inst.address), getRegister(inst.source), new Imm(0));
+            curBlock.addInst(storing);
+        }
     }
 }

@@ -16,6 +16,7 @@ public class IRInfo {
     private final HashMap<String, StructureType> types = new HashMap<>();
     private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
     private final HashMap<String, String> stringMethods = new HashMap<>();
+
     private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private final HashSet<IRFunction> globalFunction = new HashSet<>();
     private int strCounter = 0;
@@ -202,4 +203,13 @@ public class IRInfo {
     public void forEachFunctionIncludingBuiltin(Consumer<IRFunction> f) {
         functions.forEach((k, v) -> f.accept(v));
     }
+
+    public HashMap<String, StringConstant> getStringLiteral() {
+        return strLiterals;
+    }
+
+    public HashMap<String, GlobalVar> getGlobalVars() {
+        return globalVars;
+    }
+
 }

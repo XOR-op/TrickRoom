@@ -5,45 +5,42 @@ import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
 
-public class LoadData extends RVInst {
-
-    private RVRegister rd, rs1;
+public class StoreMem extends RVInst {
+    private RVRegister rs1, rs2;
     private Imm imm;
     private WidthType wt;
 
-    public LoadData(RVRegister rd, WidthType wt, RVRegister rs1, Imm imm) {
-        this.rd = rd;
+    public StoreMem(WidthType wt, RVRegister addr, RVRegister src, Imm offset) {
         this.wt = wt;
-        this.rs1 = rs1;
-        this.imm = imm;
-    }
-
-    public RVRegister getRd() {
-        return rd;
+        this.rs1 = addr;
+        this.rs2 = src;
+        this.imm = offset;
     }
 
     @Override
     public String tell() {
-        return "l" + wt + " " + rd.tell() + "," + imm + "(" + rs1.tell() + ")";
+        return "s" + wt + " " + rs2.tell() + "," + imm.tell() + "(" + rs1.tell() + ")";
     }
 
     @Override
     public void forEachRegSrc(Consumer<RVRegister> consumer) {
         consumer.accept(rs1);
+        consumer.accept(rs2);
     }
 
     @Override
     public void forEachRegDest(Consumer<RVRegister> consumer) {
-        consumer.accept(rd);
+        // do nothing
     }
 
     @Override
     public void replaceRegSrc(RVRegister newReg, RVRegister oldReg) {
         if (rs1 == oldReg) rs1 = newReg;
+        if (rs2 == oldReg) rs2 = newReg;
     }
 
     @Override
     public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
-        if (rd == oldReg) rd = newReg;
+        // do nothing
     }
 }

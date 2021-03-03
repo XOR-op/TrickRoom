@@ -6,8 +6,6 @@ import assembly.operand.RVRegister;
 import ir.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
-import ir.typesystem.PointerType;
-import ir.typesystem.StructureType;
 import optimization.AsmOptimizer;
 
 import java.util.HashMap;
@@ -16,6 +14,8 @@ import java.util.function.Consumer;
 
 public class RVInfo {
     private final HashMap<String, AsmFunction> funcCollection = new HashMap<>();
+    private final HashMap<String, String> strData = new HashMap<>();
+    private final HashMap<String, Integer> globalToSize = new HashMap<>();
     private final IRInfo irInfo;
 
     public RVInfo(IRInfo irInfo) {
@@ -25,6 +25,12 @@ public class RVInfo {
                 funcCollection.put(f.name, new AsmFunction(f));
             else
                 funcCollection.put(f.name, new AsmFunction(f, true));
+        });
+        irInfo.getStringLiteral().forEach((k, v) -> {
+            strData.put(v.name, v.value);
+        });
+        irInfo.getGlobalVars().forEach((k, v) -> {
+            globalToSize.put(v.name, v.type.size());
         });
     }
 
@@ -46,7 +52,7 @@ public class RVInfo {
     public void registerAllocate() {
         funcCollection.forEach((k, func) -> {
             if (!func.isBuiltin()) {
-                GraphRegisterAllocator.allocate(func);
+                new GraphRegisterAllocator(func).run();
                 new AsmOptimizer(func).run();
             }
         });
@@ -54,25 +60,48 @@ public class RVInfo {
 
     public void renameMain() {
         forEachFunction(f -> {
-            if (f.name.equals("main")){
+            if (f.name.equals("main")) {
                 f.name = "real.main";
-                f.entry.name="real.main";
-            }
-            else if (f.name.equals(Cst.INIT)){
+                f.entry.name = "real.main";
+            } else if (f.name.equals(Cst.INIT)) {
                 f.name = "main";
-                f.entry.name="main";
+                f.entry.name = "main";
             }
         });
     }
 
     public String tell() {
         StringBuilder builder = new StringBuilder();
-        builder.append("\t.text\n");
-        builder.append("\t.align 2\n");
+        Consumer<String> rawStr = s -> builder.append("\t").append(s).append("\n");
+        rawStr.accept(".attribute stack_align, 16");
+        // .rodata
+        if (!strData.isEmpty()) {
+            rawStr.accept(".rodata");
+            strData.forEach((k, v) -> {
+                rawStr.accept(".align 2");
+                builder.append(k).append(":\n");
+                builder.append("\t.string \"").append(v).append("\"\n");
+            });
+        }
+        builder.append("\n");
+        // .text
+        rawStr.accept(".text");
+        rawStr.accept(".align 2");
         forEachFunction(f -> {
             if (!f.isBuiltin())
-                builder.append(f.tell());
+                builder.append(f.tell()).append("\n");
         });
+        // .bss
+        if (!globalToSize.isEmpty()) {
+            rawStr.accept(".bss");
+            rawStr.accept(".align 2");
+            globalToSize.forEach((name, size) -> {
+                builder.append("\t.type\t").append(name).append(", @object\n");
+                builder.append("\t.size\t").append(name).append(", ").append(size).append("\n");
+                builder.append(name).append(":\n");
+                builder.append("\t.zero\t").append(size).append("\n");
+            });
+        }
         return builder.toString();
     }
 
@@ -92,10 +121,14 @@ public class RVInfo {
     public static HashSet<RVRegister> getCalleeSave() {
         if (calleeSave == null) {
             calleeSave = new HashSet<>();
-            calleeSave.add(PhysicalRegister.get("sp"));
+            // not add sp because sp is restored by addi
             for (int i = 8; i <= 9; ++i) calleeSave.add(PhysicalRegister.get(i));
             for (int i = 18; i <= 27; ++i) calleeSave.add(PhysicalRegister.get(i));
         }
         return calleeSave;
+    }
+
+    public static boolean hasHigh(int val) {
+        return (val & 0xfffff000) != 0;
     }
 }

@@ -22,6 +22,6 @@ public class VirtualRegister extends RVRegister {
 
     @Override
     public String toString() {
-        return name;
+        return color==null?name:color.tell();
     }
 }
