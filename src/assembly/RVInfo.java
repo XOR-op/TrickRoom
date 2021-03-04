@@ -96,6 +96,7 @@ public class RVInfo {
             rawStr.accept(".bss");
             rawStr.accept(".align 2");
             globalToSize.forEach((name, size) -> {
+                builder.append("\t.globl\t").append(name).append("\n");
                 builder.append("\t.type\t").append(name).append(", @object\n");
                 builder.append("\t.size\t").append(name).append(", ").append(size).append("\n");
                 builder.append(name).append(":\n");

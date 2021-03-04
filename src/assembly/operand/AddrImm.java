@@ -7,7 +7,7 @@ public class AddrImm extends Imm {
     private Part part;
     private String name;
 
-    public enum Part {HI, LO}
+    public enum Part {hi, lo}
 
     public AddrImm(Part part, GlobalVar var) {
         super(0);

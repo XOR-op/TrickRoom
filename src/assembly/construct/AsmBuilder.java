@@ -16,18 +16,16 @@ import ir.instruction.Jump;
 import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
-import utils.L;
 
 import java.util.HashMap;
 
-/*
-    delay register restoration to Stage Register Allocation
- */
 public class AsmBuilder {
     private IRInfo irInfo;
     private RVInfo rvInfo;
     private AsmBlock curBlock;
     private AsmFunction curFunc;
+    private final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
+    private final static String RESERVE_PREFIX = "__reserve_";
 
     private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
 
@@ -94,9 +92,9 @@ public class AsmBuilder {
             if (operand instanceof GlobalVar) {
                 var addrReg = ng.gen();
                 var valReg = ng.gen();
-                curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) operand)));
+                curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) operand)));
                 curBlock.addInst(new LoadMem(valReg, resolveWidth(operand),
-                        addrReg, new AddrImm(AddrImm.Part.LO, (GlobalVar) operand)));
+                        addrReg, new AddrImm(AddrImm.Part.lo, (GlobalVar) operand)));
                 return valReg;
             } else {
                 var name = ((Register) operand).identifier();
@@ -130,10 +128,9 @@ public class AsmBuilder {
 
 
     private void buildFunction(AsmFunction asmFunc, IRFunction irFunc) {
-        ng = new NameGenerator("asm.virtualReg");
+        ng = new NameGenerator(NAME_GENERATE_PREFIX);
         curBlockMapping = new BlockMapping(asmFunc, irFunc);
         curFunc = asmFunc;
-        // store arguments
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
         // load arguments
         entry.name = irFunc.name;
@@ -148,8 +145,9 @@ public class AsmBuilder {
         }
         // callee save
         RVInfo.getCalleeSave().forEach(reg -> {
-            entry.addInst(new Move(getRegister("reserve." + reg.tell()), reg));
+            entry.addInst(new Move(getRegister(RESERVE_PREFIX + reg.tell()), reg));
         });
+        entry.addInst(new Move(getRegister(RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -193,8 +191,9 @@ public class AsmBuilder {
             }
             // restoration
             RVInfo.getCalleeSave().forEach(reg -> {
-                curBlock.addInst(new Move(reg, getRegister("reserve." + reg.tell())));
+                curBlock.addInst(new Move(reg, getRegister(RESERVE_PREFIX + reg.tell())));
             });
+            curBlock.addInst(new Move(PhysicalRegister.get("ra"), getRegister(RESERVE_PREFIX + PhysicalRegister.get("ra"))));
             curBlock.addInst(new Return());
         }
         curBlock = null;
@@ -217,9 +216,9 @@ public class AsmBuilder {
         if (inst.src instanceof UndefConstant) return;
         if (inst.dest instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.dest)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.dest)));
             curBlock.addInst(new StoreMem(resolveWidth(inst.dest), addrReg,
-                    getRegister(inst.src), new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.dest)));
+                    getRegister(inst.src), new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.dest)));
         } else
             curBlock.addInst(copyToReg(getRegister(inst.dest), inst.src));
     }
@@ -284,17 +283,18 @@ public class AsmBuilder {
             var operand = inst.args.get(i);
             if (operand instanceof StringConstant) {
                 var dest = PhysicalRegister.get("a" + i);
-                curBlock.addInst(new Lui(dest, new AddrImm(AddrImm.Part.HI, (StringConstant) operand)));
+                curBlock.addInst(new Lui(dest, new AddrImm(AddrImm.Part.hi, (StringConstant) operand)));
                 curBlock.addInst(new Computation(dest, Computation.CompType.add,
-                        dest, new AddrImm(AddrImm.Part.LO, (StringConstant) operand)));
+                        dest, new AddrImm(AddrImm.Part.lo, (StringConstant) operand)));
             } else
                 curBlock.addInst(new Move(PhysicalRegister.get("a" + i), getRegister(operand)));
         }
         if (inst.args.size() > 8) {
+            // todo special judge to fill the 16-align hole
             // store to the sp
             int curOff = 0;
             curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
-                    PhysicalRegister.get("sp"), new Imm(4 * (inst.args.size() - 8))));
+                    PhysicalRegister.get("sp"), new Imm(-4 * (inst.args.size() - 8))));
             for (int i = 8; i < inst.args.size(); ++i) {
                 curBlock.addInst(new StoreMem(resolveWidth(inst.args.get(i)), PhysicalRegister.get("sp"),
                         getRegister(inst.args.get(i)), new Imm(curOff)));
@@ -311,7 +311,7 @@ public class AsmBuilder {
         if (inst.args.size() > 8) {
             // restore sp
             curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
-                    PhysicalRegister.get("sp"), new Imm(-4 * (inst.args.size() - 8))));
+                    PhysicalRegister.get("sp"), new Imm(4 * (inst.args.size() - 8))));
         }
         if (inst.containsDest())
             curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
@@ -373,9 +373,9 @@ public class AsmBuilder {
     private void buildLoad(Load inst) {
         if (inst.address instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.address)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.address)));
             curBlock.addInst(new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
-                    addrReg, new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.address)));
+                    addrReg, new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.address)));
 
         } else {
             var loading = new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
@@ -387,9 +387,9 @@ public class AsmBuilder {
     private void buildStore(Store inst) {
         if (inst.address instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.HI, (GlobalVar) inst.address)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.address)));
             curBlock.addInst(new StoreMem(resolveWidth(inst.source),
-                    addrReg, getRegister(inst.source), new AddrImm(AddrImm.Part.LO, (GlobalVar) inst.address)));
+                    addrReg, getRegister(inst.source), new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.address)));
         } else {
             var storing = new StoreMem(resolveWidth(inst.source),
                     getRegister(inst.address), getRegister(inst.source), new Imm(0));

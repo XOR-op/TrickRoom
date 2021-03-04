@@ -2,6 +2,7 @@ package assembly.instruction;
 
 import assembly.operand.Imm;
 import assembly.operand.RVRegister;
+import assembly.operand.VirtualImm;
 
 import java.util.function.Consumer;
 
@@ -15,6 +16,12 @@ public class StoreMem extends RVInst {
         this.rs1 = addr;
         this.rs2 = src;
         this.imm = offset;
+    }
+
+    public void replaceImm(int stackLength) {
+        if (imm instanceof VirtualImm) {
+            imm = new Imm(((VirtualImm) imm).offset + stackLength);
+        }
     }
 
     @Override

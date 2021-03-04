@@ -3,10 +3,7 @@ package assembly.construct;
 import assembly.AsmBlock;
 import assembly.AsmFunction;
 import assembly.instruction.*;
-import assembly.operand.Imm;
-import assembly.operand.PhysicalRegister;
-import assembly.operand.RVRegister;
-import assembly.operand.VirtualRegister;
+import assembly.operand.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -152,11 +149,7 @@ public class GraphRegisterAllocator {
                 // end optimization
                 asmFunc.blocks.forEach(this::optimize);
                 color.forEach((reg, col) -> reg.setColor(PhysicalRegister.get(col)));
-                asmFunc.blocks.forEach(block -> {
-                    block.instructions.forEach(inst -> {
-                        if (inst instanceof LoadMem) ((LoadMem) inst).replaceImm(asmFunc.getStackOffset());
-                    });
-                });
+                new PostCleaner(asmFunc).run();
                 return true;
             } else {
                 rewriteProgram();
@@ -405,11 +398,11 @@ public class GraphRegisterAllocator {
                     inst.forEachRegSrc(reg -> {
                         if (decidedSpillSet.contains(reg)) {
                             if (inst instanceof Move) {
-                                iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg))));
+                                iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(asmFunc.getVarOffset(reg))));
                             } else {
                                 var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
                                 var loading = new LoadMem(tmp, RVInst.WidthType.w,
-                                        PhysicalRegister.get("sp"), new Imm(asmFunc.getVarOffset(reg)));
+                                        PhysicalRegister.get("sp"), new VirtualImm(asmFunc.getVarOffset(reg)));
                                 inst.replaceRegSrc(loading.getRd(), reg);
                                 // insert before inst
                                 iter.previous();
@@ -422,12 +415,12 @@ public class GraphRegisterAllocator {
                     inst.forEachRegDest(reg -> {
                         if (decidedSpillSet.contains(reg)) {
                             if (inst instanceof Move) {
-                                iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new Imm(asmFunc.getVarOffset(reg))));
+                                iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new VirtualImm(asmFunc.getVarOffset(reg))));
                             } else {
                                 var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
                                 inst.replaceRegDest(tmp, reg);
                                 var storing = new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"),
-                                        tmp, new Imm(asmFunc.getVarOffset(reg)));
+                                        tmp, new VirtualImm(asmFunc.getVarOffset(reg)));
                                 iter.add(storing);
                                 weights.put(tmp, 0);
                             }

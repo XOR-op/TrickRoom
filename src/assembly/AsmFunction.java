@@ -14,6 +14,7 @@ public class AsmFunction {
     public AsmBlock entry;
 
     private int stackOffset = 0;
+    private int curOffset = 0;
     private final HashMap<RVRegister, Integer> varOffset = new HashMap<>();
     public final HashMap<String, VirtualRegister> nameToVirReg = new HashMap<>();
 
@@ -30,7 +31,6 @@ public class AsmFunction {
         for (int i = 8; i < parameterCount; ++i) {
             var reg = new VirtualRegister(irFunc.parameters.get(i));
             nameToVirReg.put(irFunc.parameters.get(i).name, reg);
-
         }
     }
 
@@ -47,10 +47,9 @@ public class AsmFunction {
         this.entry = entry;
     }
 
-    public int addVarOnStack(RVRegister reg) {
+    public void addVarOnStack(RVRegister reg) {
+        stackOffset -= 4;
         varOffset.put(reg, stackOffset);
-        stackOffset += 4;
-        return stackOffset - 4;
     }
 
     public int getVarOffset(RVRegister reg) {
@@ -59,7 +58,8 @@ public class AsmFunction {
     }
 
     public int getStackOffset() {
-        return stackOffset % 16 == 0 ? stackOffset : (stackOffset / 16) * 16 + 16;
+        var so = -stackOffset;
+        return so % 16 == 0 ? so : (so / 16) * 16 + 16;
     }
 
     public String tell() {

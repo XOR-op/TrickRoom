@@ -19,6 +19,7 @@ public class Return extends RVInst {
     @Override
     public void forEachRegSrc(Consumer<RVRegister> consumer) {
         RVInfo.getCalleeSave().forEach(consumer::accept);
+        consumer.accept(PhysicalRegister.get("ra"));
     }
 
     @Override
