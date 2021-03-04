@@ -30,7 +30,7 @@ public class PointerType extends IRType {
 
     @Override
     public int size() {
-        // for debug purpose, you may modify this
+        // To verify llvm-IR using llc on 64-bit machine, you may modify this
         return 4;
     }
 

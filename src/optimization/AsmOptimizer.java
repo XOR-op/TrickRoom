@@ -17,7 +17,7 @@ public class AsmOptimizer {
         while (iter.hasNext()) {
             var inst = iter.next();
             if (inst instanceof Computation && ((Computation) inst).ct == Computation.CompType.add
-                    && ((Computation) inst).imm != null && ((Computation) inst).imm.isRealVal()&& ((Computation) inst).imm.getVal() == 0) {
+                    && ((Computation) inst).imm != null && ((Computation) inst).imm.isRealVal() && ((Computation) inst).imm.getVal() == 0) {
                 iter.set(new Move(((Computation) inst).rd, ((Computation) inst).rs1));
             }
         }

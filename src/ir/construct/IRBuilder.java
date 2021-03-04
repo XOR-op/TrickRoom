@@ -26,6 +26,7 @@ public class IRBuilder implements ASTVisitor {
     private final IRInfo info;
     private final RootNode root;
     private int blockSuffix = 0;
+    private int loopSuffix = 0;
     private int loopDepth = 0;
 
 
@@ -292,7 +293,8 @@ public class IRBuilder implements ASTVisitor {
         // calculate real array address
         IRDestedInst trueArrayAddress = new GetElementPtr(new Register(new PointerType(Cst.byte_t)), alloc.dest,
                 new IntConstant(4));
-        IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)), trueArrayAddress.dest);
+        IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)),
+                trueArrayAddress.dest);
         // store size
         IRDestedInst cast = new BitCast(new Register(new PointerType(Cst.int32)), alloc.dest);
         IRInst storeSize = new Store(dims.get(level), cast.dest);
@@ -301,30 +303,32 @@ public class IRBuilder implements ASTVisitor {
         curBlock.appendInst(trueArrayAddress).appendInst(returnCast);
 
         if (level < dims.size() - 1) {
+            var loopedAddr = new Register(new PointerType(elementType), Cst.LOOP_RETURN_NAME + loopSuffix++);
+            IRDestedInst copyAddr = new Assign(loopedAddr, returnCast.dest);
+            curFunc.declareVar(loopedAddr);
+            curFunc.defineVar(loopedAddr, curBlock);
+            curBlock.appendInst(copyAddr);
             // initialize subarray
             var cond = new BasicBlock("imp_cond" + blockSuffix, loopDepth);
             var loopBody = new BasicBlock("imp_body" + blockSuffix, loopDepth);
             var afterLoop = new BasicBlock("imp_after" + blockSuffix, loopDepth - 1);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
-            Phi phi = new Phi(new Register(new PointerType(elementType)));
             IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
                     returnCast.dest, dims.get(level));
-            IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), phi.dest, endAddr.dest);
-            IRDestedInst incrPtr = new GetElementPtr(new Register(new PointerType(elementType)), phi.dest, new IntConstant(1));
+            IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), loopedAddr, endAddr.dest);
+            IRDestedInst incrPtr = new GetElementPtr(loopedAddr, loopedAddr, new IntConstant(1));
 
             curBlock.appendInst(endAddr);
             curBlock.setJumpTerminator(cond);
-            phi.append(returnCast.dest, curBlock);
-            cond.appendPhi(phi);
             cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
             curBlock = loopBody;
 
             Register initDone = arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
-            curBlock.appendInst(new Store(initDone, phi.dest));
 
-            phi.append(incrPtr.dest, curBlock);
+            curBlock.appendInst(new Store(initDone, loopedAddr));
             curBlock.appendInst(incrPtr);
+            curFunc.defineVar(loopedAddr, curBlock);
             curBlock.setJumpTerminator(cond);
             curBlock = afterLoop;
         } // we assume no initialization is needed for the most internal elements
@@ -449,6 +453,7 @@ public class IRBuilder implements ASTVisitor {
     public Object visit(FunctionNode node) {
         Register.reset(1);
         blockSuffix = 1;
+        loopSuffix = 1;
         curFunc = curClass == null ? info.getFunction(node.funcId) : info.getClassMethod(curClass.id, node.funcId);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;

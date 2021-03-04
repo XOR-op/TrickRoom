@@ -127,8 +127,8 @@ public class GraphRegisterAllocator {
             var iter = block.instructions.listIterator();
             while (iter.hasNext()) {
                 var inst = iter.next();
-                if (inst instanceof Move && (coalescedMoves.contains(inst) ||
-                        (((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor()))) iter.remove();
+                if (inst instanceof Move && ((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor())
+                    iter.remove();
 
             }
         }
@@ -147,8 +147,8 @@ public class GraphRegisterAllocator {
             assignColor();
             if (decidedSpillSet.isEmpty()) {
                 // end optimization
-                asmFunc.blocks.forEach(this::optimize);
                 color.forEach((reg, col) -> reg.setColor(PhysicalRegister.get(col)));
+                asmFunc.blocks.forEach(this::optimize);
                 new PostCleaner(asmFunc).run();
                 return true;
             } else {
@@ -261,10 +261,11 @@ public class GraphRegisterAllocator {
             }
         }
 
-        private boolean ableToCoalesce(RVRegister u, RVRegister v) {
+        private boolean GeorgeCriterion(RVRegister u, RVRegister v) {
             if (!preColored.contains(u)) return false;
             AtomicReference<Boolean> flag = new AtomicReference<>(true);
             forEachAdjacent(v, adj -> {
+                // assure coalesce u and v doesn't introduce more edges for u
                 if (flag.get() && (!(degrees.get(adj) < REG_NUM || preColored.contains(adj) || hasEdge(adj, u))))
                     flag.set(false);
             });
@@ -312,12 +313,12 @@ public class GraphRegisterAllocator {
             if (u == v) {
                 coalescedMoves.add(move);
                 addRegToWorkList(u);
-            } else if (preColored.contains(v) || hasEdge(u, v)) {
-                // conflict
+            } else if (u == PhysicalRegister.get("zero") || preColored.contains(v) || hasEdge(u, v)) {
+                // both pre-colored or conflict
                 constrainedMoves.add(move);
                 addRegToWorkList(u);
                 addRegToWorkList(v);
-            } else if (ableToCoalesce(u, v) || BriggsCriterion(u, v)) {
+            } else if (GeorgeCriterion(u, v) || BriggsCriterion(u, v)) {
                 // able to coalescing
                 coalescedMoves.add(move);
                 combine(u, v);

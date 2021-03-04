@@ -9,6 +9,7 @@ public class Cst {
     public static final String RETURN_VAL="__ret_val";
     public static final String INIT="_gbl_init";
     public static final String COPY_ELIMINATION="__copy_";
+    public static final String LOOP_RETURN_NAME="__loop_new_";
     public static final IRType int32 =new IntegerType();
     public static final IRType str=new PointerType(new IntegerType(8));
     public static final IRType bool=new BoolType();

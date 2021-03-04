@@ -115,11 +115,10 @@ public class AsmBuilder {
     }
 
     private void copyToReg(RVRegister target, IROperand op) {
-        if (op instanceof Register){
+        if (op instanceof Register) {
             curBlock.addInst(new Move(target, getRegister(op)));
             return;
-        }
-        else {
+        } else {
             int val;
             if (op instanceof IntConstant) {
                 val = ((IntConstant) op).value;
@@ -373,23 +372,37 @@ public class AsmBuilder {
         }
     }
 
+    private int twoPower(int x) {
+        int r = 0;
+        for (; x != 1; r++) {
+            assert x % 2 == 0;
+            x /= 2;
+        }
+        return r;
+    }
+
+
     private void buildGetElementPtr(GetElementPtr inst) {
         var base = getRegister(inst.base);
+        var tp = ((PointerType) inst.base.type).subType();
+        var offset = inst.offset == null ? -1 : ((StructureType) tp).getMemberOffset(inst.offset.value);
         if (inst.indexing instanceof IntConstant) {
-            var tp = ((PointerType) inst.base.type).subType();
             int i = tp.size() * ((IntConstant) inst.indexing).value;
-            if (inst.offset != null) {
-                i += ((StructureType) tp).getMemberOffset(inst.offset.value);
-            }
+            if (inst.offset != null)
+                i += offset;
             var calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, new Imm(i));
             curBlock.addInst(calcAddr);
         } else {
+            var calcBase = new Computation(ng.gen(), Computation.CompType.sll,
+                    getRegister(inst.indexing), new Imm(twoPower(((PointerType) inst.base.type).subType().size())));
+            curBlock.addInst(calcBase);
             if (inst.offset == null) {
-                var addBase = new Computation(getRegister(inst.dest), Computation.CompType.add, base, getRegister(inst.indexing));
+                var addBase = new Computation(getRegister(inst.dest), Computation.CompType.add, base, calcBase.rd);
                 curBlock.addInst(addBase);
             } else {
-                var addBase = new Computation(ng.gen(), Computation.CompType.add, base, getRegister(inst.indexing));
-                var addOffset = new Computation(getRegister(inst.dest), Computation.CompType.add, addBase.rd, new Imm(inst.offset.value));
+                var addBase = new Computation(ng.gen(), Computation.CompType.add, base, calcBase.rd);
+                var addOffset = new Computation(getRegister(inst.dest), Computation.CompType.add, addBase.rd,
+                        new Imm(offset));
                 curBlock.addInst(addBase);
                 curBlock.addInst(addOffset);
             }
