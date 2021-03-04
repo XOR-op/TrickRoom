@@ -3,7 +3,7 @@ package ast.scope;
 import ast.struct.ASTNode;
 import ast.type.ClassType;
 import ast.type.FunctionType;
-import exception.semantic.DuplicateSyntax;
+import ast.exception.DuplicateSyntax;
 
 import java.util.HashMap;
 

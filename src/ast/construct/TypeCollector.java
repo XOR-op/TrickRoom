@@ -5,8 +5,8 @@ import ast.Symbol;
 import ast.struct.*;
 import ast.type.*;
 import ast.scope.*;
-import exception.UnimplementedError;
-import exception.semantic.*;
+import misc.UnimplementedError;
+import ast.exception.*;
 
 public class TypeCollector implements ASTVisitor {
     private Scope currentScope;

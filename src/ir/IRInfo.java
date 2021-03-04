@@ -6,6 +6,7 @@ import ir.operand.GlobalVar;
 import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
+import misc.Cst;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,15 +147,16 @@ public class IRInfo {
         return functions.get(ft);
     }
 
-    public Register registerStrLiteral(String s) {
+    public StringConstant registerStrLiteral(String s) {
         String name;
         if (strLiterals.containsKey(s)) {
-            name = strLiterals.get(s).name;
+            return strLiterals.get(s);
         } else {
             name = Cst.STR_LITERAL + strCounter++;
-            strLiterals.put(s, new StringConstant(name, s));
+            var ret=new StringConstant(name, s);
+            strLiterals.put(s, ret);
+            return ret;
         }
-        return GlobalVar.toStaticString(name, s.length() + 1);
     }
 
     public String toLLVMir() {
@@ -173,8 +175,6 @@ public class IRInfo {
                 builder.append(v.tell()).append(" = global ").append(v.type).append(" ").append(v.initValue).append('\n')
         );
         builder.append('\n');
-
-        builder.append(init.tell()).append('\n');
 
         functions.forEach((k, v) -> {
             if (!v.isBuiltin())

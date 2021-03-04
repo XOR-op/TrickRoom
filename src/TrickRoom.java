@@ -5,8 +5,7 @@ import ast.construct.ScopeBuilder;
 import ast.construct.TypeCollector;
 import ast.struct.RootNode;
 import ir.construct.IRBuilder;
-import exception.UnimplementedError;
-import exception.semantic.*;
+import ast.exception.*;
 import ir.IRInfo;
 import optimization.BlockCoalesce;
 import org.antlr.v4.runtime.CharStreams;
@@ -14,8 +13,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
 import optimization.ConstantDeducer;
-import optimization.SSAConverter;
-import optimization.SSADestructor;
+import ir.construct.SSAConverter;
+import ir.construct.SSADestructor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -111,7 +110,7 @@ public class TrickRoom {
                     }
                     case VERBOSE -> verb = Verbose.INFO;
                     case DEBUG -> verb = Verbose.DEBUG;
-                    case HELP,HELP_ABBR -> {
+                    case HELP, HELP_ABBR -> {
                         System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
                         System.exit(0);
                     }
@@ -128,7 +127,7 @@ public class TrickRoom {
             if (llvmGenFlag || assemblyGenFlag) {
                 var info = llvmGen(rootNode);
                 if (optimizationFlag) optimize(info);
-                if (assemblyGenFlag){
+                if (assemblyGenFlag) {
                     postOptimization(info);
                     assemblyGen(info);
                 }
@@ -141,7 +140,7 @@ public class TrickRoom {
         } catch (Exception e) {
             if (verb == Verbose.DEBUG) {
                 e.printStackTrace();
-            }else
+            } else
                 System.err.println(e);
             System.exit(-1);
         }
@@ -166,17 +165,18 @@ public class TrickRoom {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
         info.forEachFunction(f -> new SSAConverter(f).invoke());
-        try {
-            if (llvmGenFlag)
+        if (llvmGenFlag) {
+            try {
                 os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            System.err.println(e);
+            } catch (IOException e) {
+                System.err.println(e);
+            }
         }
         return info;
     }
 
-    private void optimize(IRInfo irInfo){
-        irInfo.forEachFunction(f->{
+    private void optimize(IRInfo irInfo) {
+        irInfo.forEachFunction(f -> {
             new BlockCoalesce(f).invoke();
         });
     }

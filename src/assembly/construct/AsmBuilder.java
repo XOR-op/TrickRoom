@@ -6,7 +6,7 @@ import assembly.RVInfo;
 import assembly.instruction.*;
 import assembly.operand.*;
 import ir.BasicBlock;
-import ir.Cst;
+import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
 import ir.instruction.*;
@@ -16,6 +16,7 @@ import ir.instruction.Jump;
 import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
+import misc.Cst;
 
 import java.util.HashMap;
 
@@ -24,8 +25,6 @@ public class AsmBuilder {
     private RVInfo rvInfo;
     private AsmBlock curBlock;
     private AsmFunction curFunc;
-    private final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
-    private final static String RESERVE_PREFIX = "__reserve_";
 
     private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
 
@@ -128,7 +127,7 @@ public class AsmBuilder {
 
 
     private void buildFunction(AsmFunction asmFunc, IRFunction irFunc) {
-        ng = new NameGenerator(NAME_GENERATE_PREFIX);
+        ng = new NameGenerator(Cst.NAME_GENERATE_PREFIX);
         curBlockMapping = new BlockMapping(asmFunc, irFunc);
         curFunc = asmFunc;
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
@@ -145,9 +144,9 @@ public class AsmBuilder {
         }
         // callee save
         RVInfo.getCalleeSave().forEach(reg -> {
-            entry.addInst(new Move(getRegister(RESERVE_PREFIX + reg.tell()), reg));
+            entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + reg.tell()), reg));
         });
-        entry.addInst(new Move(getRegister(RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
+        entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -191,9 +190,9 @@ public class AsmBuilder {
             }
             // restoration
             RVInfo.getCalleeSave().forEach(reg -> {
-                curBlock.addInst(new Move(reg, getRegister(RESERVE_PREFIX + reg.tell())));
+                curBlock.addInst(new Move(reg, getRegister(Cst.RESERVE_PREFIX + reg.tell())));
             });
-            curBlock.addInst(new Move(PhysicalRegister.get("ra"), getRegister(RESERVE_PREFIX + PhysicalRegister.get("ra"))));
+            curBlock.addInst(new Move(PhysicalRegister.get("ra"), getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra"))));
             curBlock.addInst(new Return());
         }
         curBlock = null;

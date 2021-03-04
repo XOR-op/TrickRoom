@@ -5,9 +5,9 @@ import ast.type.ClassType;
 import ast.type.FunctionType;
 import ast.Symbol;
 import ast.type.Type;
-import exception.UnimplementedError;
-import exception.semantic.DuplicateSyntax;
-import exception.semantic.MissingSyntax;
+import misc.UnimplementedError;
+import ast.exception.DuplicateSyntax;
+import ast.exception.MissingSyntax;
 
 import java.util.HashMap;
 

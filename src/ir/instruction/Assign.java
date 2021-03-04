@@ -1,10 +1,9 @@
 package ir.instruction;
 
-import ir.Cst;
+import misc.Cst;
 import ir.operand.IROperand;
 import ir.operand.IntConstant;
 import ir.operand.Register;
-import ir.operand.UndefConstant;
 import ir.typesystem.PointerType;
 
 import java.util.function.Function;

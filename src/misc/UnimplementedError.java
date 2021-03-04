@@ -1,4 +1,4 @@
-package exception;
+package misc;
 
 public class UnimplementedError extends RuntimeException{
     String info;

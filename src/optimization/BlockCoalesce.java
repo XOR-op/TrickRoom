@@ -3,6 +3,7 @@ package optimization;
 import ir.BasicBlock;
 import ir.IRFunction;
 import ir.instruction.Jump;
+import misc.FunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;

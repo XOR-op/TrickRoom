@@ -1,4 +1,4 @@
-package exception.semantic;
+package ast.exception;
 
 import ast.struct.ASTNode;
 

@@ -1,7 +1,7 @@
 package ast;
 
 import ast.struct.*;
-import exception.UnimplementedError;
+import misc.UnimplementedError;
 
 public interface ASTVisitor  {
     private Object notImplemented() {

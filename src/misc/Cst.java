@@ -1,11 +1,11 @@
-package ir;
+package misc;
 
 import ir.typesystem.*;
 
 public class Cst {
     public static final String STRUCT="__struct_";
     public static final String STR_FUNC="__builtin_str_";
-    public static final String STR_LITERAL="__str_";
+    public static final String STR_LITERAL="._str_";
     public static final String RETURN_VAL="__ret_val";
     public static final String INIT="_gbl_init";
     public static final String COPY_ELIMINATION="__copy_";
@@ -14,4 +14,6 @@ public class Cst {
     public static final IRType bool=new BoolType();
     public static final IRType void_t=new VoidType();
     public static final IRType byte_t=new IntegerType(8);
+    public final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
+    public final static String RESERVE_PREFIX = "__reserve_";
 }

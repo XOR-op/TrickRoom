@@ -1,10 +1,11 @@
-package optimization;
+package ir.construct;
 
 import ir.BasicBlock;
 import ir.IRFunction;
 import ir.instruction.Assign;
 import ir.operand.IROperand;
 import ir.operand.Register;
+import misc.FunctionPass;
 
 import java.util.ArrayList;
 import java.util.HashMap;

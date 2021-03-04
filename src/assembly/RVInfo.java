@@ -3,7 +3,7 @@ package assembly;
 import assembly.construct.GraphRegisterAllocator;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
-import ir.Cst;
+import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
 import optimization.AsmOptimizer;

@@ -1,4 +1,4 @@
-package optimization;
+package misc;
 
 import ir.IRFunction;
 import ir.IRInfo;

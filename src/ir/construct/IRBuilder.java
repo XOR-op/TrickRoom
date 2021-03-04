@@ -7,7 +7,7 @@ import ast.type.FunctionType;
 import ast.type.TypeConst;
 import ast.scope.FileScope;
 import ir.BasicBlock;
-import ir.Cst;
+import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
 import ir.instruction.*;
@@ -494,6 +494,7 @@ public class IRBuilder implements ASTVisitor {
                     IROperand ope = ((Ret) b.terminatorInst).value;
                     b.terminatorInst = null;
                     b.appendInst(new Assign(returnValue, ope));
+                    curFunc.defineVar(returnValue, b);
                     b.setJumpTerminator(exit);
                 });
                 curFunc.addBlock(exit);

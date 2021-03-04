@@ -1,4 +1,4 @@
-package optimization;
+package ir.construct;
 
 
 import ir.BasicBlock;
@@ -6,6 +6,7 @@ import ir.IRFunction;
 import ir.instruction.IRDestedInst;
 import ir.instruction.Phi;
 import ir.operand.Register;
+import misc.FunctionPass;
 
 import java.util.*;
 

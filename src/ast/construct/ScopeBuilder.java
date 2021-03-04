@@ -5,7 +5,7 @@ import ast.Symbol;
 import ast.struct.*;
 import ast.type.*;
 import ast.scope.*;
-import exception.semantic.*;
+import ast.exception.*;
 
 import java.util.HashMap;
 import java.util.Stack;

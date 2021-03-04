@@ -2,7 +2,6 @@ package assembly.instruction;
 
 import assembly.AsmBlock;
 import assembly.operand.RVRegister;
-import exception.UnimplementedError;
 
 import java.util.function.Consumer;
 

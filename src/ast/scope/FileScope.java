@@ -3,7 +3,7 @@ package ast.scope;
 import ast.Symbol;
 import ast.struct.ASTNode;
 import ast.type.*;
-import exception.semantic.*;
+import ast.exception.*;
 
 import java.util.HashMap;
 
