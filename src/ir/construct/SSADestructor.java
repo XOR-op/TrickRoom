@@ -48,31 +48,32 @@ public class SSADestructor extends FunctionPass {
             var prevToAdd = new HashMap<BasicBlock, BasicBlock>();
             // split critical edges
             oneBlk.prevs.forEach(onePrev -> {
-                ParallelCopy pc = new ParallelCopy();
+                ParallelCopy pCopy = new ParallelCopy();
                 if (onePrev.nexts.size() > 1) {
-                    var inter = new BasicBlock("copyF" + onePrev.blockName + "T" + oneBlk.blockName,oneBlk.loopDepth);
+                    var inter = new BasicBlock("F" + onePrev.blockName.substring(2) + "T" + oneBlk.blockName.substring(2),
+                            oneBlk.loopDepth);
                     prevToAdd.put(onePrev, inter);
-                    prevToCopy.put(onePrev, pc);
-                    blockToCopy.put(inter, pc);
+                    prevToCopy.put(onePrev, pCopy);
+                    blockToCopy.put(inter, pCopy);
                     toAdd.add(inter);
                 } else {
-                    prevToCopy.put(onePrev, pc);
-                    blockToCopy.put(onePrev, pc);
+                    prevToCopy.put(onePrev, pCopy);
+                    blockToCopy.put(onePrev, pCopy);
                 }
             });
             prevToAdd.forEach(oneBlk::createBetweenPrev);
             oneBlk.phiCollection.forEach(onePhi -> {
                 onePhi.arguments.forEach(s -> prevToCopy.get(s.block).addPair(onePhi.dest, s.val));
             });
-            oneBlk.phiCollection = new HashSet<>();
+            oneBlk.phiCollection.clear();
         });
         // add inter block to func
         toAdd.forEach(b -> irFunc.addBlock(b));
-        toAdd.forEach(this::parallelCopyElimination);
+        blockToCopy.forEach(this::parallelCopyElimination);
     }
 
-    private void parallelCopyElimination(BasicBlock theBlock) {
-        var theCopy = blockToCopy.get(theBlock);
+    private void parallelCopyElimination(BasicBlock theBlock, ParallelCopy theCopy) {
+        // append to block's tail
         boolean flag;
         do {
             flag = false;

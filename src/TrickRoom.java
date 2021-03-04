@@ -128,7 +128,7 @@ public class TrickRoom {
                 var info = llvmGen(rootNode);
                 if (optimizationFlag) optimize(info);
                 if (assemblyGenFlag) {
-                    postOptimization(info);
+                    postIROptimization(info);
                     assemblyGen(info);
                 }
             }
@@ -194,7 +194,7 @@ public class TrickRoom {
         }
     }
 
-    private void postOptimization(IRInfo info) {
+    private void postIROptimization(IRInfo info) {
         info.forEachFunction(f -> {
             new SSADestructor(f).invoke();
             new ConstantDeducer(f).invoke();

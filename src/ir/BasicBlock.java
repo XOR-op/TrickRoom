@@ -16,7 +16,7 @@ public class BasicBlock {
     public int loopDepth=0;
 
     public BasicBlock(String name,int depth) {
-        blockName = "l." + name;
+        blockName = "l_" + name;
         this.loopDepth=depth;
     }
 
@@ -27,9 +27,10 @@ public class BasicBlock {
     }
 
     public void createBetweenPrev(BasicBlock prev,BasicBlock newBlk){
+        assert prevs.contains(prev);
         prevs.remove(prev);
         prevs.add(newBlk);
-        ((Branch)prev.terminatorInst).replaceBranch(prev,newBlk);
+        ((Branch)prev.terminatorInst).replaceBranch(this,newBlk);
         prev.nexts.remove(this);
         prev.nexts.add(newBlk);
         newBlk.prevs.add(prev);

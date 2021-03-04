@@ -183,7 +183,7 @@ _str_concat:
 	mv	s0,a0
 	call	strcpy
 	mv	a1,s1
-	call	strcpy
+	call	strcat
 	lw	ra,12(sp)
 	mv	a0,s0
 	lw	s0,8(sp)

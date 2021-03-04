@@ -15,8 +15,8 @@ public class AsmBlock {
 
     public HashSet<RVRegister> liveOut;
 
-    public AsmBlock(String name, int loopDepth) {
-        this.name = name;
+    public AsmBlock(AsmFunction baseFunc, String name, int loopDepth) {
+        this.name = baseFunc.getName()+name.substring(1);
         this.loopDepth = loopDepth;
     }
 
@@ -33,7 +33,7 @@ public class AsmBlock {
     }
 
     public String getName() {
-        return name.replace(".","_2E_");
+        return name.replace(".", "_2E_");
     }
 
     public String tell() {

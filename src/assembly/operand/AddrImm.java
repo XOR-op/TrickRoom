@@ -1,6 +1,7 @@
 package assembly.operand;
 
 import ir.operand.GlobalVar;
+import ir.operand.IROperand;
 import ir.operand.StringConstant;
 
 public class AddrImm extends Imm {
@@ -9,16 +10,22 @@ public class AddrImm extends Imm {
 
     public enum Part {hi, lo}
 
-    public AddrImm(Part part, GlobalVar var) {
+    public AddrImm(Part part, IROperand var){
         super(0);
-        this.part = part;
-        name = var.name;
+        assert (var instanceof StringConstant)||(var instanceof GlobalVar);
+        this.part=part;
+        if(var instanceof StringConstant)name= ((StringConstant) var).name;
+        else name= ((GlobalVar) var).name;
     }
 
-    public AddrImm(Part part, StringConstant var) {
-        super(0);
-        this.part = part;
-        name = var.name;
+    @Override
+    public int getVal() {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean isRealVal() {
+        return false;
     }
 
     @Override

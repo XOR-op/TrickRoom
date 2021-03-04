@@ -26,8 +26,6 @@ public class AsmBuilder {
     private AsmBlock curBlock;
     private AsmFunction curFunc;
 
-    private final HashMap<IRFunction, AsmFunction> funcMapping = new HashMap<>();
-
     private class NameGenerator {
         private int n = 0;
         private final String prefix;
@@ -58,7 +56,7 @@ public class AsmBuilder {
         public AsmBlock getBlock(BasicBlock blk) {
             if (mapping.containsKey(blk)) return mapping.get(blk);
             else {
-                var asmBlk = new AsmBlock(blk.getBlockName(), blk.loopDepth);
+                var asmBlk = new AsmBlock(asmFunc, blk.getBlockName(), blk.loopDepth);
                 mapping.put(blk, asmBlk);
                 asmFunc.addBlock(asmBlk);
                 return asmBlk;
@@ -91,9 +89,9 @@ public class AsmBuilder {
             if (operand instanceof GlobalVar) {
                 var addrReg = ng.gen();
                 var valReg = ng.gen();
-                curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) operand)));
+                curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, operand)));
                 curBlock.addInst(new LoadMem(valReg, resolveWidth(operand),
-                        addrReg, new AddrImm(AddrImm.Part.lo, (GlobalVar) operand)));
+                        addrReg, new AddrImm(AddrImm.Part.lo, operand)));
                 return valReg;
             } else {
                 var name = ((Register) operand).identifier();
@@ -116,12 +114,27 @@ public class AsmBuilder {
         return curFunc.nameToVirReg.get(name);
     }
 
-    private RVInst copyToReg(RVRegister target, IROperand op) {
-        if (op instanceof Register) return new Move(target, getRegister(op));
+    private void copyToReg(RVRegister target, IROperand op) {
+        if (op instanceof Register){
+            curBlock.addInst(new Move(target, getRegister(op)));
+            return;
+        }
         else {
-            int val = (op instanceof IntConstant) ? ((IntConstant) op).value
-                    : (op instanceof NullptrConstant) ? 0 : ((((BoolConstant) op).value) ? 1 : 0);
-            return new LoadImm(target, val);
+            int val;
+            if (op instanceof IntConstant) {
+                val = ((IntConstant) op).value;
+            } else if (op instanceof NullptrConstant) {
+                val = 0;
+            } else if (op instanceof BoolConstant) {
+                val = ((BoolConstant) op).value ? 1 : 0;
+            } else {
+                assert op instanceof StringConstant;
+                var reg = ng.gen();
+                curBlock.addInst(new Lui(reg, new AddrImm(AddrImm.Part.hi, op)));
+                curBlock.addInst(new Computation(reg, Computation.CompType.add, reg, new AddrImm(AddrImm.Part.lo, op)));
+                return;
+            }
+            curBlock.addInst(new LoadImm(target, val));
         }
     }
 
@@ -186,7 +199,7 @@ public class AsmBuilder {
             assert irBlock.terminatorInst instanceof Ret;
             var val = ((Ret) irBlock.terminatorInst).value;
             if (val != null) {
-                curBlock.addInst(copyToReg(PhysicalRegister.get("a0"), val));
+                copyToReg(PhysicalRegister.get("a0"), val);
             }
             // restoration
             RVInfo.getCalleeSave().forEach(reg -> {
@@ -213,13 +226,27 @@ public class AsmBuilder {
 
     private void buildAssign(Assign inst) {
         if (inst.src instanceof UndefConstant) return;
+        if (!(inst.dest instanceof GlobalVar) && !(inst.src instanceof StringConstant)) {
+            copyToReg(getRegister(inst.dest), inst.src);
+            return;
+        }
+        RVRegister srcReg;
+        if (inst.src instanceof StringConstant) {
+            // corner condition for immutable string
+            srcReg = ng.gen();
+            curBlock.addInst(new Lui(srcReg, new AddrImm(AddrImm.Part.hi, inst.src)));
+            curBlock.addInst(new Computation(srcReg, Computation.CompType.add, srcReg,
+                    new AddrImm(AddrImm.Part.lo, inst.src)));
+        } else {
+            srcReg = getRegister(inst.src);
+        }
         if (inst.dest instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.dest)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, inst.dest)));
             curBlock.addInst(new StoreMem(resolveWidth(inst.dest), addrReg,
-                    getRegister(inst.src), new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.dest)));
+                    srcReg, new AddrImm(AddrImm.Part.lo, inst.dest)));
         } else
-            curBlock.addInst(copyToReg(getRegister(inst.dest), inst.src));
+            curBlock.addInst(new Move(getRegister(inst.dest), srcReg));
     }
 
     private void buildBinary(Binary inst) {
@@ -231,7 +258,7 @@ public class AsmBuilder {
         Integer imm = null;
         if (inst.operand1 instanceof IntConstant) {
             switch (ct) {
-                case div, rem, sll, sra -> {
+                case div, rem, sll, sra, sub -> {
                     rs1 = getRegister(inst.operand1);
                     rs2 = getRegister(inst.operand2);
                 }
@@ -280,11 +307,11 @@ public class AsmBuilder {
     private void buildCall(Call inst) {
         for (int i = 0; i < Integer.min(8, inst.args.size()); ++i) {
             var operand = inst.args.get(i);
-            if (operand instanceof StringConstant) {
+            if (operand instanceof StringConstant || operand instanceof GlobalVar) {
                 var dest = PhysicalRegister.get("a" + i);
-                curBlock.addInst(new Lui(dest, new AddrImm(AddrImm.Part.hi, (StringConstant) operand)));
+                curBlock.addInst(new Lui(dest, new AddrImm(AddrImm.Part.hi, operand)));
                 curBlock.addInst(new Computation(dest, Computation.CompType.add,
-                        dest, new AddrImm(AddrImm.Part.lo, (StringConstant) operand)));
+                        dest, new AddrImm(AddrImm.Part.lo, operand)));
             } else
                 curBlock.addInst(new Move(PhysicalRegister.get("a" + i), getRegister(operand)));
         }
@@ -372,9 +399,9 @@ public class AsmBuilder {
     private void buildLoad(Load inst) {
         if (inst.address instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.address)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, inst.address)));
             curBlock.addInst(new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
-                    addrReg, new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.address)));
+                    addrReg, new AddrImm(AddrImm.Part.lo, inst.address)));
 
         } else {
             var loading = new LoadMem(getRegister(inst.dest), resolveWidth(inst.dest),
@@ -384,14 +411,21 @@ public class AsmBuilder {
     }
 
     private void buildStore(Store inst) {
+        RVRegister srcReg;
+        if (inst.source instanceof StringConstant) {
+            srcReg = ng.gen();
+            curBlock.addInst(new Lui(srcReg, new AddrImm(AddrImm.Part.hi, inst.source)));
+            curBlock.addInst(new Computation(srcReg, Computation.CompType.add,
+                    srcReg, new AddrImm(AddrImm.Part.lo, inst.source)));
+        } else srcReg = getRegister(inst.source);
         if (inst.address instanceof GlobalVar) {
             var addrReg = ng.gen();
-            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, (GlobalVar) inst.address)));
+            curBlock.addInst(new Lui(addrReg, new AddrImm(AddrImm.Part.hi, inst.address)));
             curBlock.addInst(new StoreMem(resolveWidth(inst.source),
-                    addrReg, getRegister(inst.source), new AddrImm(AddrImm.Part.lo, (GlobalVar) inst.address)));
+                    addrReg, srcReg, new AddrImm(AddrImm.Part.lo, inst.address)));
         } else {
             var storing = new StoreMem(resolveWidth(inst.source),
-                    getRegister(inst.address), getRegister(inst.source), new Imm(0));
+                    getRegister(inst.address), srcReg, new Imm(0));
             curBlock.addInst(storing);
         }
     }

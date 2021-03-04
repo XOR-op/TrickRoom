@@ -10,6 +10,16 @@ public class VirtualImm extends Imm {
     }
 
     @Override
+    public int getVal() {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean isRealVal() {
+        return false;
+    }
+
+    @Override
     public String tell() {
         throw new IllegalStateException();
     }
