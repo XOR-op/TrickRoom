@@ -4,6 +4,7 @@ import assembly.AsmBlock;
 import assembly.AsmFunction;
 import assembly.instruction.*;
 import assembly.operand.*;
+import utils.L;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,8 +21,7 @@ public class GraphRegisterAllocator {
     }
 
     public void run() {
-        while (!new AllocatorInstance(asmFunc).run()) {
-        }
+        for (int i = 0; !new AllocatorInstance(asmFunc, i).run(); ) ++i;
     }
 
     private class AllocatorInstance {
@@ -31,7 +31,8 @@ public class GraphRegisterAllocator {
         private final List<Integer> immutableColorList = new ArrayList<>();
         private final int REG_NUM = 27;
         private final AsmFunction asmFunc;
-        private int anonymousCounter = 0;
+        private int identity;
+        private int anonymousCounter=0;
 
         // register structures
 
@@ -63,8 +64,9 @@ public class GraphRegisterAllocator {
         private final HashMap<RVRegister, HashSet<Move>> moveRelation = new HashMap<>(); // mapping reg to all moves containing the reg
         private final HashMap<RVRegister, RVRegister> aliasMapping = new HashMap<>();
 
-        private AllocatorInstance(AsmFunction asmFunc) {
+        private AllocatorInstance(AsmFunction asmFunc, int id) {
             this.asmFunc = asmFunc;
+            this.identity = id;
         }
 
         private void build() {
@@ -106,7 +108,7 @@ public class GraphRegisterAllocator {
             if (!interferenceGraph.containsKey(rv1)) {
                 interferenceGraph.put(rv1, new HashSet<>());
                 degrees.put(rv1, 0);
-            }
+            } else if (interferenceGraph.get(rv1).contains(rv2)) return;
             interferenceGraph.get(rv1).add(rv2);
             if (!preColored.contains(rv1)) {
                 degrees.replace(rv1, degrees.get(rv1) + 1);
@@ -127,9 +129,9 @@ public class GraphRegisterAllocator {
             var iter = block.instructions.listIterator();
             while (iter.hasNext()) {
                 var inst = iter.next();
-                if (inst instanceof Move && ((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor())
+                if (inst instanceof Move && ((Move) inst).rd.getColor() == ((Move) inst).rs1.getColor()) {
                     iter.remove();
-
+                }
             }
         }
 
@@ -374,12 +376,14 @@ public class GraphRegisterAllocator {
             while (!selectedRegisterStack.isEmpty()) {
                 var reg = selectedRegisterStack.pop();
                 var remainingColor = new HashSet<>(immutableColorList);
-                forEachAdjacent(reg, adj -> {
-                    var w = getAlias(adj);
-                    if (coloredSet.contains(w) || preColored.contains(w)) {
-                        remainingColor.remove(color.get(w));
-                    }
-                });
+                if (interferenceGraph.containsKey(reg)) {
+                    interferenceGraph.get(reg).forEach(adj -> {
+                        var w = getAlias(adj);
+                        if (coloredSet.contains(w) || preColored.contains(w)) {
+                            remainingColor.remove(color.get(w));
+                        }
+                    });
+                }
                 if (remainingColor.isEmpty()) {
                     decidedSpillSet.add(reg);
                 } else {
@@ -390,20 +394,27 @@ public class GraphRegisterAllocator {
             coalescedSet.forEach(reg -> color.put(reg, color.get(getAlias(reg))));
         }
 
+        private String newTemporaryName(RVRegister reg) {
+            return "rewrite_" + reg.toString() + "_t" + identity +"_"+anonymousCounter++;
+        }
+
         private void rewriteProgram() {
             decidedSpillSet.forEach(asmFunc::addVarOnStack);
+//            decidedSpillSet.forEach(r->L.l("spill:"+r.toString()+"="+(48+asmFunc.getVarOffset(r))));
             asmFunc.blocks.forEach(block -> {
                 var iter = block.instructions.listIterator();
                 while (iter.hasNext()) {
                     var inst = iter.next();
                     inst.forEachRegSrc(reg -> {
                         if (decidedSpillSet.contains(reg)) {
+                            int offset = asmFunc.getVarOffset(reg);
                             if (inst instanceof Move) {
-                                iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(asmFunc.getVarOffset(reg))));
+                                iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(offset)));
                             } else {
-                                var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
+                                var tmp = new VirtualRegister(newTemporaryName(reg));
+//                                L.l(tmp.toString()+"::"+offset);
                                 var loading = new LoadMem(tmp, RVInst.WidthType.w,
-                                        PhysicalRegister.get("sp"), new VirtualImm(asmFunc.getVarOffset(reg)));
+                                        PhysicalRegister.get("sp"), new VirtualImm(offset));
                                 inst.replaceRegSrc(loading.getRd(), reg);
                                 // insert before inst
                                 iter.previous();
@@ -415,13 +426,15 @@ public class GraphRegisterAllocator {
                     });
                     inst.forEachRegDest(reg -> {
                         if (decidedSpillSet.contains(reg)) {
+                            int offset = asmFunc.getVarOffset(reg);
                             if (inst instanceof Move) {
-                                iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new VirtualImm(asmFunc.getVarOffset(reg))));
+                                iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new VirtualImm(offset)));
                             } else {
-                                var tmp = new VirtualRegister("rewrite_" + anonymousCounter++);
+                                var tmp = new VirtualRegister(newTemporaryName(reg));
+//                                L.l(tmp.toString()+"::"+offset);
                                 inst.replaceRegDest(tmp, reg);
                                 var storing = new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"),
-                                        tmp, new VirtualImm(asmFunc.getVarOffset(reg)));
+                                        tmp, new VirtualImm(offset));
                                 iter.add(storing);
                                 weights.put(tmp, 0);
                             }

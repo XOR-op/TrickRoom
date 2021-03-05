@@ -4,8 +4,7 @@ import assembly.operand.RVRegister;
 
 public class Move extends Computation{
     public Move(RVRegister rd,RVRegister rs){
-        this.rd=rd;
-        this.rs1=rs;
+        super(rd,CompType.SPECIFIC,rs,null,null);
     }
 
     @Override

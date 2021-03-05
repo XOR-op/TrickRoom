@@ -166,7 +166,7 @@ public class AsmBuilder {
     private void buildBlock(AsmBlock asmBlock, BasicBlock irBlock) {
         curBlock = asmBlock;
         irBlock.insts.forEach(irInst -> {
-            if (!((irInst instanceof Compare) && irBlock.terminatorInst instanceof Branch && irInst != irBlock.insts.getLast()))
+            if (!((irInst instanceof Compare) && irBlock.terminatorInst instanceof Branch && irInst == irBlock.insts.getLast()))
                 buildInst(irInst);
         });
         // build terminal instruction

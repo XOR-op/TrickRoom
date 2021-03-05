@@ -78,9 +78,13 @@ public class RVInfo {
         if (!strData.isEmpty()) {
             rawStr.accept(".rodata");
             strData.forEach((k, v) -> {
+                String converted = v.replace("\\", "\\\\")
+                        .replace("\n", "\\n")
+                        .replace("\"", "\\\"")
+                        .replace("\t", "\\t");
                 rawStr.accept(".align 2");
                 builder.append(k).append(":\n");
-                builder.append("\t.string \"").append(v).append("\"\n");
+                builder.append("\t.string \"").append(converted).append("\"\n");
             });
         }
         builder.append("\n");

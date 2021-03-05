@@ -35,6 +35,7 @@ public class TrickRoom {
     private static final String OUTPUT_FILE = "-o";
     private static final String HELP = "--help";
     private static final String HELP_ABBR = "-h";
+    private static final String SSA_DESTRUCT = "-fno-ssa";
 
     private Verbose verb;
     private InputStream is;
@@ -42,6 +43,7 @@ public class TrickRoom {
     private Boolean llvmGenFlag;
     private Boolean assemblyGenFlag;
     private Boolean optimizationFlag;
+    private Boolean llvmNoSSAFlag=false;
 
     private void logln(String s) {
         System.out.println(s);
@@ -110,6 +112,7 @@ public class TrickRoom {
                     }
                     case VERBOSE -> verb = Verbose.INFO;
                     case DEBUG -> verb = Verbose.DEBUG;
+                    case SSA_DESTRUCT -> llvmNoSSAFlag=true;
                     case HELP, HELP_ABBR -> {
                         System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
                         System.exit(0);
@@ -165,6 +168,8 @@ public class TrickRoom {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
         info.forEachFunction(f -> new SSAConverter(f).invoke());
+        if(llvmNoSSAFlag)
+            info.forEachFunction(f -> new SSADestructor(f).invoke());
         if (llvmGenFlag) {
             try {
                 os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
@@ -189,6 +194,7 @@ public class TrickRoom {
         info.renameMain();
         try {
             os.write(info.tell().getBytes(StandardCharsets.UTF_8));
+            int i=3;
         } catch (IOException e) {
             System.err.println(e);
         }

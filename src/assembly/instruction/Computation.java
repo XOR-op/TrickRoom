@@ -43,10 +43,8 @@ public class Computation extends RVInst {
     public Imm imm;
     public CompType ct = CompType.SPECIFIC;
 
-    protected Computation() {
-    }
 
-    private Computation(RVRegister rd, CompType type, RVRegister rs1, RVRegister rs2, Imm imm) {
+    protected Computation(RVRegister rd, CompType type, RVRegister rs1, RVRegister rs2, Imm imm) {
         this.ct = type;
         this.rd = rd;
         this.rs1 = rs1;

@@ -1,6 +1,7 @@
 package assembly.operand;
 
 import ir.operand.Register;
+import utils.L;
 
 public class VirtualRegister extends RVRegister {
 
@@ -17,6 +18,7 @@ public class VirtualRegister extends RVRegister {
     @Override
     public String tell() {
         assert color instanceof PhysicalRegister;
+//        return L.ANSI_PURPLE+name+L.ANSI_RESET+":"+color.tell()+"\t";
         return color.tell();
     }
 

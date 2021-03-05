@@ -9,8 +9,7 @@ public class SetZ extends Computation{
     private SetType st;
 
     public SetZ(RVRegister rd,SetType st,RVRegister rs){
-        this.rd=rd;
-        this.rs1=rs;
+        super(rd,CompType.SPECIFIC,rs,null,null);
         this.st=st;
     }
 

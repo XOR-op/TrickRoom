@@ -3,6 +3,7 @@ package assembly;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 import ir.IRFunction;
+import utils.L;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,6 +55,7 @@ public class AsmFunction {
 
     public int getVarOffset(RVRegister reg) {
         assert varOffset.containsKey(reg);
+//        L.i("#" + name + ":" + reg.toString() + "->" + varOffset.get(reg));
         return varOffset.get(reg);
     }
 
