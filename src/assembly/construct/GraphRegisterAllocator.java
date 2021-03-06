@@ -21,6 +21,7 @@ public class GraphRegisterAllocator {
     }
 
     public void run() {
+//        L.l(asmFunc.name);
         for (int i = 0; !new AllocatorInstance(asmFunc, i).run(); ) ++i;
     }
 
@@ -32,7 +33,7 @@ public class GraphRegisterAllocator {
         private final int REG_NUM = 27;
         private final AsmFunction asmFunc;
         private int identity;
-        private int anonymousCounter=0;
+        private int anonymousCounter = 0;
 
         // register structures
 
@@ -394,52 +395,59 @@ public class GraphRegisterAllocator {
             coalescedSet.forEach(reg -> color.put(reg, color.get(getAlias(reg))));
         }
 
-        private String newTemporaryName(RVRegister reg) {
-            return "rewrite_" + reg.toString() + "_t" + identity +"_"+anonymousCounter++;
+        private String newTemporaryName(String s) {
+            return "rewrite_" + s + "_t" + identity + "_" + anonymousCounter++;
         }
 
         private void rewriteProgram() {
             decidedSpillSet.forEach(asmFunc::addVarOnStack);
-//            decidedSpillSet.forEach(r->L.l("spill:"+r.toString()+"="+(48+asmFunc.getVarOffset(r))));
+//            decidedSpillSet.forEach(r -> L.l(identity + "@spill:" + r.toString() + "=" + (16 + asmFunc.getVarOffset(r))));
             asmFunc.blocks.forEach(block -> {
                 var iter = block.instructions.listIterator();
                 while (iter.hasNext()) {
                     var inst = iter.next();
-                    inst.forEachRegSrc(reg -> {
-                        if (decidedSpillSet.contains(reg)) {
-                            int offset = asmFunc.getVarOffset(reg);
-                            if (inst instanceof Move) {
-                                iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(offset)));
-                            } else {
-                                var tmp = new VirtualRegister(newTemporaryName(reg));
-//                                L.l(tmp.toString()+"::"+offset);
-                                var loading = new LoadMem(tmp, RVInst.WidthType.w,
-                                        PhysicalRegister.get("sp"), new VirtualImm(offset));
-                                inst.replaceRegSrc(loading.getRd(), reg);
-                                // insert before inst
-                                iter.previous();
-                                iter.add(loading);
-                                iter.next();
-                                weights.put(tmp, 0);
+                    if (inst instanceof Move && decidedSpillSet.contains(((Move) inst).getRd()) && decidedSpillSet.contains(((Move) inst).getRs())) {
+                        // avoid two spills case
+                        RVRegister rd = ((Move) inst).getRd(), rs = ((Move) inst).getRs();
+                        var tmpReg = new VirtualRegister(newTemporaryName(rd.toString() + "_" + rs.toString()));
+                        iter.set(new LoadMem(tmpReg, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(asmFunc.getVarOffset(rs))));
+                        iter.add(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), tmpReg, new VirtualImm(asmFunc.getVarOffset(rd))));
+                    } else {
+                        // able to replace
+                        inst.forEachRegSrc(reg -> {
+                            if (decidedSpillSet.contains(reg)) {
+                                int offset = asmFunc.getVarOffset(reg);
+                                if (inst instanceof Move) {
+                                    iter.set(new LoadMem(((Move) inst).rd, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(offset)));
+                                } else {
+                                    var tmp = new VirtualRegister(newTemporaryName(reg.toString()));
+//                                    L.l(tmp.toString() + "::" + offset);
+                                    var loading = new LoadMem(tmp, RVInst.WidthType.w,
+                                            PhysicalRegister.get("sp"), new VirtualImm(offset));
+                                    inst.replaceRegSrc(loading.getRd(), reg);
+                                    // insert before inst
+                                    iter.previous();
+                                    iter.add(loading);
+                                    iter.next();
+                                }
                             }
-                        }
-                    });
-                    inst.forEachRegDest(reg -> {
-                        if (decidedSpillSet.contains(reg)) {
-                            int offset = asmFunc.getVarOffset(reg);
-                            if (inst instanceof Move) {
-                                iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new VirtualImm(offset)));
-                            } else {
-                                var tmp = new VirtualRegister(newTemporaryName(reg));
-//                                L.l(tmp.toString()+"::"+offset);
-                                inst.replaceRegDest(tmp, reg);
-                                var storing = new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"),
-                                        tmp, new VirtualImm(offset));
-                                iter.add(storing);
-                                weights.put(tmp, 0);
+                        });
+                        inst.forEachRegDest(reg -> {
+                            if (decidedSpillSet.contains(reg)) {
+                                int offset = asmFunc.getVarOffset(reg);
+                                if (inst instanceof Move) {
+                                    iter.set(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ((Move) inst).rs1, new VirtualImm(offset)));
+                                } else {
+                                    var tmp = new VirtualRegister(newTemporaryName(reg.toString()));
+//                                    L.l(tmp.toString() + "::" + offset);
+                                    inst.replaceRegDest(tmp, reg);
+                                    var storing = new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"),
+                                            tmp, new VirtualImm(offset));
+                                    iter.add(storing);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             });
         }

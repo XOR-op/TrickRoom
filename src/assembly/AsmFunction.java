@@ -49,13 +49,14 @@ public class AsmFunction {
     }
 
     public void addVarOnStack(RVRegister reg) {
+        assert !varOffset.containsKey(reg);
         stackOffset -= 4;
+//        L.l("Stack:"+reg.toString()+"@"+System.identityHashCode(reg));
         varOffset.put(reg, stackOffset);
     }
 
     public int getVarOffset(RVRegister reg) {
         assert varOffset.containsKey(reg);
-//        L.i("#" + name + ":" + reg.toString() + "->" + varOffset.get(reg));
         return varOffset.get(reg);
     }
 
