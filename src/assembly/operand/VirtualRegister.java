@@ -1,7 +1,6 @@
 package assembly.operand;
 
 import ir.operand.Register;
-import utils.L;
 
 public class VirtualRegister extends RVRegister {
 
