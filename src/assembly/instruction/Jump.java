@@ -1,15 +1,15 @@
 package assembly.instruction;
 
-import assembly.AsmBlock;
+import assembly.RVBlock;
 import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
 
 public class Jump extends RVInst {
 
-    private AsmBlock dest;
+    private RVBlock dest;
 
-    public Jump(AsmBlock dest) {
+    public Jump(RVBlock dest) {
         this.dest = dest;
     }
 

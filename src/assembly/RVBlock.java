@@ -6,16 +6,16 @@ import assembly.operand.RVRegister;
 import java.util.HashSet;
 import java.util.LinkedList;
 
-public class AsmBlock {
+public class RVBlock {
 
     public String name;
     public final LinkedList<RVInst> instructions = new LinkedList<>();
-    public final HashSet<AsmBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
+    public final HashSet<RVBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
     public final int loopDepth;
 
     public HashSet<RVRegister> liveOut;
 
-    public AsmBlock(AsmFunction baseFunc, String name, int loopDepth) {
+    public RVBlock(RVFunction baseFunc, String name, int loopDepth) {
         this.name = baseFunc.getName()+name.substring(1);
         this.loopDepth = loopDepth;
     }
@@ -24,11 +24,11 @@ public class AsmBlock {
         instructions.add(inst);
     }
 
-    public void addPrevBlock(AsmBlock prev) {
+    public void addPrevBlock(RVBlock prev) {
         prevs.add(prev);
     }
 
-    public void addNextBlock(AsmBlock next) {
+    public void addNextBlock(RVBlock next) {
         nexts.add(next);
     }
 

@@ -1,20 +1,21 @@
 package ir.instruction;
 
-import ir.BasicBlock;
+import ir.IRBlock;
 import ir.operand.Register;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Jump extends IRInst {
 
     // unconditional branch
-    private final BasicBlock target;
+    private final IRBlock target;
 
-    public Jump(BasicBlock tgt) {
+    public Jump(IRBlock tgt) {
         target = tgt;
     }
 
-    public BasicBlock getTarget() {
+    public IRBlock getTarget() {
         return target;
     }
 
@@ -30,6 +31,11 @@ public class Jump extends IRInst {
 
     @Override
     public void renameOperand(Function<Register, Register> replace) {
+        // do nothing
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<Register> consumer) {
         // do nothing
     }
 

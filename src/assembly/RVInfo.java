@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.function.Consumer;
 
 public class RVInfo {
-    private final HashMap<String, AsmFunction> funcCollection = new HashMap<>();
+    private final HashMap<String, RVFunction> funcCollection = new HashMap<>();
     private final HashMap<String, String> strData = new HashMap<>();
     private final HashMap<String, Integer> globalToSize = new HashMap<>();
     private final IRInfo irInfo;
@@ -22,9 +22,9 @@ public class RVInfo {
         this.irInfo = irInfo;
         irInfo.forEachFunctionIncludingBuiltin(f -> {
             if (!f.isBuiltin())
-                funcCollection.put(f.name, new AsmFunction(f));
+                funcCollection.put(f.name, new RVFunction(f));
             else
-                funcCollection.put(f.name, new AsmFunction(f, true));
+                funcCollection.put(f.name, new RVFunction(f, true));
         });
         irInfo.getStringLiteral().forEach((k, v) -> {
             strData.put(v.name, v.value);
@@ -34,11 +34,11 @@ public class RVInfo {
         });
     }
 
-    public AsmFunction getFunc(IRFunction irFunc) {
+    public RVFunction getFunc(IRFunction irFunc) {
         return funcCollection.get(irFunc.name);
     }
 
-    public void forEachFunction(Consumer<AsmFunction> consumer) {
+    public void forEachFunction(Consumer<RVFunction> consumer) {
         funcCollection.forEach((k, f) -> consumer.accept(f));
     }
 

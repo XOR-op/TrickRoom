@@ -4,6 +4,7 @@ import ir.operand.IROperand;
 import ir.operand.Register;
 import ir.typesystem.IRType;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class BitCast extends IRDestedInst {
@@ -30,6 +31,11 @@ public class BitCast extends IRDestedInst {
     @Override
     public void renameOperand(Function<Register, Register> replace) {
         from = Register.replace(replace, from);
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<Register> consumer) {
+        if (from instanceof Register) consumer.accept((Register) from);
     }
 
     @Override

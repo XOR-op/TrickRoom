@@ -6,27 +6,27 @@ import ir.operand.Register;
 
 import java.util.*;
 
-public class BasicBlock {
+public class IRBlock {
     public final String blockName;
     public LinkedList<IRInst> insts = new LinkedList<>();
     public IRInst terminatorInst = null;
     public Set<Phi> phiCollection = new HashSet<>();
-    public Set<BasicBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
+    public Set<IRBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
     public Set<String> definition = new HashSet<>();
     public int loopDepth=0;
 
-    public BasicBlock(String name,int depth) {
+    public IRBlock(String name, int depth) {
         blockName = "l_" + name;
         this.loopDepth=depth;
     }
 
-    public BasicBlock appendInst(IRInst newInst) {
+    public IRBlock appendInst(IRInst newInst) {
         insts.add(newInst);
         newInst.parentBlock = this;
         return this;
     }
 
-    public void createBetweenPrev(BasicBlock prev,BasicBlock newBlk){
+    public void createBetweenPrev(IRBlock prev, IRBlock newBlk){
         assert prevs.contains(prev);
         prevs.remove(prev);
         prevs.add(newBlk);
@@ -37,22 +37,22 @@ public class BasicBlock {
         newBlk.setJumpTerminator(this);
     }
 
-    public void setNextBlock(BasicBlock next) {
+    public void setNextBlock(IRBlock next) {
         next.prevs.add(this);
         nexts.add(next);
     }
 
-    public void setNextBlock(BasicBlock next1, BasicBlock next2) {
+    public void setNextBlock(IRBlock next1, IRBlock next2) {
         setNextBlock(next1);
         setNextBlock(next2);
     }
 
-    public void setBranchTerminator(IROperand cond, BasicBlock trueBlock, BasicBlock falseBlock) {
+    public void setBranchTerminator(IROperand cond, IRBlock trueBlock, IRBlock falseBlock) {
         setTerminator(new Branch(cond, trueBlock, falseBlock));
         setNextBlock(trueBlock, falseBlock);
     }
 
-    public void setJumpTerminator(BasicBlock dst) {
+    public void setJumpTerminator(IRBlock dst) {
         setTerminator(new Jump(dst));
         setNextBlock(dst);
     }

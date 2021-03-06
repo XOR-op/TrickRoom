@@ -1,6 +1,6 @@
 package assembly.instruction;
 
-import assembly.AsmFunction;
+import assembly.RVFunction;
 import assembly.RVInfo;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
@@ -9,9 +9,9 @@ import java.util.function.Consumer;
 
 public class RVCall extends RVInst {
 
-    private AsmFunction dest;
+    private RVFunction dest;
 
-    public RVCall(AsmFunction func) {
+    public RVCall(RVFunction func) {
         assert func!=null;
         dest = func;
     }

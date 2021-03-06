@@ -1,6 +1,6 @@
 package ir.construct;
 
-import ir.BasicBlock;
+import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Assign;
 import ir.operand.IROperand;
@@ -28,7 +28,7 @@ public class SSADestructor extends FunctionPass {
         }
     }
 
-    private final HashMap<BasicBlock, ParallelCopy> blockToCopy = new HashMap<>();
+    private final HashMap<IRBlock, ParallelCopy> blockToCopy = new HashMap<>();
 
     public SSADestructor(IRFunction ssaFunc) {
         super(ssaFunc);
@@ -42,15 +42,15 @@ public class SSADestructor extends FunctionPass {
 
     private void convSSADestruct() {
         // avoid ConcurrentModificationException
-        var toAdd = new ArrayList<BasicBlock>();
+        var toAdd = new ArrayList<IRBlock>();
         irFunc.blocks.forEach(oneBlk -> {
-            HashMap<BasicBlock, ParallelCopy> prevToCopy = new HashMap<>();
-            var prevToAdd = new HashMap<BasicBlock, BasicBlock>();
+            HashMap<IRBlock, ParallelCopy> prevToCopy = new HashMap<>();
+            var prevToAdd = new HashMap<IRBlock, IRBlock>();
             // split critical edges
             oneBlk.prevs.forEach(onePrev -> {
                 ParallelCopy pCopy = new ParallelCopy();
                 if (onePrev.nexts.size() > 1) {
-                    var inter = new BasicBlock("F" + onePrev.blockName.substring(2) + "T" + oneBlk.blockName.substring(2),
+                    var inter = new IRBlock("F" + onePrev.blockName.substring(2) + "T" + oneBlk.blockName.substring(2),
                             oneBlk.loopDepth);
                     prevToAdd.put(onePrev, inter);
                     prevToCopy.put(onePrev, pCopy);
@@ -72,7 +72,7 @@ public class SSADestructor extends FunctionPass {
         blockToCopy.forEach(this::parallelCopyElimination);
     }
 
-    private void parallelCopyElimination(BasicBlock theBlock, ParallelCopy theCopy) {
+    private void parallelCopyElimination(IRBlock theBlock, ParallelCopy theCopy) {
         // append to block's tail
         boolean flag;
         do {

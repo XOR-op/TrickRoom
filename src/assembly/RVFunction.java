@@ -3,16 +3,15 @@ package assembly;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 import ir.IRFunction;
-import utils.L;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class AsmFunction {
+public class RVFunction {
     public String name;
     public final int parameterCount;
-    public ArrayList<AsmBlock> blocks = new ArrayList<>();
-    public AsmBlock entry;
+    public ArrayList<RVBlock> blocks = new ArrayList<>();
+    public RVBlock entry;
 
     private int stackOffset = 0;
     private int curOffset = 0;
@@ -25,7 +24,7 @@ public class AsmFunction {
 
     private final boolean isBuiltin;
 
-    public AsmFunction(IRFunction irFunc, boolean isBuiltin) {
+    public RVFunction(IRFunction irFunc, boolean isBuiltin) {
         name = irFunc.name;
         this.isBuiltin = isBuiltin;
         parameterCount = irFunc.parameters.size();
@@ -35,16 +34,16 @@ public class AsmFunction {
         }
     }
 
-    public AsmFunction(IRFunction irFunction) {
+    public RVFunction(IRFunction irFunction) {
         this(irFunction, false);
     }
 
-    public AsmFunction addBlock(AsmBlock block) {
+    public RVFunction addBlock(RVBlock block) {
         blocks.add(block);
         return this;
     }
 
-    public void setEntry(AsmBlock entry) {
+    public void setEntry(RVBlock entry) {
         this.entry = entry;
     }
 

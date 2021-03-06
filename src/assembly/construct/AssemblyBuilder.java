@@ -1,11 +1,12 @@
 package assembly.construct;
 
-import assembly.AsmBlock;
-import assembly.AsmFunction;
+import assembly.RVBlock;
+import assembly.RVFunction;
 import assembly.RVInfo;
 import assembly.instruction.*;
 import assembly.operand.*;
-import ir.BasicBlock;
+import ir.IRBlock;
+import ir.construct.RegisterTracker;
 import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
@@ -16,15 +17,15 @@ import ir.instruction.Jump;
 import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
-import misc.Cst;
 
 import java.util.HashMap;
 
-public class AsmBuilder {
+public class AssemblyBuilder {
     private IRInfo irInfo;
     private RVInfo rvInfo;
-    private AsmBlock curBlock;
-    private AsmFunction curFunc;
+    private RVBlock curBlock;
+    private RVFunction curFunc;
+    private RegisterTracker curTracker;
 
     private class NameGenerator {
         private int n = 0;
@@ -40,10 +41,10 @@ public class AsmBuilder {
     }
 
     private class BlockMapping {
-        private HashMap<BasicBlock, AsmBlock> mapping = new HashMap<>();
-        private AsmFunction asmFunc;
+        private HashMap<IRBlock, RVBlock> mapping = new HashMap<>();
+        private RVFunction asmFunc;
 
-        public BlockMapping(AsmFunction asmFunc, IRFunction irFunc) {
+        public BlockMapping(RVFunction asmFunc, IRFunction irFunc) {
             this.asmFunc = asmFunc;
             irFunc.blocks.forEach(block -> {
                 var curBlk = getBlock(block);
@@ -53,10 +54,10 @@ public class AsmBuilder {
             this.asmFunc.setEntry(getBlock(irFunc.entryBlock));
         }
 
-        public AsmBlock getBlock(BasicBlock blk) {
+        public RVBlock getBlock(IRBlock blk) {
             if (mapping.containsKey(blk)) return mapping.get(blk);
             else {
-                var asmBlk = new AsmBlock(asmFunc, blk.getBlockName(), blk.loopDepth);
+                var asmBlk = new RVBlock(asmFunc, blk.getBlockName(), blk.loopDepth);
                 mapping.put(blk, asmBlk);
                 asmFunc.addBlock(asmBlk);
                 return asmBlk;
@@ -72,7 +73,7 @@ public class AsmBuilder {
     private BlockMapping curBlockMapping;
 
 
-    public AsmBuilder(IRInfo irInfo) {
+    public AssemblyBuilder(IRInfo irInfo) {
         this.irInfo = irInfo;
         rvInfo = new RVInfo(irInfo);
     }
@@ -137,10 +138,25 @@ public class AsmBuilder {
         }
     }
 
+    private boolean validCmpBrCoalesce(Compare cmp, IRBlock theBlock) {
+        var set = curTracker.queryRegisterUses(cmp.dest.identifier());
+        return theBlock.terminatorInst instanceof Branch &&
+                set.size() == 1 &&
+                set.iterator().next() == theBlock.terminatorInst;
+    }
 
-    private void buildFunction(AsmFunction asmFunc, IRFunction irFunc) {
+    private boolean validCmpBrCoalesce(IRBlock theBlock) {
+        return !theBlock.insts.isEmpty() &&
+                theBlock.insts.getLast() instanceof Compare &&
+                validCmpBrCoalesce((Compare) theBlock.insts.getLast(), theBlock);
+    }
+
+
+    private void buildFunction(RVFunction asmFunc, IRFunction irFunc) {
         ng = new NameGenerator(Cst.NAME_GENERATE_PREFIX);
         curBlockMapping = new BlockMapping(asmFunc, irFunc);
+        curTracker = new RegisterTracker(irFunc);
+        curTracker.run();
         curFunc = asmFunc;
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
         // load arguments
@@ -163,21 +179,20 @@ public class AsmBuilder {
         curFunc = null;
     }
 
-    private void buildBlock(AsmBlock asmBlock, BasicBlock irBlock) {
-        curBlock = asmBlock;
+    private void buildBlock(RVBlock RVBlock, IRBlock irBlock) {
+        curBlock = RVBlock;
         irBlock.insts.forEach(irInst -> {
-            if (!((irInst instanceof Compare) && irBlock.terminatorInst instanceof Branch && irInst == irBlock.insts.getLast()))
+            if (!(irInst instanceof Compare && validCmpBrCoalesce((Compare) irInst, irBlock)))
                 buildInst(irInst);
         });
         // build terminal instruction
         if (irBlock.terminatorInst instanceof Branch) {
             var irBranch = (Branch) irBlock.terminatorInst;
-            Compare irCmp = (!irBlock.insts.isEmpty() && irBlock.insts.getLast() instanceof Compare)
-                    ? ((Compare) irBlock.insts.getLast()) : null;
-            if (irCmp != null && irCmp.dest == irBranch.condition) {
+            if (validCmpBrCoalesce(irBlock)) {
                 // coalesce cmp and branch
                 RVInst.RelaType rt;
-                switch (((Compare) irBlock.insts.getLast()).type) {
+                var irCmp = (Compare) irBlock.insts.getLast();
+                switch (irCmp.type) {
                     case eq -> rt = RVInst.RelaType.eq;
                     case ne -> rt = RVInst.RelaType.ne;
                     case sle -> rt = RVInst.RelaType.le;

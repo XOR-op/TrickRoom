@@ -1,18 +1,18 @@
 package optimization;
 
-import assembly.AsmBlock;
-import assembly.AsmFunction;
+import assembly.RVBlock;
+import assembly.RVFunction;
 import assembly.instruction.Computation;
 import assembly.instruction.Move;
 
 public class AsmOptimizer {
-    private AsmFunction asmFunc;
+    private RVFunction asmFunc;
 
-    public AsmOptimizer(AsmFunction asmFunc) {
+    public AsmOptimizer(RVFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 
-    private void optimize(AsmBlock block) {
+    private void optimize(RVBlock block) {
         var iter = block.instructions.listIterator();
         while (iter.hasNext()) {
             var inst = iter.next();

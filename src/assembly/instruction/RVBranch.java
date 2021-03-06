@@ -1,6 +1,6 @@
 package assembly.instruction;
 
-import assembly.AsmBlock;
+import assembly.RVBlock;
 import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
@@ -9,10 +9,10 @@ public class RVBranch extends RVInst {
 
     private RelaType rt;
     private RVRegister rs1, rs2;
-    private AsmBlock trueDest, falseDest;
+    private RVBlock trueDest, falseDest;
     private boolean isUnsigned;
 
-    public RVBranch(RelaType rt, boolean isUnsigned, RVRegister rs1, RVRegister rs2, AsmBlock trueDest, AsmBlock falseDest) {
+    public RVBranch(RelaType rt, boolean isUnsigned, RVRegister rs1, RVRegister rs2, RVBlock trueDest, RVBlock falseDest) {
         this.rt = rt;
         this.isUnsigned = isUnsigned;
         this.rs1 = rs1;

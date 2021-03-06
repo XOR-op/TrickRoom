@@ -1,7 +1,7 @@
 package assembly.construct;
 
-import assembly.AsmBlock;
-import assembly.AsmFunction;
+import assembly.RVBlock;
+import assembly.RVFunction;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 
@@ -14,12 +14,12 @@ public class LiveAnalyzer {
     /*
      *  LiveOut(n)=|{next in n.nexts}(allUses(next)|(LiveOut(next)&(!allDefs(next)))))
      */
-    private final HashMap<AsmBlock, HashSet<RVRegister>> allUses = new HashMap<>(), allDefs = new HashMap<>(),
+    private final HashMap<RVBlock, HashSet<RVRegister>> allUses = new HashMap<>(), allDefs = new HashMap<>(),
             LiveOut = new HashMap<>(), LiveIn = new HashMap<>();
-    private final HashSet<AsmBlock> visited = new HashSet<>();
-    private final AsmFunction asmFunc;
+    private final HashSet<RVBlock> visited = new HashSet<>();
+    private final RVFunction asmFunc;
 
-    private void buildDefAndUse(AsmBlock block) {
+    private void buildDefAndUse(RVBlock block) {
         var use = new HashSet<RVRegister>();
         var def = new HashSet<RVRegister>();
         block.instructions.forEach(inst -> {
@@ -35,7 +35,7 @@ public class LiveAnalyzer {
         allDefs.put(block, def);
     }
 
-    private void update(AsmBlock block, Queue<AsmBlock> queue) {
+    private void update(RVBlock block, Queue<RVBlock> queue) {
         if (visited.contains(block)) return;
         visited.add(block);
         var conjunction = new HashSet<RVRegister>();
@@ -60,7 +60,7 @@ public class LiveAnalyzer {
                 LiveIn.put(block, new HashSet<>(allUses.get(block)));
             }
         });
-        var workList = new LinkedList<AsmBlock>();
+        var workList = new LinkedList<RVBlock>();
         asmFunc.blocks.forEach(block -> {
             if (block.nexts.isEmpty()) workList.addAll(block.prevs);
         });
@@ -69,7 +69,7 @@ public class LiveAnalyzer {
         LiveOut.forEach((b, s) -> b.liveOut = s);
     }
 
-    public LiveAnalyzer(AsmFunction asmFunc) {
+    public LiveAnalyzer(RVFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 }

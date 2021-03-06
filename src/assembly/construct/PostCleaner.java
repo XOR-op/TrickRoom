@@ -1,6 +1,6 @@
 package assembly.construct;
 
-import assembly.AsmFunction;
+import assembly.RVFunction;
 import assembly.instruction.Computation;
 import assembly.instruction.LoadMem;
 import assembly.instruction.Return;
@@ -9,9 +9,9 @@ import assembly.operand.Imm;
 import assembly.operand.PhysicalRegister;
 
 public class PostCleaner {
-    private AsmFunction asmFunc;
+    private RVFunction asmFunc;
 
-    public PostCleaner(AsmFunction asmFunc) {
+    public PostCleaner(RVFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 

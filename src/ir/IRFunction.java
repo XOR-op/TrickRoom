@@ -10,20 +10,20 @@ import java.util.*;
 public class IRFunction {
     public String name;
     public IRType retTy;
-    public ArrayList<BasicBlock> blocks = new ArrayList<>();
+    public ArrayList<IRBlock> blocks = new ArrayList<>();
     public ArrayList<Register> parameters = new ArrayList<>();
-    public Map<String, HashSet<BasicBlock>> varDefs = new HashMap<>();
+    public Map<String, HashSet<IRBlock>> varDefs = new HashMap<>();
     public Map<String, IRType> varType = new HashMap<>();
-    public BasicBlock entryBlock, exitBlock;
-    public ArrayList<BasicBlock> returnBlocks = new ArrayList<>();
+    public IRBlock entryBlock, exitBlock;
+    public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     private final boolean isBuiltin;
 
     public IRFunction(String name, IRType returnType, boolean isBuiltin) {
         this.name = name;
         this.isBuiltin = isBuiltin;
         retTy = returnType;
-        entryBlock = new BasicBlock("entry",0);
-        exitBlock = new BasicBlock("exit",0);
+        entryBlock = new IRBlock("entry",0);
+        exitBlock = new IRBlock("exit",0);
         blocks.add(entryBlock);
     }
 
@@ -38,7 +38,7 @@ public class IRFunction {
         return this;
     }
 
-    public void addReturn(BasicBlock bb) {
+    public void addReturn(IRBlock bb) {
         returnBlocks.add(bb);
     }
 
@@ -46,19 +46,19 @@ public class IRFunction {
         return addParam(new Register(ty, name));
     }
 
-    public void defineVar(Register reg, BasicBlock bb) {
+    public void defineVar(Register reg, IRBlock bb) {
         // define and update Defs(var)
         bb.defVariable(reg);
         varDefs.get(reg.name).add(bb);
     }
 
     public void declareVar(Register reg) {
-        var newSet = new HashSet<BasicBlock>();
+        var newSet = new HashSet<IRBlock>();
         varDefs.put(reg.name, newSet);
         varType.put(reg.name, reg.type);
     }
 
-    public IRFunction addBlock(BasicBlock bl) {
+    public IRFunction addBlock(IRBlock bl) {
         blocks.add(bl);
         return this;
     }

@@ -1,6 +1,6 @@
 package optimization;
 
-import ir.BasicBlock;
+import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Jump;
 import misc.FunctionPass;
@@ -14,22 +14,22 @@ public class BlockCoalesce extends FunctionPass {
     }
 
     private static class Edge {
-        public BasicBlock from, to;
+        public IRBlock from, to;
 
-        public Edge(BasicBlock from, BasicBlock to) {
+        public Edge(IRBlock from, IRBlock to) {
             this.from = from;
             this.to = to;
         }
     }
 
-    private HashMap<BasicBlock, BasicBlock> dfs() {
-        HashMap<BasicBlock, BasicBlock> rt = new HashMap<>();
-        HashSet<BasicBlock> looked = new HashSet<>(), cannot = new HashSet<>();
+    private HashMap<IRBlock, IRBlock> dfs() {
+        HashMap<IRBlock, IRBlock> rt = new HashMap<>();
+        HashSet<IRBlock> looked = new HashSet<>(), cannot = new HashSet<>();
         dfs(rt, looked, cannot, irFunc.entryBlock);
         return rt;
     }
 
-    private void dfs(HashMap<BasicBlock, BasicBlock> meet, HashSet<BasicBlock> looked, HashSet<BasicBlock> cannot, BasicBlock cur) {
+    private void dfs(HashMap<IRBlock, IRBlock> meet, HashSet<IRBlock> looked, HashSet<IRBlock> cannot, IRBlock cur) {
         if (looked.contains(cur)) return;
         looked.add(cur);
         if (!cannot.contains(cur) && cur.terminatorInst instanceof Jump) {

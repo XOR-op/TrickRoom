@@ -3,6 +3,7 @@ package ir.instruction;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Compare extends IRDestedInst {
@@ -33,6 +34,12 @@ public class Compare extends IRDestedInst {
     public void renameOperand(Function<Register, Register> replace) {
         operand1 = Register.replace(replace, operand1);
         operand2 = Register.replace(replace, operand2);
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<Register> consumer) {
+        if (operand1 instanceof Register) consumer.accept((Register) operand1);
+        if (operand2 instanceof Register) consumer.accept((Register) operand2);
     }
 
     @Override

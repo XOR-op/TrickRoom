@@ -1,4 +1,4 @@
-import assembly.construct.AsmBuilder;
+import assembly.construct.AssemblyBuilder;
 import ast.construct.ASTBuilder;
 import ast.construct.ParsingErrorHandler;
 import ast.construct.ScopeBuilder;
@@ -187,7 +187,7 @@ public class TrickRoom {
     }
 
     private void assemblyGen(IRInfo irInfo) {
-        var builder = new AsmBuilder(irInfo);
+        var builder = new AssemblyBuilder(irInfo);
         var info = builder.constructAssembly();
         info.preOptimize();
         info.registerAllocate();

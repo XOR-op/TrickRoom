@@ -1,7 +1,7 @@
 package ir.construct;
 
 
-import ir.BasicBlock;
+import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.IRDestedInst;
 import ir.instruction.Phi;
@@ -12,11 +12,11 @@ import java.util.*;
 
 public class SSAConverter extends FunctionPass {
     // dominance
-    private final HashMap<BasicBlock, Integer> order = new HashMap<>();
-    private final ArrayList<BasicBlock> blocksByOrder = new ArrayList<>();
-    private final HashMap<BasicBlock, BasicBlock> iDoms = new HashMap<>();
-    private final HashMap<BasicBlock, HashSet<BasicBlock>> domTree = new HashMap<>();
-    private final HashMap<BasicBlock, ArrayList<BasicBlock>> dominanceFrontier = new HashMap<>();
+    private final HashMap<IRBlock, Integer> order = new HashMap<>();
+    private final ArrayList<IRBlock> blocksByOrder = new ArrayList<>();
+    private final HashMap<IRBlock, IRBlock> iDoms = new HashMap<>();
+    private final HashMap<IRBlock, HashSet<IRBlock>> domTree = new HashMap<>();
+    private final HashMap<IRBlock, ArrayList<IRBlock>> dominanceFrontier = new HashMap<>();
 
     private final int maxOrder;
 
@@ -42,7 +42,7 @@ public class SSAConverter extends FunctionPass {
         Collections.reverse(blocksByOrder);
     }
 
-    private void reversePostorder(BasicBlock blk, HashSet<BasicBlock> sets) {
+    private void reversePostorder(IRBlock blk, HashSet<IRBlock> sets) {
         sets.add(blk);
         for (var b : blk.nexts) {
             if (!sets.contains(b)) reversePostorder(b, sets);
@@ -51,7 +51,7 @@ public class SSAConverter extends FunctionPass {
         order.put(blk, maxOrder - blocksByOrder.size());
     }
 
-    private BasicBlock intersect(BasicBlock i, BasicBlock j) {
+    private IRBlock intersect(IRBlock i, IRBlock j) {
         while (i != j) {
             while (order.get(i) > order.get(j)) {
                 assert iDoms.get(i) != null;
@@ -76,7 +76,7 @@ public class SSAConverter extends FunctionPass {
             for (int cur = 1; cur < blocksByOrder.size(); ++cur) {
                 var curBlock = blocksByOrder.get(cur);
                 var iter = curBlock.prevs.iterator();
-                BasicBlock newIDom = iter.next();
+                IRBlock newIDom = iter.next();
                 while (iDoms.get(newIDom) == null) newIDom = iter.next(); // pick first processed one
                 while (iter.hasNext()) {
                     var onePrev = iter.next();
@@ -109,10 +109,10 @@ public class SSAConverter extends FunctionPass {
 
     public void phiInsertion() {
         irFunc.varDefs.forEach((variable, defsRef) -> {
-            var added = new HashSet<BasicBlock>();
+            var added = new HashSet<IRBlock>();
             var defs = new LinkedList<>(defsRef);
             while (!defs.isEmpty()) {
-                BasicBlock oneDef = defs.pop();
+                IRBlock oneDef = defs.pop();
                 for (var frontier : dominanceFrontier.get(oneDef)) {
                     if (!added.contains(frontier)) {
                         frontier.appendPhi(new Phi(new Register(irFunc.varType.get(variable), variable)));
@@ -163,7 +163,7 @@ public class SSAConverter extends FunctionPass {
         variableRenaming(irFunc.entryBlock);
     }
 
-    private void variableRenaming(BasicBlock bb) {
+    private void variableRenaming(IRBlock bb) {
         var modifiedSet = new HashSet<String>();
         bb.phiCollection.forEach(phi -> {
             // ignore arrayNew phi

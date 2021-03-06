@@ -1,19 +1,20 @@
 package ir.instruction;
 
-import ir.BasicBlock;
+import ir.IRBlock;
 import ir.operand.IROperand;
 import ir.operand.Register;
 
 import java.util.ArrayList;
 import java.util.StringJoiner;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Phi extends IRDestedInst {
     public class Source {
         public IROperand val;
-        public BasicBlock block;
+        public IRBlock block;
 
-        public Source(IROperand v, BasicBlock b) {
+        public Source(IROperand v, IRBlock b) {
             val = v;
             block = b;
         }
@@ -30,10 +31,10 @@ public class Phi extends IRDestedInst {
         dest = reg.copy();
     }
 
-    public Phi append(IROperand reg, BasicBlock blk) {
+    public Phi append(IROperand reg, IRBlock blk) {
         // internal phi cannot be overwritten by generated phi
-        for(var s:arguments){
-            if(blk==s.block)return this;
+        for (var s : arguments) {
+            if (blk == s.block) return this;
         }
         arguments.add(new Source(reg, blk));
         return this;
@@ -53,6 +54,11 @@ public class Phi extends IRDestedInst {
 
     @Override
     public void renameOperand(Function<Register, Register> replace) {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void forEachRegSrc(Consumer<Register> consumer) {
         throw new IllegalStateException();
     }
 

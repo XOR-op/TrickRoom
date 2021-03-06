@@ -1,10 +1,9 @@
 package assembly.construct;
 
-import assembly.AsmBlock;
-import assembly.AsmFunction;
+import assembly.RVBlock;
+import assembly.RVFunction;
 import assembly.instruction.*;
 import assembly.operand.*;
-import utils.L;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,9 +13,9 @@ import java.util.function.Consumer;
 
 public class GraphRegisterAllocator {
 
-    private final AsmFunction asmFunc;
+    private final RVFunction asmFunc;
 
-    public GraphRegisterAllocator(AsmFunction asmFunc) {
+    public GraphRegisterAllocator(RVFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 
@@ -31,7 +30,7 @@ public class GraphRegisterAllocator {
          */
         private final List<Integer> immutableColorList = new ArrayList<>();
         private final int REG_NUM = 27;
-        private final AsmFunction asmFunc;
+        private final RVFunction asmFunc;
         private int identity;
         private int anonymousCounter = 0;
 
@@ -65,7 +64,7 @@ public class GraphRegisterAllocator {
         private final HashMap<RVRegister, HashSet<Move>> moveRelation = new HashMap<>(); // mapping reg to all moves containing the reg
         private final HashMap<RVRegister, RVRegister> aliasMapping = new HashMap<>();
 
-        private AllocatorInstance(AsmFunction asmFunc, int id) {
+        private AllocatorInstance(RVFunction asmFunc, int id) {
             this.asmFunc = asmFunc;
             this.identity = id;
         }
@@ -126,7 +125,7 @@ public class GraphRegisterAllocator {
             return interferenceGraph.containsKey(r1) && interferenceGraph.get(r1).contains(r2);
         }
 
-        private void optimize(AsmBlock block) {
+        private void optimize(RVBlock block) {
             var iter = block.instructions.listIterator();
             while (iter.hasNext()) {
                 var inst = iter.next();

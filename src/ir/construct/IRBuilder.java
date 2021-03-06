@@ -6,7 +6,7 @@ import ast.type.ClassType;
 import ast.type.FunctionType;
 import ast.type.TypeConst;
 import ast.scope.FileScope;
-import ir.BasicBlock;
+import ir.IRBlock;
 import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
@@ -20,9 +20,9 @@ import java.util.Stack;
 public class IRBuilder implements ASTVisitor {
     private ClassType curClass;
     private IRFunction curFunc = null;
-    private BasicBlock curBlock = null;
-    private final Stack<BasicBlock> UpdBlockStack = new Stack<>();
-    private final Stack<BasicBlock> AfterLoopStack = new Stack<>();
+    private IRBlock curBlock = null;
+    private final Stack<IRBlock> UpdBlockStack = new Stack<>();
+    private final Stack<IRBlock> AfterLoopStack = new Stack<>();
     private final IRInfo info;
     private final RootNode root;
     private int blockSuffix = 0;
@@ -96,44 +96,46 @@ public class IRBuilder implements ASTVisitor {
                 // short circuit
                 switch (binst) {
                     case logic_and -> {
-                        BasicBlock second = new BasicBlock("and_second" + blockSuffix, loopDepth);
-                        BasicBlock after = new BasicBlock("and_after" + blockSuffix, loopDepth);
+                        IRBlock second = new IRBlock("and_second" + blockSuffix, loopDepth);
+                        IRBlock after = new IRBlock("and_after" + blockSuffix, loopDepth);
                         curFunc.addBlock(second).addBlock(after);
-                        Phi phi = new Phi(new Register(Cst.bool));
+                        var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "and" + blockSuffix);
+                        curFunc.declareVar(condReg);
+                        curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
                         blockSuffix++;
 
-                        IROperand left = (IROperand) node.lhs.accept(this);
-                        curBlock.setBranchTerminator(left, second, after);
-                        phi.append(left, curBlock);
+                        regAssign(condReg, (IROperand) node.lhs.accept(this));
+                        curFunc.defineVar(condReg, curBlock);
+                        curBlock.setBranchTerminator(condReg, second, after);
 
                         curBlock = second;
-                        IROperand right = (IROperand) node.rhs.accept(this);
+                        regAssign(condReg, (IROperand) node.rhs.accept(this));
+                        curFunc.defineVar(condReg, curBlock);
                         curBlock.setJumpTerminator(after);
-                        phi.append(right, curBlock);
 
                         curBlock = after;
-                        curBlock.appendPhi(phi);
-                        return phi.dest;
+                        return condReg;
                     }
                     case logic_or -> {
-                        BasicBlock second = new BasicBlock("or_second" + blockSuffix, loopDepth);
-                        BasicBlock after = new BasicBlock("or_after" + blockSuffix, loopDepth);
+                        IRBlock second = new IRBlock("or_second" + blockSuffix, loopDepth);
+                        IRBlock after = new IRBlock("or_after" + blockSuffix, loopDepth);
                         curFunc.addBlock(second).addBlock(after);
-                        Phi phi = new Phi(new Register(Cst.bool));
+                        var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
+                        curFunc.declareVar(condReg);
+                        curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
                         blockSuffix++;
 
-                        IROperand left = (IROperand) node.lhs.accept(this);
-                        curBlock.setBranchTerminator(left, after, second);
-                        phi.append(left, curBlock);
+                        regAssign(condReg, (IROperand) node.lhs.accept(this));
+                        curFunc.defineVar(condReg, curBlock);
+                        curBlock.setBranchTerminator(condReg, after, second);
 
                         curBlock = second;
-                        IROperand right = (IROperand) node.rhs.accept(this);
+                        regAssign(condReg, (IROperand) node.rhs.accept(this));
+                        curFunc.defineVar(condReg, curBlock);
                         curBlock.setJumpTerminator(after);
-                        phi.append(right, curBlock);
 
                         curBlock = after;
-                        curBlock.appendPhi(phi);
-                        return phi.dest;
+                        return condReg;
                     }
                     default -> {
                         // binary instruction
@@ -303,15 +305,15 @@ public class IRBuilder implements ASTVisitor {
         curBlock.appendInst(trueArrayAddress).appendInst(returnCast);
 
         if (level < dims.size() - 1) {
-            var loopedAddr = new Register(new PointerType(elementType), Cst.LOOP_RETURN_NAME + loopSuffix++);
+            var loopedAddr = new Register(new PointerType(elementType), Cst.LOOP_INCRE_NAME + loopSuffix++);
             IRDestedInst copyAddr = new Assign(loopedAddr, returnCast.dest);
             curFunc.declareVar(loopedAddr);
             curFunc.defineVar(loopedAddr, curBlock);
             curBlock.appendInst(copyAddr);
             // initialize subarray
-            var cond = new BasicBlock("imp_cond" + blockSuffix, loopDepth);
-            var loopBody = new BasicBlock("imp_body" + blockSuffix, loopDepth);
-            var afterLoop = new BasicBlock("imp_after" + blockSuffix, loopDepth - 1);
+            var cond = new IRBlock("imp_cond" + blockSuffix, loopDepth);
+            var loopBody = new IRBlock("imp_body" + blockSuffix, loopDepth);
+            var afterLoop = new IRBlock("imp_after" + blockSuffix, loopDepth - 1);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
             IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
@@ -469,7 +471,7 @@ public class IRBuilder implements ASTVisitor {
             if (curFunc.returnBlocks.size() == 1) {
                 curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
-                var exit = new BasicBlock("exit", loopDepth);
+                var exit = new IRBlock("exit", loopDepth);
                 exit.setVoidRetTerminator();
                 curFunc.returnBlocks.forEach(b -> {
                     b.terminatorInst = null;
@@ -490,7 +492,7 @@ public class IRBuilder implements ASTVisitor {
             } else if (curFunc.returnBlocks.size() == 1) {
                 curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
-                var exit = new BasicBlock("exit", loopDepth);
+                var exit = new IRBlock("exit", loopDepth);
                 var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
                 curFunc.entryBlock.insertInstFromHead(new Assign(returnValue, new UndefConstant(returnValue.type)));
                 curFunc.declareVar(returnValue);
@@ -558,10 +560,10 @@ public class IRBuilder implements ASTVisitor {
         boolean hasUpdate = node.updateExpr != null;
         // blocks
         var beforeLoop = curBlock;
-        var conditionBlock = new BasicBlock("cond" + blockSuffix, loopDepth);
-        var loopBody = new BasicBlock("body" + blockSuffix, loopDepth);
-        var updateBlock = new BasicBlock("upd" + blockSuffix, loopDepth);
-        var afterLoop = new BasicBlock("after" + blockSuffix, loopDepth - 1);
+        var conditionBlock = new IRBlock("cond" + blockSuffix, loopDepth);
+        var loopBody = new IRBlock("body" + blockSuffix, loopDepth);
+        var updateBlock = new IRBlock("upd" + blockSuffix, loopDepth);
+        var afterLoop = new IRBlock("after" + blockSuffix, loopDepth - 1);
         blockSuffix++;
         AfterLoopStack.push(afterLoop);
         UpdBlockStack.push(updateBlock);
@@ -600,10 +602,10 @@ public class IRBuilder implements ASTVisitor {
         // process branch and generate blocks
         Register cond = (Register) node.condExpr.accept(this);
         var beforeBranch = curBlock;
-        var trueBlock = new BasicBlock("true" + blockSuffix, loopDepth);
-        var afterBranch = new BasicBlock("after" + blockSuffix, loopDepth);
+        var trueBlock = new IRBlock("true" + blockSuffix, loopDepth);
+        var afterBranch = new IRBlock("after" + blockSuffix, loopDepth);
         boolean hasFalse = node.falseStat != null;
-        var falseBlock = hasFalse ? new BasicBlock("false" + blockSuffix, loopDepth) : null;
+        var falseBlock = hasFalse ? new IRBlock("false" + blockSuffix, loopDepth) : null;
         blockSuffix++;
         beforeBranch.setBranchTerminator(cond, trueBlock, hasFalse ? falseBlock : afterBranch);
         curFunc.addBlock(trueBlock);
