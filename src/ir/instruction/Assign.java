@@ -15,13 +15,14 @@ public class Assign extends IRDestedInst {
     public IROperand src;
 
     public Assign(Register dst, IROperand src) {
+        assert dst.type.matches(src.type);
         this.dest = dst;
         this.src = src;
     }
 
     @Override
     public String tell() {
-        if (dest.type.equals(Cst.int32) || dest.type.equals(Cst.bool))
+        if (dest.type.matches(Cst.int32) || dest.type.matches(Cst.bool))
             return new Binary(Binary.BinInstEnum.add, dest, src, new IntConstant(0)).tell();
         else {
             assert dest.type instanceof PointerType;

@@ -44,4 +44,9 @@ public class PointerType extends IRType {
         return new NullptrConstant(new PointerType(baseType));
     }
 
+    @Override
+    public boolean matches(IRType rhs) {
+        return rhs instanceof PointerType && baseType.matches(((PointerType) rhs).baseType) && dim == ((PointerType) rhs).dim;
+    }
+
 }

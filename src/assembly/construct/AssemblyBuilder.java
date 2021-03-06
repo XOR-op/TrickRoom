@@ -66,7 +66,7 @@ public class AssemblyBuilder {
     }
 
     private RVInst.WidthType resolveWidth(IROperand operand) {
-        return (operand.type.equals(Cst.bool) || operand.type.equals(Cst.byte_t)) ? RVInst.WidthType.b : RVInst.WidthType.w;
+        return (operand.type.matches(Cst.bool) || operand.type.matches(Cst.byte_t)) ? RVInst.WidthType.b : RVInst.WidthType.w;
     }
 
     private NameGenerator ng;

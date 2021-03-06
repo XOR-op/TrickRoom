@@ -215,7 +215,7 @@ public class IRBuilder implements ASTVisitor {
     }
 
     private Register withType(IRType ty) {
-        return ty.equals(Cst.void_t) ? null : new Register(ty);
+        return ty.matches(Cst.void_t) ? null : new Register(ty);
     }
 
     @Override
@@ -225,7 +225,7 @@ public class IRBuilder implements ASTVisitor {
             // inline array.size()
             assert node.callee instanceof MemberNode;
             var ptr = (Register) ((MemberNode) node.callee).object.accept(this);
-            if (!((PointerType) ptr.type).subType().equals(Cst.int32)) {
+            if (!((PointerType) ptr.type).subType().matches(Cst.int32)) {
                 var cast = new BitCast(new Register(new PointerType(Cst.int32)), ptr);
                 curBlock.appendInst(cast);
                 ptr = cast.dest;
@@ -462,7 +462,7 @@ public class IRBuilder implements ASTVisitor {
 
         node.suiteNode.accept(this);
 
-        if (curFunc.retTy.equals(Cst.void_t)) {
+        if (curFunc.retTy.matches(Cst.void_t)) {
             if (!curBlock.hasTerminal()) {
                 // implicit return
                 curFunc.returnBlocks.add(curBlock);

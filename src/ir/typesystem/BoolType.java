@@ -18,4 +18,9 @@ public class BoolType extends IRType{
     public IROperand defaultValue() {
         return new BoolConstant(false);
     }
+
+    @Override
+    public boolean matches(IRType rhs) {
+        return rhs instanceof BoolType;
+    }
 }

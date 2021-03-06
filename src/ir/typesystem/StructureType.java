@@ -3,6 +3,7 @@ package ir.typesystem;
 import ir.operand.IROperand;
 import ir.operand.IntConstant;
 import ir.operand.Register;
+import misc.UnimplementedError;
 
 import java.util.ArrayList;
 import java.util.StringJoiner;
@@ -59,5 +60,10 @@ public class StructureType extends IRType {
     @Override
     public IROperand defaultValue() {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean matches(IRType rhs) {
+        throw new UnimplementedError();
     }
 }

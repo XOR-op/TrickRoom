@@ -1,6 +1,7 @@
 package ir.typesystem;
 
 import ir.operand.IROperand;
+import misc.UnimplementedError;
 
 public class ArrayType extends IRType{
     public IRType baseType;
@@ -23,5 +24,10 @@ public class ArrayType extends IRType{
     @Override
     public IROperand defaultValue() {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean matches(IRType rhs) {
+        throw new UnimplementedError();
     }
 }

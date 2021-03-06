@@ -1,6 +1,7 @@
 package ir.typesystem;
 
 import ir.operand.IROperand;
+import misc.UnimplementedError;
 
 public class VoidType extends IRType {
     @Override
@@ -16,5 +17,10 @@ public class VoidType extends IRType {
     @Override
     public IROperand defaultValue() {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean matches(IRType rhs) {
+        return rhs instanceof VoidType;
     }
 }
