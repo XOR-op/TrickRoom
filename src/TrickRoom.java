@@ -46,7 +46,7 @@ public class TrickRoom {
     private Boolean llvmNoSSAFlag=false;
 
     private void logln(String s) {
-        System.out.println(s);
+        System.err.println(s);
     }
 
     private void error(String s) {
