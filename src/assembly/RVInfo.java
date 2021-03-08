@@ -73,7 +73,6 @@ public class RVInfo {
     public String tell() {
         StringBuilder builder = new StringBuilder();
         Consumer<String> rawStr = s -> builder.append("\t").append(s).append("\n");
-        rawStr.accept(".attribute stack_align, 16");
         // .rodata
         if (!strData.isEmpty()) {
             rawStr.accept(".rodata");
@@ -86,8 +85,8 @@ public class RVInfo {
                 builder.append(k).append(":\n");
                 builder.append("\t.string \"").append(converted).append("\"\n");
             });
+            builder.append("\n");
         }
-        builder.append("\n");
         // .text
         rawStr.accept(".text");
         rawStr.accept(".align 2");
