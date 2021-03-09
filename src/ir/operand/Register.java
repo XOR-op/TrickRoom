@@ -20,7 +20,12 @@ public class Register extends IROperand {
 
     private boolean isAnonymous;
     private int renaming = 0;
-    public String name;
+
+    public String getName() {
+        return name;
+    }
+
+    protected String name;
 
     public Register(IRType ty) {
         this.name = "_A_"+(counter++);

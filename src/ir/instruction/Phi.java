@@ -40,6 +40,16 @@ public class Phi extends IRDestedInst {
         return this;
     }
 
+    public void replaceBlock(IRBlock newBlock,IRBlock oldBlock){
+        for(var ele:arguments){
+            if(ele.block==oldBlock){
+                ele.block=newBlock;
+                return;
+            }
+        }
+        assert false;
+    }
+
     @Override
     public String tell() {
         StringJoiner sj = new StringJoiner(", ", dest + " = phi " + dest.type.tell() + " ", "");

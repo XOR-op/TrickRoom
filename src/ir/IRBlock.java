@@ -22,7 +22,7 @@ public class IRBlock {
 
     public IRBlock appendInst(IRInst newInst) {
         insts.add(newInst);
-        newInst.parentBlock = this;
+//        newInst.parentBlock = this;
         return this;
     }
 
@@ -67,7 +67,7 @@ public class IRBlock {
 
     public void appendPhi(Phi phi) {
         phiCollection.add(phi);
-        phi.parentBlock = this;
+//        phi.parentBlock = this;
     }
 
     public void insertInstFromHead(IRInst inst) {
@@ -75,13 +75,13 @@ public class IRBlock {
     }
 
     public void defVariable(Register reg) {
-        definition.add(reg.name);
+        definition.add(reg.getName());
     }
 
     private void setTerminator(IRInst terInst) {
         assert terminatorInst == null && terInst.isTerminal();
         terminatorInst = terInst;
-        terInst.parentBlock = this;
+//        terInst.parentBlock = this;
     }
 
     public String getBlockName() {

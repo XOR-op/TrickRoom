@@ -1,9 +1,9 @@
-package misc;
+package misc.pass;
 
 import ir.IRFunction;
-import ir.IRInfo;
+import misc.pass.Pass;
 
-public abstract class FunctionPass {
+public abstract class FunctionPass extends Pass {
     public IRFunction irFunc;
 
     public FunctionPass(IRFunction f) {
@@ -14,5 +14,4 @@ public abstract class FunctionPass {
         if(!irFunc.isBuiltin())run();
     }
 
-    protected abstract void run();
 }

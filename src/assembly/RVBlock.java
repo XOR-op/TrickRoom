@@ -10,13 +10,14 @@ public class RVBlock {
 
     public String name;
     public final LinkedList<RVInst> instructions = new LinkedList<>();
-    public final HashSet<RVBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
+    public final HashSet<RVBlock> prevs = new HashSet<>();
+    public HashSet<RVBlock> nexts = new HashSet<>();
     public final int loopDepth;
 
     public HashSet<RVRegister> liveOut;
 
     public RVBlock(RVFunction baseFunc, String name, int loopDepth) {
-        this.name = baseFunc.getName()+name.substring(1);
+        this.name = baseFunc.getName() + name.substring(1);
         this.loopDepth = loopDepth;
     }
 

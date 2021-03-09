@@ -159,8 +159,8 @@ public class AssemblyBuilder {
         curTracker.run();
         curFunc = asmFunc;
         var entry = curBlockMapping.getBlock(irFunc.entryBlock);
+        curFunc.entry = entry;
         // load arguments
-        entry.name = irFunc.name;
         for (int i = 0; i < Integer.min(8, asmFunc.parameterCount); ++i) {
             entry.addInst(new Move(getRegister(irFunc.parameters.get(i)), PhysicalRegister.get(10 + i)));
         }

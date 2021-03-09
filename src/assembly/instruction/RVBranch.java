@@ -5,7 +5,7 @@ import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
 
-public class RVBranch extends RVInst {
+public class RVBranch extends ControlFlowInst {
 
     private RelaType rt;
     private RVRegister rs1, rs2;
@@ -48,5 +48,11 @@ public class RVBranch extends RVInst {
     @Override
     public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
         // do nothing
+    }
+
+    @Override
+    public void replaceBlock(RVBlock newBlock, RVBlock oldBlock) {
+        if(trueDest==oldBlock)trueDest=newBlock;
+        if(falseDest==oldBlock)falseDest=newBlock;
     }
 }

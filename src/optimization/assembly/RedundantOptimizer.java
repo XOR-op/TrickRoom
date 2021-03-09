@@ -1,15 +1,15 @@
-package optimization;
+package optimization.assembly;
 
 import assembly.RVBlock;
 import assembly.RVFunction;
 import assembly.instruction.Computation;
 import assembly.instruction.Move;
+import misc.pass.RVFunctionPass;
 
-public class AsmOptimizer {
-    private RVFunction asmFunc;
+public class RedundantOptimizer extends RVFunctionPass {
 
-    public AsmOptimizer(RVFunction asmFunc) {
-        this.asmFunc = asmFunc;
+    public RedundantOptimizer(RVFunction rvFunc) {
+        super(rvFunc);
     }
 
     private void optimize(RVBlock block) {
@@ -30,7 +30,8 @@ public class AsmOptimizer {
         }
     }
 
-    public void run() {
-        asmFunc.blocks.forEach(this::optimize);
+    @Override
+    protected void run() {
+        rvFunc.blocks.forEach(this::optimize);
     }
 }

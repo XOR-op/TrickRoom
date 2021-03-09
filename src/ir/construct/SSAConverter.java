@@ -6,7 +6,7 @@ import ir.IRFunction;
 import ir.instruction.IRDestedInst;
 import ir.instruction.Phi;
 import ir.operand.Register;
-import misc.FunctionPass;
+import misc.pass.FunctionPass;
 
 import java.util.*;
 
@@ -127,25 +127,25 @@ public class SSAConverter extends FunctionPass {
     }
 
     private Register allocNewRenaming(Register var, HashSet<String> modified) {
-        int i = renamingCounter.get(var.name);
-        renamingCounter.put(var.name, i + 1);
+        int i = renamingCounter.get(var.getName());
+        renamingCounter.put(var.getName(), i + 1);
         var renaming = var.rename(i);
         assert renaming != null;
         // one bb one def
-        if (modified.contains(var.name))
-            namingStack.get(var.name).pop();
-        else modified.add(var.name);
-        namingStack.get(var.name).push(renaming);
+        if (modified.contains(var.getName()))
+            namingStack.get(var.getName()).pop();
+        else modified.add(var.getName());
+        namingStack.get(var.getName()).push(renaming);
         return renaming;
     }
 
     private Register getRenaming(Register var) {
-        if (namingStack.containsKey(var.name))
-            return namingStack.get(var.name).peek();
+        if (namingStack.containsKey(var.getName()))
+            return namingStack.get(var.getName()).peek();
         else {
             // global or read only
-            namingStack.put(var.name, new Stack<>());
-            namingStack.get(var.name).push(var);
+            namingStack.put(var.getName(), new Stack<>());
+            namingStack.get(var.getName()).push(var);
             return var;
         }
     }
@@ -158,7 +158,7 @@ public class SSAConverter extends FunctionPass {
             namingStack.put(v, stk);
         });
         irFunc.parameters.forEach(r -> {
-            namingStack.get(r.name).push(r);
+            namingStack.get(r.getName()).push(r);
         });
         variableRenaming(irFunc.entryBlock);
     }

@@ -71,16 +71,16 @@ public class IRBuilder implements ASTVisitor {
             // implicit function
             IRFunction f;
             switch (node.lexerSign) {
-                case "==" -> f = info.getStringMethod("eq");
-                case "!=" -> f = info.getStringMethod("ne");
-                case "<" -> f = info.getStringMethod("lt");
-                case ">" -> f = info.getStringMethod("gt");
-                case "<=" -> f = info.getStringMethod("le");
-                case ">=" -> f = info.getStringMethod("ge");
-                case "+" -> f = info.getStringMethod("concat");
+                case Cst.EQUAL -> f = info.getStringMethod("eq");
+                case Cst.NOT_EQ -> f = info.getStringMethod("ne");
+                case Cst.LESS -> f = info.getStringMethod("lt");
+                case Cst.GREATER -> f = info.getStringMethod("gt");
+                case Cst.LESS_EQ -> f = info.getStringMethod("le");
+                case Cst.GREATER_EQ -> f = info.getStringMethod("ge");
+                case Cst.ADD -> f = info.getStringMethod("concat");
                 default -> throw new IllegalStateException("Unexpected value: " + node.lexerSign);
             }
-            var inst = new Call(new Register(node.lexerSign.equals("+") ? Cst.str : Cst.bool), f);
+            var inst = new Call(new Register(node.lexerSign.equals(Cst.ADD) ? Cst.str : Cst.bool), f);
             inst.push((IROperand) node.lhs.accept(this)).push((IROperand) node.rhs.accept(this));
             curBlock.appendInst(inst);
             return inst.dest;
@@ -166,12 +166,12 @@ public class IRBuilder implements ASTVisitor {
             // !/~/-/+
             var target = (IROperand) node.expr.accept(this);
             switch (node.lexerSign) {
-                case "+" -> {
+                case Cst.ADD -> {
                     return target;
                 }
-                case "-" -> inst = new Binary(Binary.BinInstEnum.sub, new Register(Cst.int32), new IntConstant(0), target);
-                case "!" -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.bool), new BoolConstant(true), target);
-                case "~" -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.int32), new IntConstant(Integer.MAX_VALUE), target);
+                case Cst.MINUS -> inst = new Binary(Binary.BinInstEnum.sub, new Register(Cst.int32), new IntConstant(0), target);
+                case Cst.NOT_LOGIC -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.bool), new BoolConstant(true), target);
+                case Cst.NOT_ARI -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.int32), new IntConstant(Integer.MAX_VALUE), target);
                 default -> throw new IllegalStateException(node.lexerSign);
             }
             curBlock.appendInst(inst);
@@ -194,7 +194,7 @@ public class IRBuilder implements ASTVisitor {
     private Register unarySelfOp(ExprNode expr, String lexerSign, boolean isPrefix) {
         var ptr = locate(expr);
         var load = new Load(new Register(Cst.int32), ptr);
-        var incre = new Binary(lexerSign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
+        var incre = new Binary(lexerSign.equals(Cst.SELF_INCRE) ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
                 new Register(Cst.int32), load.dest, new IntConstant(1));
         var store = new Store(incre.dest, ptr);
         curBlock.appendInst(load).appendInst(incre).appendInst(store);
@@ -205,7 +205,7 @@ public class IRBuilder implements ASTVisitor {
     public Register visit(PrefixLeftValueNode node) {
         if (directlyAccessible(node.expr)) {
             var target = (Register) node.expr.accept(this);
-            var inst = new Binary(node.sign.equals("++") ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
+            var inst = new Binary(node.sign.equals(Cst.SELF_INCRE) ? Binary.BinInstEnum.add : Binary.BinInstEnum.sub,
                     target, target, new IntConstant(1));
             curFunc.defineVar(target, curBlock);
             curBlock.appendInst(inst);
@@ -429,7 +429,7 @@ public class IRBuilder implements ASTVisitor {
     private void regAssign(Register lhs, IROperand rhs) {
         curFunc.defineVar(lhs, curBlock);
         if (rhs instanceof Register && ((Register) rhs).isAnonymous()) {
-            ((Register) rhs).replaceWith(lhs.name);
+            ((Register) rhs).replaceWith(lhs.getName());
         } else {
             var inst = new Assign(lhs, rhs);
             curBlock.appendInst(inst);

@@ -15,7 +15,7 @@ public class AddrImm extends Imm {
         assert (var instanceof StringConstant)||(var instanceof GlobalVar);
         this.part=part;
         if(var instanceof StringConstant)name= ((StringConstant) var).name;
-        else name= ((GlobalVar) var).name;
+        else name= ((GlobalVar) var).getName();
     }
 
     @Override

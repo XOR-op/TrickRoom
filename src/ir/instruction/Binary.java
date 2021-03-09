@@ -2,6 +2,7 @@ package ir.instruction;
 
 import ir.operand.IROperand;
 import ir.operand.Register;
+import misc.Cst;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,40 +50,40 @@ public class Binary extends IRDestedInst {
 
     public static Binary.BinInstEnum getIntBinOpEnum(String s) {
         switch (s) {
-            case "+" -> {
+            case Cst.ADD -> {
                 return Binary.BinInstEnum.add;
             }
-            case "-" -> {
+            case Cst.MINUS -> {
                 return Binary.BinInstEnum.sub;
             }
-            case "*" -> {
+            case Cst.MUL -> {
                 return Binary.BinInstEnum.mul;
             }
-            case "/" -> {
+            case Cst.DIV -> {
                 return Binary.BinInstEnum.sdiv;
             }
-            case "%" -> {
+            case Cst.MOD -> {
                 return BinInstEnum.srem;
             }
-            case "<<" -> {
+            case Cst.LEFT_SHIFT -> {
                 return Binary.BinInstEnum.shl;
             }
-            case ">>" -> {
+            case Cst.RIGHT_SHIFT -> {
                 return Binary.BinInstEnum.ashr;
             }
-            case "&" -> {
+            case Cst.AND_ARI -> {
                 return Binary.BinInstEnum.and;
             }
-            case "&&" -> {
+            case Cst.AND_LOGIC -> {
                 return BinInstEnum.logic_and;
             }
-            case "|" -> {
+            case Cst.OR_ARI -> {
                 return Binary.BinInstEnum.or;
             }
-            case "||" -> {
+            case Cst.OR_LOGIC -> {
                 return BinInstEnum.logic_or;
             }
-            case "^" -> {
+            case Cst.XOR_ARI -> {
                 return Binary.BinInstEnum.xor;
             }
             default -> {

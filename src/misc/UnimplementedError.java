@@ -9,7 +9,7 @@ public class UnimplementedError extends RuntimeException{
 
     @Override
     public String toString() {
-        return "MissingOverrideException{" +
+        return "UnimplementedError{" +
                 "info='" + info + '\'' +
                 '}';
     }

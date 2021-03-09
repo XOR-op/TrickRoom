@@ -36,7 +36,7 @@ public class StructureType extends IRType {
 
     public IntConstant getMemberIndex(String mem){
         for (int idx = 0; idx < members.size() ; ++idx) {
-            if(members.get(idx).name.equals(mem))return new IntConstant(idx);
+            if(members.get(idx).getName().equals(mem))return new IntConstant(idx);
         }
         throw new IllegalStateException();
     }

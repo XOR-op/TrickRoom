@@ -5,7 +5,17 @@ import assembly.operand.RVRegister;
 
 import java.util.function.Consumer;
 
-public class Jump extends RVInst {
+public class Jump extends ControlFlowInst {
+
+    public RVBlock getDest() {
+        return dest;
+    }
+
+    @Override
+    public void replaceBlock(RVBlock newBlock, RVBlock oldBlock) {
+        assert oldBlock==dest;
+        dest=newBlock;
+    }
 
     private RVBlock dest;
 

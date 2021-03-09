@@ -1,18 +1,17 @@
+import assembly.RVInfo;
 import assembly.construct.AssemblyBuilder;
-import ast.construct.ASTBuilder;
-import ast.construct.ParsingErrorHandler;
-import ast.construct.ScopeBuilder;
-import ast.construct.TypeCollector;
+import ast.construct.*;
 import ast.struct.RootNode;
 import ir.construct.IRBuilder;
 import ast.exception.*;
 import ir.IRInfo;
-import optimization.BlockCoalesce;
+import optimization.assembly.RVBlockCoalesce;
+import optimization.ir.BlockCoalesce;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
-import optimization.ConstantDeducer;
+import optimization.ir.ConstantDeducer;
 import ir.construct.SSAConverter;
 import ir.construct.SSADestructor;
 
@@ -35,7 +34,6 @@ public class TrickRoom {
     private static final String OUTPUT_FILE = "-o";
     private static final String HELP = "--help";
     private static final String HELP_ABBR = "-h";
-    private static final String SSA_DESTRUCT = "-fno-ssa";
 
     private Verbose verb;
     private InputStream is;
@@ -43,7 +41,6 @@ public class TrickRoom {
     private Boolean llvmGenFlag;
     private Boolean assemblyGenFlag;
     private Boolean optimizationFlag;
-    private Boolean llvmNoSSAFlag=false;
 
     private void logln(String s) {
         System.err.println(s);
@@ -72,7 +69,6 @@ public class TrickRoom {
                 switch (args[i]) {
                     case SYNTAX:
                     case LLVM:
-                    case OPTIMIZATION:
                         if (!specification) specification = true;
                         else error("duplicated specification");
                 }
@@ -80,18 +76,12 @@ public class TrickRoom {
                     case SYNTAX -> {
                         llvmGenFlag = false;
                         assemblyGenFlag = false;
-                        optimizationFlag = false;
                     }
                     case LLVM -> {
                         llvmGenFlag = true;
                         assemblyGenFlag = false;
-                        optimizationFlag = false;
                     }
-                    case OPTIMIZATION -> {
-                        llvmGenFlag = false;
-                        assemblyGenFlag = true;
-                        optimizationFlag = true;
-                    }
+                    case OPTIMIZATION -> optimizationFlag = true;
                     case INPUT_FILE -> {
                         if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no file input");
                         try {
@@ -112,7 +102,6 @@ public class TrickRoom {
                     }
                     case VERBOSE -> verb = Verbose.INFO;
                     case DEBUG -> verb = Verbose.DEBUG;
-                    case SSA_DESTRUCT -> llvmNoSSAFlag=true;
                     case HELP, HELP_ABBR -> {
                         System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
                         System.exit(0);
@@ -127,12 +116,26 @@ public class TrickRoom {
         try {
             RootNode rootNode = astGen();
             collectType(rootNode);
+            if (optimizationFlag) new ConstantEliminator(rootNode).run();
             if (llvmGenFlag || assemblyGenFlag) {
                 var info = llvmGen(rootNode);
-                if (optimizationFlag) optimize(info);
+                if (optimizationFlag) irOptimize(info);
+                if (llvmGenFlag) {
+                    try {
+                        os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        System.err.println(e);
+                    }
+                }
                 if (assemblyGenFlag) {
                     postIROptimization(info);
-                    assemblyGen(info);
+                    var rvInfo = assemblyGen(info);
+                    if (optimizationFlag) rvOptimize(rvInfo);
+                    try {
+                        os.write(rvInfo.tell().getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        System.err.println(e);
+                    }
                 }
             }
         } catch (SemanticException e) {
@@ -168,36 +171,29 @@ public class TrickRoom {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
         info.forEachFunction(f -> new SSAConverter(f).invoke());
-        if(llvmNoSSAFlag)
-            info.forEachFunction(f -> new SSADestructor(f).invoke());
-        if (llvmGenFlag) {
-            try {
-                os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                System.err.println(e);
-            }
-        }
         return info;
     }
 
-    private void optimize(IRInfo irInfo) {
+    private void irOptimize(IRInfo irInfo) {
         irInfo.forEachFunction(f -> {
             new BlockCoalesce(f).invoke();
         });
     }
 
-    private void assemblyGen(IRInfo irInfo) {
+    private void rvOptimize(RVInfo rvInfo) {
+        rvInfo.forEachFunction(f -> {
+            new RVBlockCoalesce(f).invoke();
+        });
+    }
+
+    private RVInfo assemblyGen(IRInfo irInfo) {
         var builder = new AssemblyBuilder(irInfo);
         var info = builder.constructAssembly();
         info.preOptimize();
         info.registerAllocate();
         info.renameMain();
-        try {
-            os.write(info.tell().getBytes(StandardCharsets.UTF_8));
-            int i=3;
-        } catch (IOException e) {
-            System.err.println(e);
-        }
+
+        return info;
     }
 
     private void postIROptimization(IRInfo info) {

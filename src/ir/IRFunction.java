@@ -33,8 +33,8 @@ public class IRFunction {
 
     public IRFunction addParam(Register reg) {
         parameters.add(reg);
-        varDefs.put(reg.name, new HashSet<>());
-        varType.put(reg.name, reg.type);
+        varDefs.put(reg.getName(), new HashSet<>());
+        varType.put(reg.getName(), reg.type);
         return this;
     }
 
@@ -49,13 +49,13 @@ public class IRFunction {
     public void defineVar(Register reg, IRBlock bb) {
         // define and update Defs(var)
         bb.defVariable(reg);
-        varDefs.get(reg.name).add(bb);
+        varDefs.get(reg.getName()).add(bb);
     }
 
     public void declareVar(Register reg) {
         var newSet = new HashSet<IRBlock>();
-        varDefs.put(reg.name, newSet);
-        varType.put(reg.name, reg.type);
+        varDefs.put(reg.getName(), newSet);
+        varType.put(reg.getName(), reg.type);
     }
 
     public IRFunction addBlock(IRBlock bl) {

@@ -45,7 +45,7 @@ public class RegisterTracker {
             });
             srcProcess.accept(block.terminatorInst);
         });
-        assert validate();
+//        assert validate();
     }
 
     public HashSet<IRInst> queryRegisterUses(String str) {

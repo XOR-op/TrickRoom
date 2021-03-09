@@ -30,7 +30,7 @@ public class RVFunction {
         parameterCount = irFunc.parameters.size();
         for (int i = 8; i < parameterCount; ++i) {
             var reg = new VirtualRegister(irFunc.parameters.get(i));
-            nameToVirReg.put(irFunc.parameters.get(i).name, reg);
+            nameToVirReg.put(irFunc.parameters.get(i).getName(), reg);
         }
     }
 
@@ -65,6 +65,7 @@ public class RVFunction {
     }
 
     public String tell() {
+        entry.name = name;
         StringBuilder builder = new StringBuilder();
         builder.append("\t.globl\t").append(getName()).append("\n");
         builder.append("\t.type\t").append(getName()).append(", @function\n");

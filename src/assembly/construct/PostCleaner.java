@@ -7,23 +7,23 @@ import assembly.instruction.Return;
 import assembly.instruction.StoreMem;
 import assembly.operand.Imm;
 import assembly.operand.PhysicalRegister;
+import misc.pass.RVFunctionPass;
 
-public class PostCleaner {
-    private RVFunction asmFunc;
+public class PostCleaner extends RVFunctionPass {
 
-    public PostCleaner(RVFunction asmFunc) {
-        this.asmFunc = asmFunc;
+    public PostCleaner(RVFunction rvFunc) {
+        super(rvFunc);
     }
 
     public void run() {
-        int so = asmFunc.getStackOffset();
+        int so = rvFunc.getStackOffset();
         if (so != 0) {
             // allocate stack
-            asmFunc.entry.instructions.addFirst(new Computation(
+            rvFunc.entry.instructions.addFirst(new Computation(
                     PhysicalRegister.get("sp"), Computation.CompType.add, PhysicalRegister.get("sp"), new Imm(-so)
             ));
         }
-        asmFunc.blocks.forEach(block -> {
+        rvFunc.blocks.forEach(block -> {
             block.instructions.forEach(inst -> {
                 if (inst instanceof LoadMem)
                     ((LoadMem) inst).replaceImm(so);
@@ -33,7 +33,7 @@ public class PostCleaner {
         });
         if (so != 0) {
             // restore stack
-            asmFunc.blocks.forEach(block -> {
+            rvFunc.blocks.forEach(block -> {
                 var last = block.instructions.getLast();
                 if (last instanceof Return) {
                     block.instructions.removeLast();

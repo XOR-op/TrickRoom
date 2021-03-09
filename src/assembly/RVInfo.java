@@ -6,7 +6,7 @@ import assembly.operand.RVRegister;
 import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
-import optimization.AsmOptimizer;
+import optimization.assembly.RedundantOptimizer;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +30,7 @@ public class RVInfo {
             strData.put(v.name, v.value);
         });
         irInfo.getGlobalVars().forEach((k, v) -> {
-            globalToSize.put(v.name, v.type.size());
+            globalToSize.put(v.getName(), v.type.size());
         });
     }
 
@@ -45,7 +45,7 @@ public class RVInfo {
     public void preOptimize() {
         funcCollection.forEach((k, func) -> {
             if (!func.isBuiltin())
-                new AsmOptimizer(func).run();
+                new RedundantOptimizer(func).invoke();
         });
     }
 
@@ -53,7 +53,7 @@ public class RVInfo {
         funcCollection.forEach((k, func) -> {
             if (!func.isBuiltin()) {
                 new GraphRegisterAllocator(func).run();
-                new AsmOptimizer(func).run();
+                new RedundantOptimizer(func).invoke();
             }
         });
     }
