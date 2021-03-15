@@ -3,6 +3,7 @@ package ir.construct;
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Branch;
+import ir.instruction.IRDestedInst;
 import ir.instruction.IRInst;
 import ir.instruction.Ret;
 import ir.operand.GlobalVar;
@@ -15,9 +16,9 @@ import java.util.function.Consumer;
 public class RegisterTracker {
     private IRFunction irFunc;
 
-    private final HashMap<String, HashSet<IRInst>> defs = new HashMap<>();
-    private final HashMap<String, HashSet<IRInst>> uses = new HashMap<>();
-    private final HashMap<IRInst, IRBlock> instToBlock = new HashMap<>();
+    public final HashMap<String, HashSet<IRDestedInst>> defs = new HashMap<>();
+    public final HashMap<String, HashSet<IRInst>> uses = new HashMap<>();
+    public final HashMap<IRInst, IRBlock> instToBlock = new HashMap<>();
 
     public RegisterTracker(IRFunction irFunc) {
         this.irFunc = irFunc;
@@ -28,24 +29,32 @@ public class RegisterTracker {
         uses.clear();
         instToBlock.clear();
         Consumer<IRInst> srcProcess = inst -> inst.forEachRegSrc(reg -> {
-            if(reg instanceof GlobalVar)return;
+            if (reg instanceof GlobalVar) return;
             if (!uses.containsKey(reg.identifier())) uses.put(reg.identifier(), new HashSet<>());
             uses.get(reg.identifier()).add(inst);
         });
-        Consumer<IRInst> destProcess = inst -> inst.forEachRegDest(reg -> {
-            if(reg instanceof GlobalVar)return;
+        Consumer<IRDestedInst> destProcess = inst -> inst.forEachRegDest(reg -> {
+            if (reg instanceof GlobalVar) return;
             if (!defs.containsKey(reg.identifier())) defs.put(reg.identifier(), new HashSet<>());
+            if (!uses.containsKey(reg.identifier())) uses.put(reg.identifier(), new HashSet<>());
             defs.get(reg.identifier()).add(inst);
         });
         irFunc.blocks.forEach(block -> {
-            block.insts.forEach(inst -> {
+            Consumer<IRInst> func = inst -> {
                 instToBlock.put(inst, block);
                 srcProcess.accept(inst);
-                destProcess.accept(inst);
-            });
+                if (inst instanceof IRDestedInst)
+                    destProcess.accept((IRDestedInst) inst);
+            };
+            block.phiCollection.forEach(func);
+            block.insts.forEach(func);
+            func.accept(block.terminatorInst);
             srcProcess.accept(block.terminatorInst);
         });
-//        assert validate();
+    }
+
+    public HashSet<IRInst> queryRegisterUses(Register reg) {
+        return queryRegisterUses(reg.identifier());
     }
 
     public HashSet<IRInst> queryRegisterUses(String str) {
@@ -53,7 +62,11 @@ public class RegisterTracker {
         return uses.get(str);
     }
 
-    public HashSet<IRInst> queryRegisterDefs(String str) {
+    public HashSet<IRDestedInst> queryRegisterDefs(Register reg) {
+        return queryRegisterDefs(reg.identifier());
+    }
+
+    public HashSet<IRDestedInst> queryRegisterDefs(String str) {
         assert defs.containsKey(str);
         return defs.get(str);
     }
@@ -63,9 +76,15 @@ public class RegisterTracker {
         return instToBlock.get(inst);
     }
 
-    private boolean validate(){
-        for(var entry:uses.entrySet()){
-            if(!defs.containsKey(entry.getKey()))
+    public void removeRegister(Register reg) {
+        assert defs.get(reg.identifier()).size() == 1;
+        uses.remove(reg.identifier());
+        defs.remove(reg.identifier());
+    }
+
+    private boolean validate() {
+        for (var entry : uses.entrySet()) {
+            if (!defs.containsKey(entry.getKey()))
                 throw new IllegalStateException();
         }
         return true;

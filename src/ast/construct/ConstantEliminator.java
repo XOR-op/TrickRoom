@@ -1,11 +1,9 @@
 package ast.construct;
 
 import ast.ASTVisitor;
-import ast.exception.DividedByZero;
 import ast.struct.*;
 import ast.type.TypeConst;
 import misc.Cst;
-import utils.L;
 
 
 public class ConstantEliminator implements ASTVisitor {
@@ -143,7 +141,7 @@ public class ConstantEliminator implements ASTVisitor {
                             case Cst.MUL -> finalVal = lhs * rhs;
                             case Cst.DIV -> {
                                 if (rhs == 0)
-                                    throw new DividedByZero(node);
+                                    return node; // ignore
                                 finalVal = lhs / rhs;
                             }
                             case Cst.MOD -> finalVal = lhs % rhs;

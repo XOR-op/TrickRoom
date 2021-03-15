@@ -1,6 +1,7 @@
 package ir.instruction;
 
 import ir.IRBlock;
+import ir.operand.IROperand;
 import ir.operand.Register;
 
 import java.util.function.Consumer;
@@ -31,6 +32,11 @@ public class Jump extends IRInst {
 
     @Override
     public void renameOperand(Function<Register, Register> replace) {
+        // do nothing
+    }
+
+    @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
         // do nothing
     }
 

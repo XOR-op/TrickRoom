@@ -2,6 +2,7 @@ package ir.typesystem;
 
 import ir.operand.IROperand;
 import ir.operand.NullptrConstant;
+import misc.Cst;
 
 public class PointerType extends IRType {
     public IRType baseType;
@@ -30,8 +31,8 @@ public class PointerType extends IRType {
 
     @Override
     public int size() {
-        // To verify llvm-IR using llc on 64-bit machine, you may modify this
-        return 4;
+        // verify llvm-IR using llc on 64-bit machine
+        return Cst.pointerSize;
     }
 
     @Override

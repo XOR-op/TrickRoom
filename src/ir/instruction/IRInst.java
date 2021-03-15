@@ -1,8 +1,10 @@
 package ir.instruction;
 
 import ir.IRBlock;
+import ir.operand.IROperand;
 import ir.operand.Register;
 
+import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -15,10 +17,24 @@ public abstract class IRInst {
 
     public abstract void renameOperand(Function<Register, Register> replace);
 
+    public abstract void replaceRegisterWithOperand(IROperand operand,Register oldReg);
+
     public abstract void forEachRegSrc(Consumer<Register> consumer);
 
     public void forEachRegDest(Consumer<Register> consumer) {
         // do nothing for no-IRDestInst
+    }
+
+    public HashSet<Register> getRegSrc() {
+        var set = new HashSet<Register>();
+        forEachRegSrc(set::add);
+        return set;
+    }
+
+    public HashSet<Register> getRegDest() {
+        var set = new HashSet<Register>();
+        forEachRegDest(set::add);
+        return set;
     }
 
     @Override
@@ -35,4 +51,5 @@ public abstract class IRInst {
     }
 
     public abstract boolean hasSideEffect();
+
 }

@@ -6,11 +6,11 @@ import ir.IRFunction;
 import ir.instruction.IRDestedInst;
 import ir.instruction.Phi;
 import ir.operand.Register;
-import misc.pass.FunctionPass;
+import misc.pass.IRFunctionPass;
 
 import java.util.*;
 
-public class SSAConverter extends FunctionPass {
+public class SSAConverter extends IRFunctionPass {
     // dominance
     private final HashMap<IRBlock, Integer> order = new HashMap<>();
     private final ArrayList<IRBlock> blocksByOrder = new ArrayList<>();

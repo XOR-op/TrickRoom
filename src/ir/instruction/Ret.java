@@ -38,6 +38,11 @@ public class Ret extends IRInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if (value != null && oldReg.sameIdentifier(value)) value = operand;
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (value != null && value instanceof Register) consumer.accept((Register) value);
     }

@@ -47,6 +47,14 @@ public class Call extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        for (int i = 0; i < args.size(); ++i) {
+            if (oldReg.sameIdentifier(args.get(i)))
+                args.set(i, operand);
+        }
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         args.forEach(arg -> {
             if (arg instanceof Register) consumer.accept((Register) arg);

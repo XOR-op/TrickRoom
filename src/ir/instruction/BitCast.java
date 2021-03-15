@@ -34,6 +34,11 @@ public class BitCast extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if(oldReg.sameIdentifier(from))from=operand;
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (from instanceof Register) consumer.accept((Register) from);
     }

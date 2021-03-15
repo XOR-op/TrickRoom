@@ -1,7 +1,6 @@
 package ir.instruction;
 
-import ir.operand.IROperand;
-import ir.operand.Register;
+import ir.operand.*;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -34,6 +33,12 @@ public class Compare extends IRDestedInst {
     public void renameOperand(Function<Register, Register> replace) {
         operand1 = Register.replace(replace, operand1);
         operand2 = Register.replace(replace, operand2);
+    }
+
+    @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if (oldReg.sameIdentifier(operand1)) operand1 = operand;
+        if (oldReg.sameIdentifier(operand2)) operand2 = operand;
     }
 
     @Override
@@ -70,6 +75,34 @@ public class Compare extends IRDestedInst {
             default -> {
                 return null;
             }
+        }
+    }
+
+    public static IRConstant evaluateConstant(CmpEnum op, IRConstant val1, IRConstant val2) {
+        boolean val;
+        if (val1 instanceof IntConstant) {
+            int lhs = ((IntConstant) val1).value, rhs = ((IntConstant) val2).value;
+            switch (op) {
+                case eq -> val = lhs == rhs;
+                case ne -> val = lhs != rhs;
+                case sge -> val = lhs >= rhs;
+                case sgt -> val = lhs > rhs;
+                case sle -> val = lhs <= rhs;
+                case slt -> val = lhs < rhs;
+                default -> throw new IllegalStateException();
+            }
+            return new BoolConstant(val);
+        } else if (val1 instanceof BoolConstant) {
+            boolean lhs = ((BoolConstant) val1).value, rhs = ((BoolConstant) val2).value;
+            switch (op) {
+                case eq -> val = lhs == rhs;
+                case ne -> val = lhs != rhs;
+                default -> throw new IllegalStateException();
+            }
+            return new BoolConstant(val);
+        } else {
+            assert val1 instanceof NullptrConstant;
+            return op == CmpEnum.eq ? new BoolConstant(true) : new BoolConstant(false);
         }
     }
 }

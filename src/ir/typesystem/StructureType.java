@@ -64,6 +64,6 @@ public class StructureType extends IRType {
 
     @Override
     public boolean matches(IRType rhs) {
-        throw new UnimplementedError();
+        return rhs==this;
     }
 }

@@ -2,7 +2,7 @@ package ir.operand;
 
 import misc.Cst;
 
-public class StringConstant extends IROperand {
+public class StringConstant extends IRConstant {
     // the pointer to string in .rodata fragment
     public String value;
     public String name;
@@ -12,7 +12,7 @@ public class StringConstant extends IROperand {
         this.name = name;
         value = val;
         length = val.length() + 1;
-        type= Cst.str;
+        type = Cst.str;
 //        type = new PointerType(new ArrayType(new IntegerType(8), val.length()+1));
     }
 
@@ -27,5 +27,10 @@ public class StringConstant extends IROperand {
                 .replace("\"", "\\22")
                 .replace("\t", "\\09");
         return "@" + name + " = private unnamed_addr constant [ " + length + " x i8 ] " + "c\"" + converted + "\\00\", align 1";
+    }
+
+    @Override
+    public boolean sameConst(IRConstant rhs) {
+        return false;
     }
 }

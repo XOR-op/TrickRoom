@@ -40,10 +40,10 @@ public class Phi extends IRDestedInst {
         return this;
     }
 
-    public void replaceBlock(IRBlock newBlock,IRBlock oldBlock){
-        for(var ele:arguments){
-            if(ele.block==oldBlock){
-                ele.block=newBlock;
+    public void replaceBlock(IRBlock newBlock, IRBlock oldBlock) {
+        for (var ele : arguments) {
+            if (ele.block == oldBlock) {
+                ele.block = newBlock;
                 return;
             }
         }
@@ -68,8 +68,19 @@ public class Phi extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        for (Source argument : arguments) {
+            if (oldReg.sameIdentifier(argument.val))
+                argument.val = operand;
+        }
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
-        throw new IllegalStateException();
+        arguments.forEach(source -> {
+            if (source.val instanceof Register)
+                consumer.accept((Register) source.val);
+        });
     }
 
     @Override

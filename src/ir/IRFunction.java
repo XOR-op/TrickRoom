@@ -10,7 +10,7 @@ import java.util.*;
 public class IRFunction {
     public String name;
     public IRType retTy;
-    public ArrayList<IRBlock> blocks = new ArrayList<>();
+    public LinkedList<IRBlock> blocks = new LinkedList<>();
     public ArrayList<Register> parameters = new ArrayList<>();
     public Map<String, HashSet<IRBlock>> varDefs = new HashMap<>();
     public Map<String, IRType> varType = new HashMap<>();

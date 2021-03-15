@@ -4,9 +4,9 @@ import ir.IRFunction;
 import ir.instruction.Assign;
 import ir.instruction.Binary;
 import ir.operand.IntConstant;
-import misc.pass.FunctionPass;
+import misc.pass.IRFunctionPass;
 
-public class ConstantDeducer extends FunctionPass {
+public class ConstantDeducer extends IRFunctionPass {
     public ConstantDeducer(IRFunction f) {
         super(f);
     }

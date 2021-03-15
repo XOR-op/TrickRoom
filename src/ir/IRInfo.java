@@ -7,6 +7,7 @@ import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
 import misc.Cst;
+import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;

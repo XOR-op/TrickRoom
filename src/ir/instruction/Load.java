@@ -30,6 +30,11 @@ public class Load extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if(oldReg.sameIdentifier(address))address=operand;
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (address instanceof Register) consumer.accept((Register) address);
     }

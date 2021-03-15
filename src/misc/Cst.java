@@ -3,6 +3,7 @@ package misc;
 import ir.typesystem.*;
 
 public class Cst {
+    public static int pointerSize=4;
     public static final String STRUCT="__struct_";
     public static final String STR_FUNC="__builtin_str_";
     public static final String STR_LITERAL="._str_";

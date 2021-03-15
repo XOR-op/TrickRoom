@@ -38,6 +38,11 @@ public class Branch extends IRInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if(oldReg.sameIdentifier(condition))condition=operand;
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (condition instanceof Register) consumer.accept((Register) condition);
     }

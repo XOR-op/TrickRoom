@@ -5,8 +5,10 @@ import ast.struct.RootNode;
 import ir.construct.IRBuilder;
 import ast.exception.*;
 import ir.IRInfo;
+import misc.Cst;
 import optimization.assembly.RVBlockCoalesce;
 import optimization.ir.BlockCoalesce;
+import optimization.ir.SCCP;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
@@ -34,6 +36,7 @@ public class TrickRoom {
     private static final String OUTPUT_FILE = "-o";
     private static final String HELP = "--help";
     private static final String HELP_ABBR = "-h";
+    private static final String IR64 = "-ir64";
 
     private Verbose verb;
     private InputStream is;
@@ -106,6 +109,7 @@ public class TrickRoom {
                         System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
                         System.exit(0);
                     }
+                    case IR64 -> Cst.pointerSize = 8;
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -177,6 +181,7 @@ public class TrickRoom {
     private void irOptimize(IRInfo irInfo) {
         irInfo.forEachFunction(f -> {
             new BlockCoalesce(f).invoke();
+            new SCCP(f).invoke();
         });
     }
 
@@ -192,7 +197,6 @@ public class TrickRoom {
         info.preOptimize();
         info.registerAllocate();
         info.renameMain();
-
         return info;
     }
 

@@ -43,6 +43,11 @@ public class Alloca extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        // do nothing
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         // do nothing
     }

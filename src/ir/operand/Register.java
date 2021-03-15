@@ -28,7 +28,7 @@ public class Register extends IROperand {
     protected String name;
 
     public Register(IRType ty) {
-        this.name = "_A_"+(counter++);
+        this.name = "_A_" + (counter++);
         type = ty;
         isAnonymous = true;
     }
@@ -45,15 +45,15 @@ public class Register extends IROperand {
         return reg;
     }
 
-    public void replaceWith(String name){
-        this.name=name;
-        this.isAnonymous=false;
+    public void replaceWith(String name) {
+        this.name = name;
+        this.isAnonymous = false;
     }
 
-    public Register copy(){
-        var rt=new Register(type,name);
-        rt.isAnonymous=isAnonymous;
-        rt.renaming=renaming;
+    public Register copy() {
+        var rt = new Register(type, name);
+        rt.isAnonymous = isAnonymous;
+        rt.renaming = renaming;
         return rt;
     }
 
@@ -61,27 +61,34 @@ public class Register extends IROperand {
         return isAnonymous;
     }
 
-    public boolean sameNaming(IROperand rhs){return rhs instanceof Register&&name.equals(((Register)rhs).name);}
+    public boolean sameNaming(IROperand rhs) {
+        return rhs instanceof Register && name.equals(((Register) rhs).name);
+    }
 
-    public static IROperand replace(Function<Register,Register> mapping,IROperand operand){
-        if(operand instanceof Register&& !((Register) operand).isAnonymous())
+    public static IROperand replace(Function<Register, Register> mapping, IROperand operand) {
+        if (operand instanceof Register && !((Register) operand).isAnonymous())
             return mapping.apply((Register) operand);
         else return operand;
     }
 
-    public String identifier(){
-        return name+"_"+renaming;
+    public String identifier() {
+        return name + "_" + renaming;
     }
 
-    public boolean equals(Register rhs){
-        return name.equals(rhs.name)&&renaming== rhs.renaming;
+    public boolean sameIdentifier(IROperand rhs) {
+        return rhs instanceof Register && identifier().equals(((Register) rhs).identifier());
     }
-    public boolean equals(IROperand rhs){
-        return rhs instanceof Register&&equals((Register) rhs);
+
+    public boolean equals(Register rhs) {
+        return name.equals(rhs.name) && renaming == rhs.renaming;
+    }
+
+    public boolean equals(IROperand rhs) {
+        return rhs instanceof Register && equals((Register) rhs);
     }
 
     @Override
     public String tell() {
-        return "%"+ (renaming==0?"":("_"+renaming+"$_"))+ name;
+        return "%" + (renaming == 0 ? "" : ("_" + renaming + "$_")) + name;
     }
 }

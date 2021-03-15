@@ -3,10 +3,10 @@ package misc.pass;
 import ir.IRFunction;
 import misc.pass.Pass;
 
-public abstract class FunctionPass extends Pass {
+public abstract class IRFunctionPass extends Pass {
     public IRFunction irFunc;
 
-    public FunctionPass(IRFunction f) {
+    public IRFunctionPass(IRFunction f) {
         irFunc = f;
     }
 

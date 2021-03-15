@@ -5,13 +5,13 @@ import ir.IRFunction;
 import ir.instruction.Assign;
 import ir.operand.IROperand;
 import ir.operand.Register;
-import misc.pass.FunctionPass;
+import misc.pass.IRFunctionPass;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class SSADestructor extends FunctionPass {
+public class SSADestructor extends IRFunctionPass {
 
     private static class ParallelCopy {
         public final HashSet<Assign> copyList = new HashSet<>();
@@ -36,11 +36,10 @@ public class SSADestructor extends FunctionPass {
 
     @Override
     protected void run() {
-        // todo transformed-SSA support
-        convSSADestruct();
+        destruct();
     }
 
-    private void convSSADestruct() {
+    private void destruct() {
         // avoid ConcurrentModificationException
         var toAdd = new ArrayList<IRBlock>();
         irFunc.blocks.forEach(oneBlk -> {

@@ -3,12 +3,12 @@ package optimization.ir;
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Jump;
-import misc.pass.FunctionPass;
+import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class BlockCoalesce extends FunctionPass {
+public class BlockCoalesce extends IRFunctionPass {
     public BlockCoalesce(IRFunction f) {
         super(f);
     }

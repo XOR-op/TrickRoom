@@ -43,6 +43,12 @@ public class GetElementPtr extends IRDestedInst {
     }
 
     @Override
+    public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
+        if(oldReg.sameIdentifier(base))base=operand;
+        if(oldReg.sameIdentifier(indexing))indexing=operand;
+    }
+
+    @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (base instanceof Register) consumer.accept((Register) base);
         if (indexing instanceof Register) consumer.accept((Register) indexing);
