@@ -171,7 +171,7 @@ public class IRBuilder implements ASTVisitor {
                 }
                 case Cst.MINUS -> inst = new Binary(Binary.BinInstEnum.sub, new Register(Cst.int32), new IntConstant(0), target);
                 case Cst.NOT_LOGIC -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.bool), new BoolConstant(true), target);
-                case Cst.NOT_ARI -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.int32), new IntConstant(Integer.MAX_VALUE), target);
+                case Cst.NOT_ARI -> inst = new Binary(Binary.BinInstEnum.xor, new Register(Cst.int32), new IntConstant(-1), target);
                 default -> throw new IllegalStateException(node.lexerSign);
             }
             curBlock.appendInst(inst);
@@ -550,9 +550,6 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Object visit(LoopNode node) {
-        /*
-         * todo loop CFG can be further optimized
-         */
         ++loopDepth;
         if (node.initExpr != null) node.initExpr.accept(this);
         else if (node.initDecl != null) node.initDecl.accept(this);
@@ -572,7 +569,7 @@ public class IRBuilder implements ASTVisitor {
         // condition block
         curBlock = conditionBlock;
         if (hasCond) {
-            Register cond = (Register) node.condExpr.accept(this);
+            IROperand cond = (IROperand) node.condExpr.accept(this);
             curBlock.setBranchTerminator(cond, loopBody, afterLoop);
         } else {
             curBlock.setJumpTerminator(loopBody);
@@ -676,7 +673,7 @@ public class IRBuilder implements ASTVisitor {
     }
 
     @Override
-    public IROperand visit(LiteralNode node) {
+    public IRConstant visit(LiteralNode node) {
         if (TypeConst.Bool.equals(node.type)) {
             switch (node.content) {
                 case "true" -> {

@@ -67,11 +67,7 @@ public class SCCP extends IRFunctionPass {
     protected void run() {
         irFunc.parameters.forEach(r -> lattice.put(r.identifier(), new LatticeStat(LatticeStat.Stat.multiple)));
         tracker.defs.forEach((r, v) -> {
-            var src = v.iterator().next();
-            if (src instanceof Load || src instanceof Call || src instanceof GetElementPtr)
-                lattice.put(r, new LatticeStat(LatticeStat.Stat.multiple));
-            else
-                lattice.put(r, new LatticeStat(LatticeStat.Stat.unsure));
+            lattice.put(r, new LatticeStat(LatticeStat.Stat.unsure));
         });
         reachableBlock.add(irFunc.entryBlock);
         blockUpdateQueue.add(irFunc.entryBlock);
@@ -86,6 +82,9 @@ public class SCCP extends IRFunctionPass {
                         else if (inst instanceof Phi) visitPhi((Phi) inst);
                         else if (inst instanceof Branch) visitBranch((Branch) inst);
                         else if (inst instanceof BitCast) visitBitCast((BitCast) inst);
+                        else visitOthers(inst);
+                    } else if (inst instanceof Phi) {
+                        partiallyVisitPhi((Phi) inst);
                     }
                 });
             }
@@ -105,6 +104,7 @@ public class SCCP extends IRFunctionPass {
             else if (inst instanceof Assign) visitAssign((Assign) inst);
             else if (inst instanceof Compare) visitCompare((Compare) inst);
             else if (inst instanceof BitCast) visitBitCast((BitCast) inst);
+            else visitOthers(inst);
         });
         if (block.terminatorInst instanceof Branch) {
             Branch br = (Branch) block.terminatorInst;
@@ -228,8 +228,7 @@ public class SCCP extends IRFunctionPass {
         }
     }
 
-
-    private void visitPhi(Phi phi) {
+    private LatticeStat iteratePhi(Phi phi) {
         LatticeStat init = new LatticeStat(LatticeStat.Stat.unsure);
         for (var sou : phi.arguments) {
             if (reachableBlock.contains(sou.block)) {
@@ -237,23 +236,45 @@ public class SCCP extends IRFunctionPass {
                 else init = init.operate(getLattice((Register) sou.val));
             }
         }
+        return init;
+    }
+
+    private void visitPhi(Phi phi) {
+        var conjunction = iteratePhi(phi);
         var latt = getLattice(phi.dest);
-        if (init.stat == LatticeStat.Stat.multiple) {
-            if (latt.stat != init.stat) {
+        if (conjunction.stat == LatticeStat.Stat.multiple) {
+            if (latt.stat != conjunction.stat) {
                 latt.stat = LatticeStat.Stat.multiple;
                 registerUpdateQueue.add(phi.dest.identifier());
             }
-        } else if (init.stat == LatticeStat.Stat.constant) {
+        } else partiallyVisitPhi(phi, conjunction);
+    }
+
+    private void partiallyVisitPhi(Phi phi, LatticeStat conjunction) {
+        if (conjunction.stat == LatticeStat.Stat.constant) {
+            var latt = getLattice(phi.dest);
             if (latt.stat == LatticeStat.Stat.unsure) {
                 latt.stat = LatticeStat.Stat.constant;
-                latt.constant = init.constant;
+                latt.constant = conjunction.constant;
                 registerUpdateQueue.add(phi.dest.identifier());
             }
         }
     }
 
+    private void partiallyVisitPhi(Phi phi) {
+        partiallyVisitPhi(phi, iteratePhi(phi));
+    }
+
+    private void visitOthers(IRInst i) {
+        if (!i.containsDest()) return;
+        var inst = (IRDestedInst) i;
+        if (getLattice(inst.dest).stat == LatticeStat.Stat.unsure && (inst instanceof Load || inst instanceof Call || inst instanceof GetElementPtr)) {
+            lattice.put(inst.dest.identifier(), new LatticeStat(LatticeStat.Stat.multiple));
+            registerUpdateQueue.add(inst.dest.identifier());
+        }
+    }
+
     private void postProcessing() {
-        int q = 1;
         lattice.forEach((reg, l) -> {
             if (l.stat == LatticeStat.Stat.constant) {
                 tracker.queryRegisterUses(reg).forEach(inst -> {
@@ -264,7 +285,6 @@ public class SCCP extends IRFunctionPass {
                     tracker.queryInstBelongedBlock(def).insts.remove(def);
             }
         });
-        int a = 3;
         // remove unreachable block
         for (var iter = irFunc.blocks.iterator(); iter.hasNext(); ) {
             var block = iter.next();
@@ -286,6 +306,5 @@ public class SCCP extends IRFunctionPass {
                 });
             }
         }
-        int i = 1;
     }
 }
