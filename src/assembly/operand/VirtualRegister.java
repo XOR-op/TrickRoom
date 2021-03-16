@@ -4,8 +4,6 @@ import ir.operand.Register;
 
 public class VirtualRegister extends RVRegister {
 
-    private String name;
-
     public VirtualRegister(String name){
         this.name=name;
     }

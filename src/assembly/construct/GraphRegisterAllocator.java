@@ -24,7 +24,7 @@ public class GraphRegisterAllocator {
         for (int i = 0; !new AllocatorInstance(asmFunc, i).run(); ) ++i;
     }
 
-    private class AllocatorInstance {
+    private static class AllocatorInstance {
         /*
          * Based on the algorithm in Tiger Book
          */
@@ -36,12 +36,12 @@ public class GraphRegisterAllocator {
 
         // register structures
 
-        private final HashMap<RVRegister, HashSet<RVRegister>> interferenceGraph = new HashMap<>();
-        private final HashMap<RVRegister, Integer> degrees = new HashMap<>();
-        private final HashMap<RVRegister, Integer> weights = new HashMap<>();
-        private final HashMap<RVRegister, Integer> color = new HashMap<>();
+        private final Map<RVRegister, HashSet<RVRegister>> interferenceGraph = new HashMap<>();
+        private final Map<RVRegister, Integer> degrees = new HashMap<>();
+        private final Map<RVRegister, Integer> weights = new HashMap<>();
+        private final Map<RVRegister, Integer> color = new HashMap<>();
 
-        private final HashSet<RVRegister>
+        private final Set<RVRegister>
                 preColored = new HashSet<>(),
                 initialList = new HashSet<>(),
                 simplifyWorkList = new HashSet<>(),
@@ -54,7 +54,7 @@ public class GraphRegisterAllocator {
         private final Stack<RVRegister> selectedRegisterStack = new Stack<>();
 
         // move instructions
-        private final HashSet<Move>
+        private final Set<Move>
                 workListMoves = new HashSet<>(),
                 constrainedMoves = new HashSet<>(),
                 coalescedMoves = new HashSet<>(),
@@ -99,6 +99,9 @@ public class GraphRegisterAllocator {
                 });
             });
             initialList.forEach(reg -> {
+                assert !preColored.contains(reg);
+            });
+            initialList.forEach(reg -> {
                 degrees.put(reg, 0);
                 moveRelation.put(reg, new HashSet<>());
             });
@@ -141,6 +144,9 @@ public class GraphRegisterAllocator {
             buildInterfere();
             buildWorkList();
             while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {
+                /*
+                 * todo how to extract element from simplifyWorkList, workListMoves and freezeWorkList
+                 */
                 if (!simplifyWorkList.isEmpty()) simplify();
                 else if (!workListMoves.isEmpty()) coalesceValidMoves();
                 else if (!freezeWorkList.isEmpty()) freeze();
@@ -221,12 +227,13 @@ public class GraphRegisterAllocator {
             int deg = degrees.get(reg);
             degrees.put(reg, deg - 1);
             if (deg == REG_NUM) {
+                assert highDegreeWorkList.contains(reg);
                 // enable moves
                 enableMoves(reg);
                 forEachAdjacent(reg, this::enableMoves);
                 // move to correct work list
                 highDegreeWorkList.remove(reg);
-                if (moveRelation.containsKey(reg))
+                if (isRegRelatedToMove(reg))
                     freezeWorkList.add(reg);
                 else
                     simplifyWorkList.add(reg);
@@ -237,11 +244,14 @@ public class GraphRegisterAllocator {
             var iter = simplifyWorkList.iterator();
             var reg = iter.next();
             iter.remove();
+            assert !selectedRegisterStack.contains(reg);
+            assert !(reg instanceof PhysicalRegister);
             selectedRegisterStack.add(reg);
             forEachAdjacent(reg, this::decreaseDegree);
         }
 
         private void enableMoves(RVRegister reg) {
+            // degree is ok
             forEachRelatedMoves(reg, mov -> {
                 if (activeMoves.contains(mov)) {
                     activeMoves.remove(mov);
@@ -257,7 +267,9 @@ public class GraphRegisterAllocator {
         }
 
         private void addRegToWorkList(RVRegister reg) {
-            if (!preColored.contains(reg) && !(isRegRelatedToMove(reg) && degrees.get(reg) < REG_NUM)) {
+            if (!preColored.contains(reg) && !isRegRelatedToMove(reg) && (degrees.get(reg) < REG_NUM)) {
+                // not related to live move
+                assert freezeWorkList.contains(reg);
                 freezeWorkList.remove(reg);
                 simplifyWorkList.add(reg);
             }
@@ -340,6 +352,7 @@ public class GraphRegisterAllocator {
                 AtomicBoolean noRelated = new AtomicBoolean(true);
                 forEachRelatedMoves(v, m -> noRelated.set(false));
                 if (noRelated.get() && degrees.get(v) < REG_NUM) {
+                    assert freezeWorkList.add(v);
                     freezeWorkList.remove(v);
                     simplifyWorkList.add(v);
                 }
@@ -379,6 +392,7 @@ public class GraphRegisterAllocator {
                 if (interferenceGraph.containsKey(reg)) {
                     interferenceGraph.get(reg).forEach(adj -> {
                         var w = getAlias(adj);
+                        assert w != null;
                         if (coloredSet.contains(w) || preColored.contains(w)) {
                             remainingColor.remove(color.get(w));
                         }

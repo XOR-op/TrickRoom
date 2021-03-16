@@ -5,8 +5,6 @@ import java.util.HashMap;
 
 public class PhysicalRegister extends RVRegister {
     private int numbering;
-    private String name;
-
     private PhysicalRegister(int numbering, String name) {
         this.numbering = numbering;
         this.name = name;
