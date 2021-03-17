@@ -20,6 +20,11 @@ public class IntConstant extends IRConstant {
     }
 
     @Override
+    public IROperand copy() {
+        return new IntConstant(value, ((IntegerType) type).width);
+    }
+
+    @Override
     public boolean sameConst(IRConstant rhs) {
         return rhs instanceof IntConstant && ((IntConstant) rhs).value == value;
     }

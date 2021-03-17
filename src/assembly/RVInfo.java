@@ -58,17 +58,7 @@ public class RVInfo {
         });
     }
 
-    public void renameMain() {
-        forEachFunction(f -> {
-            if (f.name.equals("main")) {
-                f.name = "real.main";
-                f.entry.name = "real.main";
-            } else if (f.name.equals(Cst.INIT)) {
-                f.name = "main";
-                f.entry.name = "main";
-            }
-        });
-    }
+
 
     public String tell() {
         StringBuilder builder = new StringBuilder();

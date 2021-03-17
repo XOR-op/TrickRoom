@@ -4,7 +4,7 @@ import ir.operand.IROperand;
 import ir.operand.IntConstant;
 
 public class IntegerType extends IRType {
-    private int width;
+    public final int width;
 
     public IntegerType() {
         this(32);

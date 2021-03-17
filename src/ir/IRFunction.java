@@ -1,9 +1,7 @@
 package ir;
 
-import ir.instruction.Alloca;
 import ir.operand.Register;
 import ir.typesystem.IRType;
-import ir.typesystem.PointerType;
 
 import java.util.*;
 
@@ -12,18 +10,20 @@ public class IRFunction {
     public IRType retTy;
     public LinkedList<IRBlock> blocks = new LinkedList<>();
     public ArrayList<Register> parameters = new ArrayList<>();
+    // only before optimize
     public Map<String, HashSet<IRBlock>> varDefs = new HashMap<>();
     public Map<String, IRType> varType = new HashMap<>();
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
+    public Set<IRFunction> invokedFunctions = new HashSet<>();
     private final boolean isBuiltin;
 
     public IRFunction(String name, IRType returnType, boolean isBuiltin) {
         this.name = name;
         this.isBuiltin = isBuiltin;
         retTy = returnType;
-        entryBlock = new IRBlock("entry",0);
-        exitBlock = new IRBlock("exit",0);
+        entryBlock = new IRBlock("entry", 0);
+        exitBlock = new IRBlock("exit", 0);
         blocks.add(entryBlock);
     }
 
@@ -48,7 +48,7 @@ public class IRFunction {
 
     public void defineVar(Register reg, IRBlock bb) {
         // define and update Defs(var)
-        bb.defVariable(reg);
+//        bb.defVariable(reg);
         varDefs.get(reg.getName()).add(bb);
     }
 
@@ -61,13 +61,6 @@ public class IRFunction {
     public IRFunction addBlock(IRBlock bl) {
         blocks.add(bl);
         return this;
-    }
-
-    public void addAlloca(Register reg) {
-        assert reg.type instanceof PointerType;
-        declareVar(reg);
-        entryBlock.insertInstFromHead(new Alloca(reg, ((PointerType) reg.type).subType()));
-        defineVar(reg, entryBlock);
     }
 
     public String toDeclaration() {
@@ -91,5 +84,8 @@ public class IRFunction {
         return isBuiltin;
     }
 
+    public Object[] inlineClone(){
+
+    }
 
 }

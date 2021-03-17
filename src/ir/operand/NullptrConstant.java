@@ -12,6 +12,11 @@ public class NullptrConstant extends IRConstant {
     }
 
     @Override
+    public IROperand copy() {
+        return new NullptrConstant((PointerType) type);
+    }
+
+    @Override
     public boolean sameConst(IRConstant rhs) {
         return rhs instanceof NullptrConstant;
     }

@@ -21,6 +21,11 @@ public class StringConstant extends IRConstant {
         return "getelementptr inbounds ([" + length + " x i8], [" + length + " x i8]* @" + name + ", i32 0,i32 0)";
     }
 
+    @Override
+    public IROperand copy() {
+        throw new IllegalStateException();
+    }
+
     public String toDefinition() {
         String converted = value.replace("\\", "\\5C")
                 .replace("\n", "\\0A")

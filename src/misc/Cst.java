@@ -12,13 +12,20 @@ public class Cst {
     public static final String COPY_ELIMINATION="__copy_";
     public static final String LOOP_INCRE_NAME ="__loop_new_";
     public static final String SHORT_CIRCUIT_COND="__short_cond_";
+    public final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
+    public final static String RESERVE_PREFIX = "__reserve_";
+    public final static String INLINE_PREFIX = "_inline_";
+    public final static String SPLIT_PREFIX = "_split_";
+    public static String inlineRename(String origin,String func){
+        return SPLIT_PREFIX+func+"_"+origin;
+    }
+
     public static final IRType int32 =new IntegerType();
     public static final IRType str=new PointerType(new IntegerType(8));
     public static final IRType bool=new BoolType();
     public static final IRType void_t=new VoidType();
     public static final IRType byte_t=new IntegerType(8);
-    public final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
-    public final static String RESERVE_PREFIX = "__reserve_";
+
     public final static String ADD="+";
     public final static String MINUS="-";
     public final static String MUL="*";

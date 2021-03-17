@@ -50,6 +50,7 @@ public class Register extends IROperand {
         this.isAnonymous = false;
     }
 
+    @Override
     public Register copy() {
         var rt = new Register(type, name);
         rt.isAnonymous = isAnonymous;

@@ -8,6 +8,7 @@ import ir.IRInfo;
 import misc.Cst;
 import optimization.assembly.RVBlockCoalesce;
 import optimization.ir.BlockCoalesce;
+import optimization.ir.GlobalInliner;
 import optimization.ir.SCCP;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -37,6 +38,7 @@ public class TrickRoom {
     private static final String HELP = "--help";
     private static final String HELP_ABBR = "-h";
     private static final String IR64 = "-ir64";
+    private static final String NO_RENAME = "-fnorename-entry";
 
     private Verbose verb;
     private InputStream is;
@@ -44,6 +46,7 @@ public class TrickRoom {
     private Boolean llvmGenFlag;
     private Boolean assemblyGenFlag;
     private Boolean optimizationFlag;
+    private Boolean entryRenameFlag;
 
     private void logln(String s) {
         System.err.println(s);
@@ -65,6 +68,7 @@ public class TrickRoom {
         llvmGenFlag = false;
         assemblyGenFlag = true;
         optimizationFlag = false;
+        entryRenameFlag = true;
         boolean specification = false;
         for (int i = 0; i < args.length; ++i) {
             if (args[i].charAt(0) == '-') {
@@ -110,6 +114,7 @@ public class TrickRoom {
                         System.exit(0);
                     }
                     case IR64 -> Cst.pointerSize = 8;
+                    case NO_RENAME -> entryRenameFlag = false;
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -175,6 +180,8 @@ public class TrickRoom {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
         info.forEachFunction(f -> new SSAConverter(f).invoke());
+        if (entryRenameFlag)
+            info.renameMain();
         return info;
     }
 
@@ -183,6 +190,7 @@ public class TrickRoom {
             new BlockCoalesce(f).invoke();
             new SCCP(f).invoke();
         });
+        new GlobalInliner(irInfo).invoke();
     }
 
     private void rvOptimize(RVInfo rvInfo) {
@@ -196,7 +204,6 @@ public class TrickRoom {
         var info = builder.constructAssembly();
         info.preOptimize();
         info.registerAllocate();
-        info.renameMain();
         return info;
     }
 

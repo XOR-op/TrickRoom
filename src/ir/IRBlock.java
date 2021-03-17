@@ -3,34 +3,34 @@ package ir;
 import ir.instruction.*;
 import ir.operand.IROperand;
 import ir.operand.Register;
+import misc.Cst;
 
 import java.util.*;
 
 public class IRBlock {
-    public final String blockName;
+    public String blockName;
     public LinkedList<IRInst> insts = new LinkedList<>();
     public IRInst terminatorInst = null;
     public Set<Phi> phiCollection = new HashSet<>();
     public Set<IRBlock> prevs = new HashSet<>(), nexts = new HashSet<>();
-    public Set<String> definition = new HashSet<>();
-    public int loopDepth=0;
+    //    public Set<String> definition = new HashSet<>();
+    public int loopDepth = 0;
 
     public IRBlock(String name, int depth) {
         blockName = "l_" + name;
-        this.loopDepth=depth;
+        this.loopDepth = depth;
     }
 
     public IRBlock appendInst(IRInst newInst) {
         insts.add(newInst);
-//        newInst.parentBlock = this;
         return this;
     }
 
-    public void createBetweenPrev(IRBlock prev, IRBlock newBlk){
+    public void createBetweenPrev(IRBlock prev, IRBlock newBlk) {
         assert prevs.contains(prev);
         prevs.remove(prev);
         prevs.add(newBlk);
-        ((Branch)prev.terminatorInst).replaceBranch(this,newBlk);
+        ((Branch) prev.terminatorInst).replaceBranch(this, newBlk);
         prev.nexts.remove(this);
         prev.nexts.add(newBlk);
         newBlk.prevs.add(prev);
@@ -61,27 +61,39 @@ public class IRBlock {
         setTerminator(new Ret(ope));
     }
 
-    public void setVoidRetTerminator(){
+    public void setVoidRetTerminator() {
         setTerminator(Ret.voidRet());
     }
 
     public void appendPhi(Phi phi) {
         phiCollection.add(phi);
-//        phi.parentBlock = this;
     }
 
     public void insertInstFromHead(IRInst inst) {
         this.insts.addFirst(inst);
     }
 
-    public void defVariable(Register reg) {
-        definition.add(reg.getName());
-    }
+//    public void defVariable(Register reg) {
+//        definition.add(reg.getName());
+//    }
 
     private void setTerminator(IRInst terInst) {
         assert terminatorInst == null && terInst.isTerminal();
         terminatorInst = terInst;
-//        terInst.parentBlock = this;
+    }
+
+    public IRBlock splitBlockWithInsts(LinkedList<IRInst> instsOfNewBlock) {
+        var newBlock = new IRBlock(Cst.SPLIT_PREFIX + blockName, loopDepth);
+        newBlock.insts = instsOfNewBlock;
+        nexts.forEach(successor -> {
+            successor.prevs.remove(this);
+            successor.prevs.add(newBlock);
+        });
+        newBlock.nexts = nexts;
+        nexts = new HashSet<>();
+        newBlock.terminatorInst = terminatorInst;
+        terminatorInst = null;
+        return newBlock;
     }
 
     public String getBlockName() {

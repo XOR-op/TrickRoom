@@ -14,6 +14,11 @@ public class UndefConstant extends IRConstant {
     }
 
     @Override
+    public IROperand copy() {
+        return new UndefConstant(type);
+    }
+
+    @Override
     public boolean sameConst(IRConstant rhs) {
         throw new IllegalStateException();
     }

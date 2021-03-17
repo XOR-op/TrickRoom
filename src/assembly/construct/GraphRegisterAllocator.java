@@ -4,6 +4,7 @@ import assembly.RVBlock;
 import assembly.RVFunction;
 import assembly.instruction.*;
 import assembly.operand.*;
+import utils.L;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -145,7 +146,7 @@ public class GraphRegisterAllocator {
             buildWorkList();
             while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {
                 /*
-                 * todo how to extract element from simplifyWorkList, workListMoves and freezeWorkList
+                 * todo tune methods to extract element from simplifyWorkList, workListMoves and freezeWorkList
                  */
                 if (!simplifyWorkList.isEmpty()) simplify();
                 else if (!workListMoves.isEmpty()) coalesceValidMoves();
@@ -225,16 +226,24 @@ public class GraphRegisterAllocator {
 
         private void decreaseDegree(RVRegister reg) {
             int deg = degrees.get(reg);
-            degrees.put(reg, deg - 1);
+            degrees.replace(reg, deg - 1);
             if (deg == REG_NUM) {
-                assert highDegreeWorkList.contains(reg);
                 // enable moves
                 enableMoves(reg);
                 forEachAdjacent(reg, this::enableMoves);
                 // move to correct work list
-                highDegreeWorkList.remove(reg);
-                if (isRegRelatedToMove(reg))
+                assert highDegreeWorkList.contains(reg)|| freezeWorkList.contains(reg);
+                /*
+                 * Here is something different with what in the Tiger Book.
+                 * We want to guarantee any remove is valid, and while the algorithm in Tiger Book
+                 * won't execute the else branch if reg is in freezeWorkList, it can be wrote down explicitly.
+                 */
+                if(highDegreeWorkList.contains(reg))
+                    highDegreeWorkList.remove(reg);
+                else freezeWorkList.remove(reg);
+                if (isRegRelatedToMove(reg)) {
                     freezeWorkList.add(reg);
+                }
                 else
                     simplifyWorkList.add(reg);
             }
@@ -297,8 +306,10 @@ public class GraphRegisterAllocator {
         private void combine(RVRegister to, RVRegister from) {
             if (freezeWorkList.contains(from))
                 freezeWorkList.remove(from);
-            else
+            else{
+                assert highDegreeWorkList.contains(from);
                 highDegreeWorkList.remove(from);
+            }
             coalescedSet.add(from);
             aliasMapping.put(from, to);
             moveRelation.get(to).addAll(moveRelation.get(from));
@@ -308,6 +319,7 @@ public class GraphRegisterAllocator {
                 decreaseDegree(adj);
             });
             if (degrees.get(to) >= REG_NUM && freezeWorkList.contains(to)) {
+                assert freezeWorkList.contains(to);
                 freezeWorkList.remove(to);
                 highDegreeWorkList.add(to);
             }
@@ -352,7 +364,7 @@ public class GraphRegisterAllocator {
                 AtomicBoolean noRelated = new AtomicBoolean(true);
                 forEachRelatedMoves(v, m -> noRelated.set(false));
                 if (noRelated.get() && degrees.get(v) < REG_NUM) {
-                    assert freezeWorkList.add(v);
+                    assert freezeWorkList.contains(v);
                     freezeWorkList.remove(v);
                     simplifyWorkList.add(v);
                 }
@@ -379,7 +391,7 @@ public class GraphRegisterAllocator {
                     minCost = cost;
                 }
             }
-            assert selection != null;
+            assert selection != null && highDegreeWorkList.contains(selection);
             highDegreeWorkList.remove(selection);
             simplifyWorkList.add(selection);
             freezeRelatedMoves(selection);
@@ -463,6 +475,21 @@ public class GraphRegisterAllocator {
                     }
                 }
             });
+        }
+
+        private boolean testEnum(RVRegister reg){
+            int belong=0;
+            if(preColored.contains(reg))++belong;
+            if(initialList.contains(reg))++belong;
+            if(simplifyWorkList.contains(reg))++belong;
+            if(freezeWorkList.contains(reg))++belong;
+            if(decidedSpillSet.contains(reg))++belong;
+            if(coalescedSet.contains(reg))++belong;
+            if(coloredSet.contains(reg))++belong;
+            if(selectedRegisterStack.contains(reg))++belong;
+            if (highDegreeWorkList.contains(reg))++belong;
+            assert belong == 1;
+            return true;
         }
     }
 }

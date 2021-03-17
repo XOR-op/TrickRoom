@@ -8,8 +8,7 @@ import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public abstract class IRInst {
-//    public IRBlock parentBlock;
+public abstract class IRInst implements Cloneable{
 
     public abstract String tell();
 

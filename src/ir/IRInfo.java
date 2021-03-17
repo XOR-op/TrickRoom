@@ -154,7 +154,7 @@ public class IRInfo {
             return strLiterals.get(s);
         } else {
             name = Cst.STR_LITERAL + strCounter++;
-            var ret=new StringConstant(name, s);
+            var ret = new StringConstant(name, s);
             strLiterals.put(s, ret);
             return ret;
         }
@@ -211,6 +211,16 @@ public class IRInfo {
 
     public HashMap<String, GlobalVar> getGlobalVars() {
         return globalVars;
+    }
+
+    public void renameMain() {
+        forEachFunction(f -> {
+            if (f.name.equals("main")) {
+                f.name = "real.main";
+            } else if (f.name.equals(Cst.INIT)) {
+                f.name = "main";
+            }
+        });
     }
 
 }

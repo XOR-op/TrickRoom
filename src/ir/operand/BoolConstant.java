@@ -15,6 +15,11 @@ public class BoolConstant extends IRConstant {
     }
 
     @Override
+    public IROperand copy() {
+        return new BoolConstant(value);
+    }
+
+    @Override
     public boolean sameConst(IRConstant rhs) {
         return rhs instanceof BoolConstant&&((BoolConstant) rhs).value==value;
     }

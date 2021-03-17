@@ -18,4 +18,9 @@ public class GlobalVar extends Register {
     public String tell() {
         return "@" + name;
     }
+
+    @Override
+    public Register copy() {
+        return new GlobalVar(type, name, initValue);
+    }
 }
