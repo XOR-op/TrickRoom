@@ -34,14 +34,19 @@ public class Store extends IRInst {
 
     @Override
     public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
-        if(oldReg.sameIdentifier(address))address=operand;
-        if(oldReg.sameIdentifier(source))source=operand;
+        if (oldReg.sameIdentifier(address)) address = operand;
+        if (oldReg.sameIdentifier(source)) source = operand;
     }
 
     @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         if (source instanceof Register) consumer.accept((Register) source);
         if (address instanceof Register) consumer.accept((Register) address);
+    }
+
+    @Override
+    public IRInst copy(String arg) {
+        return new Store(source.copy(arg), address.copy(arg));
     }
 
     @Override

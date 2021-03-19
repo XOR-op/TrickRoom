@@ -28,7 +28,7 @@ public class Phi extends IRDestedInst {
 
     public Phi(Register reg) {
         assert reg.type != null;
-        dest = reg.copy();
+        dest = reg.copy("");
     }
 
     public Phi append(IROperand reg, IRBlock blk) {
@@ -87,4 +87,10 @@ public class Phi extends IRDestedInst {
     public boolean hasSideEffect() {
         return false;
     }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        throw new IllegalStateException();
+    }
+
 }

@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Binary extends IRDestedInst {
+
     public enum BinInstEnum {add, sub, mul, sdiv, srem, shl, ashr, and, or, xor, logic_and, logic_or}
 
     public BinInstEnum inst;
@@ -32,8 +33,8 @@ public class Binary extends IRDestedInst {
 
     @Override
     public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
-        if(oldReg.sameIdentifier(operand1))operand1=operand;
-        if(oldReg.sameIdentifier(operand2))operand2=operand;
+        if (oldReg.sameIdentifier(operand1)) operand1 = operand;
+        if (oldReg.sameIdentifier(operand2)) operand2 = operand;
     }
 
     @Override
@@ -131,5 +132,10 @@ public class Binary extends IRDestedInst {
             }
             return new BoolConstant(result);
         }
+    }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new Binary(inst, dest.copy(arg), operand1.copy(arg), operand2.copy(arg));
     }
 }

@@ -1,6 +1,5 @@
 package optimization.ir;
 
-import assembly.instruction.Move;
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Assign;
@@ -16,6 +15,7 @@ import java.util.*;
 public class Inliner extends IRFunctionPass {
     private final Set<IRFunction> inlineCandidates;
     private final List<IRBlock> pendingBlocks = new LinkedList<>();
+    private int serial = 0;
 
     public Inliner(IRFunction f, Set<IRFunction> inlineCandidates) {
         super(f);
@@ -28,7 +28,11 @@ public class Inliner extends IRFunctionPass {
         irFunc.blocks.addAll(pendingBlocks);
     }
 
-    private void replaceInBlock(IRBlock block) {
+    private void replaceInBlock(IRBlock block){
+        replaceInBlock(block,0);
+    }
+
+    private void replaceInBlock(IRBlock block, int currentCount) {
         var newInst = new LinkedList<IRInst>();
         Call call = null;
         // find first inline-available call
@@ -47,27 +51,31 @@ public class Inliner extends IRFunctionPass {
         // inline
         if (call != null) {
             var inlinedFunc = call.function;
-            var newBlock = block.splitBlockWithInsts(newInst);
+            var newBlock = block.splitBlockWithInsts(newInst,currentCount);
+            if (irFunc.exitBlock == block)
+                irFunc.exitBlock = newBlock;
             pendingBlocks.add(newBlock);
-            var tuple = inlinedFunc.inlineClone();
+            var prefix = Cst.inlinePrefix(inlinedFunc.name, serial);
+            var tuple = inlinedFunc.inlineClone(serial++);
             // (entryBlock:IRBlock, exitBlock:IRBlock, blockSet:HashSet<IRBlock>)
             assert tuple.length == 3;
+            assert tuple[0] instanceof IRBlock && tuple[1] instanceof IRBlock && tuple[2] instanceof HashSet;
             pendingBlocks.addAll((HashSet<IRBlock>) tuple[2]);
             // arguments
             for (int i = 0; i < inlinedFunc.parameters.size(); ++i) {
                 block.appendInst(new Assign(new Register(call.args.get(i).type,
-                        Cst.inlineRename(inlinedFunc.parameters.get(i).getName(), inlinedFunc.name)), call.args.get(i)));
+                        prefix + inlinedFunc.parameters.get(i).getName()), call.args.get(i)));
             }
             block.setJumpTerminator((IRBlock) tuple[0]);
             // return value
             var exitBlock = (IRBlock) tuple[1];
-            exitBlock.terminatorInst = null;
-            exitBlock.setJumpTerminator(newBlock);
             if (call.containsDest()) {
                 var returnStmt = (Ret) exitBlock.terminatorInst;
                 exitBlock.appendInst(new Assign(call.dest, returnStmt.value));
             }
-            replaceInBlock(newBlock);
+            exitBlock.terminatorInst = null;
+            exitBlock.setJumpTerminator(newBlock);
+            replaceInBlock(newBlock,currentCount+1);
         }
     }
 }

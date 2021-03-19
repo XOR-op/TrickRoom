@@ -31,4 +31,7 @@ public abstract class IRDestedInst extends IRInst {
     public void forEachRegDest(Consumer<Register> consumer) {
         consumer.accept(dest);
     }
+
+    @Override
+    public abstract IRDestedInst copy(String arg);
 }

@@ -10,7 +10,7 @@ import java.util.function.Function;
 public class Jump extends IRInst {
 
     // unconditional branch
-    private final IRBlock target;
+    public final IRBlock target;
 
     public Jump(IRBlock tgt) {
         target = tgt;
@@ -43,6 +43,15 @@ public class Jump extends IRInst {
     @Override
     public void forEachRegSrc(Consumer<Register> consumer) {
         // do nothing
+    }
+
+    @Override
+    public IRInst copy(String arg) {
+        throw new IllegalStateException();
+    }
+
+    public IRInst copy(IRBlock newBlock) {
+        return new Jump(newBlock);
     }
 
     @Override

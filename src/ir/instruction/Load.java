@@ -31,7 +31,7 @@ public class Load extends IRDestedInst {
 
     @Override
     public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
-        if(oldReg.sameIdentifier(address))address=operand;
+        if (oldReg.sameIdentifier(address)) address = operand;
     }
 
     @Override
@@ -42,5 +42,10 @@ public class Load extends IRDestedInst {
     @Override
     public boolean hasSideEffect() {
         return true;
+    }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new Load(dest.copy(arg), address.copy(arg));
     }
 }

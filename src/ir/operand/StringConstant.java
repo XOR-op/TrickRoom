@@ -22,8 +22,8 @@ public class StringConstant extends IRConstant {
     }
 
     @Override
-    public IROperand copy() {
-        throw new IllegalStateException();
+    public IROperand copy(String arg) {
+        return this;
     }
 
     public String toDefinition() {

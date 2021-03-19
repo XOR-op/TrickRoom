@@ -67,6 +67,13 @@ public class Call extends IRDestedInst {
     }
 
     @Override
+    public IRDestedInst copy(String arg) {
+        var newCall = new Call(dest != null ? dest.copy(arg) : null, function);
+        args.forEach(a -> newCall.push(a.copy(arg)));
+        return newCall;
+    }
+
+    @Override
     public boolean containsDest() {
         return dest != null;
     }

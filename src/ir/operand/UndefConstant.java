@@ -14,7 +14,7 @@ public class UndefConstant extends IRConstant {
     }
 
     @Override
-    public IROperand copy() {
+    public IROperand copy(String arg) {
         return new UndefConstant(type);
     }
 

@@ -82,12 +82,21 @@ public class IRBlock {
         terminatorInst = terInst;
     }
 
-    public IRBlock splitBlockWithInsts(LinkedList<IRInst> instsOfNewBlock) {
-        var newBlock = new IRBlock(Cst.SPLIT_PREFIX + blockName, loopDepth);
+    public IRBlock splitBlockWithInsts(LinkedList<IRInst> instsOfNewBlock, int count) {
+        var newName = count == 0 ? (Cst.SPLIT_PREFIX + "000" + blockName) :
+                (Cst.SPLIT_PREFIX + "0".repeat(Math.max(0, (int) (2 - Math.floor(Math.log10(count)))))
+                        + count + blockName.substring(Cst.SPLIT_PREFIX.length() + 5));
+        var newBlock = new IRBlock(newName, loopDepth);
         newBlock.insts = instsOfNewBlock;
         nexts.forEach(successor -> {
             successor.prevs.remove(this);
             successor.prevs.add(newBlock);
+            successor.phiCollection.forEach(phi -> {
+                phi.arguments.forEach(s -> {
+                    if (s.block == this)
+                        s.block = newBlock;
+                });
+            });
         });
         newBlock.nexts = nexts;
         nexts = new HashSet<>();

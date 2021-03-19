@@ -51,12 +51,13 @@ public class Register extends IROperand {
     }
 
     @Override
-    public Register copy() {
-        var rt = new Register(type, name);
+    public Register copy(String arg) {
+        var rt = new Register(type, arg + name);
         rt.isAnonymous = isAnonymous;
         rt.renaming = renaming;
         return rt;
     }
+
 
     public boolean isAnonymous() {
         return isAnonymous;

@@ -12,7 +12,7 @@ public class NullptrConstant extends IRConstant {
     }
 
     @Override
-    public IROperand copy() {
+    public IROperand copy(String arg) {
         return new NullptrConstant((PointerType) type);
     }
 

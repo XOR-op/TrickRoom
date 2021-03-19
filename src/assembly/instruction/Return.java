@@ -13,7 +13,7 @@ public class Return extends RVInst {
 
     @Override
     public String tell() {
-        return "jr ra";
+        return "ret";
     }
 
     @Override

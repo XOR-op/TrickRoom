@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Compare extends IRDestedInst {
+
     public enum CmpEnum {eq, ne, sgt, sge, slt, sle}
 
     public IROperand operand1, operand2;
@@ -104,5 +105,10 @@ public class Compare extends IRDestedInst {
             assert val1 instanceof NullptrConstant;
             return op == CmpEnum.eq ? new BoolConstant(true) : new BoolConstant(false);
         }
+    }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new Compare(type, dest.copy(arg), operand1.copy(arg), operand2.copy(arg));
     }
 }

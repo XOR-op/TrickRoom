@@ -35,7 +35,7 @@ public class BitCast extends IRDestedInst {
 
     @Override
     public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
-        if(oldReg.sameIdentifier(from))from=operand;
+        if (oldReg.sameIdentifier(from)) from = operand;
     }
 
     @Override
@@ -46,5 +46,10 @@ public class BitCast extends IRDestedInst {
     @Override
     public boolean hasSideEffect() {
         return false;
+    }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new BitCast(dest.copy(arg), from.copy(arg));
     }
 }

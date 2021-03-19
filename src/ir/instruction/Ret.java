@@ -48,6 +48,11 @@ public class Ret extends IRInst {
     }
 
     @Override
+    public IRInst copy(String arg) {
+        return value == null ? new Ret() : new Ret(value.copy(arg));
+    }
+
+    @Override
     public boolean isTerminal() {
         return true;
     }

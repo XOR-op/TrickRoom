@@ -44,8 +44,8 @@ public class GetElementPtr extends IRDestedInst {
 
     @Override
     public void replaceRegisterWithOperand(IROperand operand, Register oldReg) {
-        if(oldReg.sameIdentifier(base))base=operand;
-        if(oldReg.sameIdentifier(indexing))indexing=operand;
+        if (oldReg.sameIdentifier(base)) base = operand;
+        if (oldReg.sameIdentifier(indexing)) indexing = operand;
     }
 
     @Override
@@ -57,5 +57,10 @@ public class GetElementPtr extends IRDestedInst {
     @Override
     public boolean hasSideEffect() {
         return false;
+    }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new GetElementPtr(dest.copy(arg), base.copy(arg), indexing.copy(arg), offset == null ? null : (IntConstant) offset.copy(arg));
     }
 }

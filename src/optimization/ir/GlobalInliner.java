@@ -5,6 +5,7 @@ import ir.IRInfo;
 import misc.pass.IRInfoPass;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GlobalInliner extends IRInfoPass {
 
@@ -15,6 +16,7 @@ public class GlobalInliner extends IRInfoPass {
     private final Map<IRFunction, Integer> lowLink = new HashMap<>();
     private int counter = 0;
     private final Set<IRFunction> ableToInline = new HashSet<>();
+    private final Set<IRFunction> dfsInlineVisited = new HashSet<>();
 
     public GlobalInliner(IRInfo info) {
         super(info);
@@ -22,14 +24,44 @@ public class GlobalInliner extends IRInfoPass {
 
     @Override
     protected void run() {
-        dfs();
+        collectDependency();
+        inlineFilter();
+        dfsInline();
+        info.forEachFunction(f -> {
+            if (!ableToInline.contains(f))
+                new Inliner(f, ableToInline).invoke();
+        });
     }
 
-    private void dfs() {
-        info.forEachFunction(this::dfs);
+    private void dfsInline() {
+        ableToInline.forEach(this::dfsInline);
     }
 
-    private void dfs(IRFunction func) {
+    private void inlineFilter(){
+        // todo well-tuned criterion
+    }
+
+    private void dfsInline(IRFunction func) {
+        if (!dfsInlineVisited.contains(func)) {
+            dfsInlineVisited.add(func);
+            AtomicBoolean flag = new AtomicBoolean(false);
+            callGraph.get(func).forEach(f -> {
+                if (ableToInline.contains(f)) {
+                    flag.set(true);
+                    dfsInline(func);
+                }
+            });
+            // if func contains inlined func
+            if (flag.get())
+                new Inliner(func, ableToInline).invoke();
+        }
+    }
+
+    private void collectDependency() {
+        info.forEachFunction(this::collectDependency);
+    }
+
+    private void collectDependency(IRFunction func) {
         if (callGraph.containsKey(func)) return;
         if (func.isBuiltin()) {
             callGraph.put(func, new HashSet<>());
@@ -46,7 +78,7 @@ public class GlobalInliner extends IRInfoPass {
         func.invokedFunctions.forEach(successor -> {
             next.add(successor);
             if (!callGraph.containsKey(successor)) {
-                dfs(successor);
+                collectDependency(successor);
                 if (!successor.isBuiltin())
                     lowLink.put(func, Math.min(lowLink.get(successor), lowLink.get(func)));
             } else if (!successor.isBuiltin() && tarjanStack.contains(successor)) {
@@ -58,7 +90,8 @@ public class GlobalInliner extends IRInfoPass {
             // root
             if (tarjanStack.peek() == func) {
                 tarjanStack.pop();
-                ableToInline.add(func);
+                if (!func.invokedFunctions.contains(func))
+                    ableToInline.add(func);
             } else {
                 IRFunction one;
                 do {

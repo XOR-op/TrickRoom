@@ -626,7 +626,6 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Object visit(ReturnNode node) {
-        curFunc.addReturn(curBlock);
         if (node.returnExpr == null)
             curBlock.setVoidRetTerminator();
         else {
@@ -634,6 +633,7 @@ public class IRBuilder implements ASTVisitor {
             var val = (IROperand) node.returnExpr.accept(this);
             curBlock.setRetTerminator(val);
         }
+        curFunc.addReturn(curBlock);
         return null;
     }
 

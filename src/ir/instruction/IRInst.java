@@ -20,6 +20,8 @@ public abstract class IRInst implements Cloneable{
 
     public abstract void forEachRegSrc(Consumer<Register> consumer);
 
+    public abstract IRInst copy(String arg);
+
     public void forEachRegDest(Consumer<Register> consumer) {
         // do nothing for no-IRDestInst
     }

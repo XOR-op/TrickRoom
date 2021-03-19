@@ -16,8 +16,8 @@ public class Cst {
     public final static String RESERVE_PREFIX = "__reserve_";
     public final static String INLINE_PREFIX = "_inline_";
     public final static String SPLIT_PREFIX = "_split_";
-    public static String inlineRename(String origin,String func){
-        return SPLIT_PREFIX+func+"_"+origin;
+    public static String inlinePrefix(String func, int serial){
+        return INLINE_PREFIX+"_"+func+serial+"_";
     }
 
     public static final IRType int32 =new IntegerType();

@@ -56,4 +56,9 @@ public class Assign extends IRDestedInst {
     public boolean hasSideEffect() {
         return false;
     }
+
+    @Override
+    public IRDestedInst copy(String arg) {
+        return new Assign(dest.copy(arg), src.copy(arg));
+    }
 }

@@ -1,7 +1,12 @@
 package ir;
 
+import ir.instruction.Branch;
+import ir.instruction.Jump;
+import ir.instruction.Phi;
+import ir.instruction.Ret;
 import ir.operand.Register;
 import ir.typesystem.IRType;
+import misc.Cst;
 
 import java.util.*;
 
@@ -84,8 +89,38 @@ public class IRFunction {
         return isBuiltin;
     }
 
-    public Object[] inlineClone(){
-
+    // (entryBlock:IRBlock, exitBlock:IRBlock, blockSet:HashSet<IRBlock>)
+    public Object[] inlineClone(int serial) {
+        HashMap<IRBlock, IRBlock> originToNew = new HashMap<>();
+        String prefix = Cst.inlinePrefix(name, serial);
+        blocks.forEach(b -> originToNew.put(b, new IRBlock(prefix + b.blockName, b.loopDepth)));
+        for (var pair : originToNew.entrySet()) {
+            var origin = pair.getKey();
+            var substitute = pair.getValue();
+            origin.nexts.forEach(nb -> substitute.nexts.add(originToNew.get(nb)));
+            origin.prevs.forEach(pb -> substitute.prevs.add(originToNew.get(pb)));
+            origin.insts.forEach(inst -> substitute.appendInst(inst.copy(prefix)));
+            // phi
+            origin.phiCollection.forEach(phi -> {
+                Phi newPhi = new Phi(phi.dest.copy(prefix));
+                phi.arguments.forEach(source -> {
+                    newPhi.append(source.val.copy(prefix), originToNew.get(source.block));
+                });
+                substitute.appendPhi(newPhi);
+            });
+            // terminal
+            if (origin.terminatorInst instanceof Ret) {
+                substitute.terminatorInst = (origin.terminatorInst).copy(prefix);
+            } else if (origin.terminatorInst instanceof Jump) {
+                var oldJump = (Jump) origin.terminatorInst;
+                substitute.terminatorInst = oldJump.copy(originToNew.get(oldJump.target));
+            } else {
+                assert origin.terminatorInst instanceof Branch;
+                var oldBr = (Branch) origin.terminatorInst;
+                substitute.terminatorInst = oldBr.copy(prefix, originToNew.get(oldBr.trueBranch), originToNew.get(oldBr.falseBranch));
+            }
+        }
+        return new Object[]{originToNew.get(entryBlock), originToNew.get(exitBlock), new HashSet<>(originToNew.values())};
     }
 
 }

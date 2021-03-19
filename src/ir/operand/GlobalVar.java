@@ -20,7 +20,7 @@ public class GlobalVar extends Register {
     }
 
     @Override
-    public Register copy() {
+    public Register copy(String arg) {
         return new GlobalVar(type, name, initValue);
     }
 }
