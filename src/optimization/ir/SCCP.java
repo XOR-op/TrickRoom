@@ -1,5 +1,6 @@
 package optimization.ir;
 
+import assembly.instruction.Move;
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.construct.RegisterTracker;
@@ -48,6 +49,8 @@ public class SCCP extends IRFunctionPass {
     private final HashMap<String, LatticeStat> lattice = new HashMap<>();
     private final LinkedList<String> registerUpdateQueue = new LinkedList<>();
     private final LinkedList<IRBlock> blockUpdateQueue = new LinkedList<>();
+    private final LinkedList<Phi> phiUpdateQueue = new LinkedList<>();
+    private final HashMap<IRBlock, HashSet<Phi>> nextPhi = new HashMap<>();
 
     private void setLattice(Register reg, LatticeStat.Stat stat) {
         lattice.get(reg.identifier()).stat = stat;
@@ -61,6 +64,12 @@ public class SCCP extends IRFunctionPass {
         super(f);
         tracker = new RegisterTracker(f);
         tracker.run();
+        irFunc.blocks.forEach(b -> nextPhi.put(b, new HashSet<>()));
+        irFunc.blocks.forEach(b -> b.phiCollection.forEach(phi -> {
+            phi.arguments.forEach(s -> {
+                nextPhi.get(s.block).add(phi);
+            });
+        }));
     }
 
     @Override
@@ -71,7 +80,7 @@ public class SCCP extends IRFunctionPass {
         });
         reachableBlock.add(irFunc.entryBlock);
         blockUpdateQueue.add(irFunc.entryBlock);
-        while (!(registerUpdateQueue.isEmpty() && blockUpdateQueue.isEmpty())) {
+        while (!(registerUpdateQueue.isEmpty() && blockUpdateQueue.isEmpty() && phiUpdateQueue.isEmpty())) {
             if (!registerUpdateQueue.isEmpty()) {
                 var ele = registerUpdateQueue.pop();
                 tracker.uses.get(ele).forEach(inst -> {
@@ -91,6 +100,10 @@ public class SCCP extends IRFunctionPass {
             if (!blockUpdateQueue.isEmpty()) {
                 var ele = blockUpdateQueue.pop();
                 visitBlock(ele);
+            }
+            if(!phiUpdateQueue.isEmpty()){
+                var phi=phiUpdateQueue.pop();
+                visitPhi(phi);
             }
         }
         postProcessing();
@@ -116,6 +129,7 @@ public class SCCP extends IRFunctionPass {
                 blockUpdateQueue.add(dest);
             }
         }
+        phiUpdateQueue.addAll(nextPhi.get(block));
     }
 
     private IRConstant getConst(IROperand operand) {
@@ -127,7 +141,7 @@ public class SCCP extends IRFunctionPass {
         return operand instanceof Register && !(operand instanceof GlobalVar) && getLattice((Register) operand).stat == LatticeStat.Stat.multiple;
     }
 
-    private Boolean visitBranch(Branch inst) {
+    private void visitBranch(Branch inst) {
         if (ifMultiple(inst.condition)) {
             if (!reachableBlock.contains(inst.trueBranch)) {
                 reachableBlock.add(inst.trueBranch);
@@ -137,7 +151,6 @@ public class SCCP extends IRFunctionPass {
                 reachableBlock.add(inst.falseBranch);
                 blockUpdateQueue.add(inst.falseBranch);
             }
-            return null;
         } else {
             BoolConstant v = (BoolConstant) getConst(inst.condition);
             if (v != null) {
@@ -146,15 +159,13 @@ public class SCCP extends IRFunctionPass {
                         reachableBlock.add(inst.trueBranch);
                         blockUpdateQueue.add(inst.trueBranch);
                     }
-                    return true;
                 } else {
                     if (!reachableBlock.contains(inst.falseBranch)) {
                         reachableBlock.add(inst.falseBranch);
                         blockUpdateQueue.add(inst.falseBranch);
                     }
-                    return false;
                 }
-            } else return null;
+            }
         }
     }
 
@@ -299,9 +310,14 @@ public class SCCP extends IRFunctionPass {
                     }
                 });
                 block.nexts.forEach(b -> {
-                    b.phiCollection.forEach(phi -> {
+                    for (var phiIter = b.phiCollection.iterator(); phiIter.hasNext(); ) {
+                        var phi = phiIter.next();
                         phi.arguments.removeIf(source -> source.block == block);
-                    });
+                        if (phi.arguments.size() == 1) {
+                            phiIter.remove();
+                            b.insertInstFromHead(new Assign(phi.dest, phi.arguments.get(0).val));
+                        }
+                    }
                     b.prevs.remove(block);
                 });
             }

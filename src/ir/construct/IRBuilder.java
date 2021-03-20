@@ -58,6 +58,7 @@ public class IRBuilder implements ASTVisitor {
         curBlock.appendInst(callMain);
         curBlock.setRetTerminator(callMain.dest);
         curFunc.exitBlock = curBlock;
+        curFunc.addInvoked(callMain.function);
         curFunc = null;
         node.classes.forEach(cls -> cls.accept(this));
         node.functions.forEach(func -> func.accept(this));
@@ -256,7 +257,7 @@ public class IRBuilder implements ASTVisitor {
                 node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
             }
         }
-        curFunc.invokedFunctions.add(call.function);
+        curFunc.addInvoked(call.function);
         curBlock.appendInst(call);
         return call.dest;
     }

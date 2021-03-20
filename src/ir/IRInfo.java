@@ -216,7 +216,7 @@ public class IRInfo {
     public void renameMain() {
         forEachFunction(f -> {
             if (f.name.equals("main")) {
-                f.name = "real.main";
+                f.name = "r.m";
             } else if (f.name.equals(Cst.INIT)) {
                 f.name = "main";
             }

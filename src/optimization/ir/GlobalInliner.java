@@ -37,8 +37,11 @@ public class GlobalInliner extends IRInfoPass {
         ableToInline.forEach(this::dfsInline);
     }
 
-    private void inlineFilter(){
-        // todo well-tuned criterion
+    private void inlineFilter() {
+//        ableToInline.removeIf(f -> {
+//            var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
+//            return f.blocks.size() > 8 || instSum > 30;
+//        });
     }
 
     private void dfsInline(IRFunction func) {
@@ -75,7 +78,7 @@ public class GlobalInliner extends IRInfoPass {
         index.put(func, counter);
         lowLink.put(func, counter++);
 
-        func.invokedFunctions.forEach(successor -> {
+        func.invokedFunctions.forEach((successor, count) -> {
             next.add(successor);
             if (!callGraph.containsKey(successor)) {
                 collectDependency(successor);
@@ -90,7 +93,7 @@ public class GlobalInliner extends IRInfoPass {
             // root
             if (tarjanStack.peek() == func) {
                 tarjanStack.pop();
-                if (!func.invokedFunctions.contains(func))
+                if (!func.invokedFunctions.containsKey(func))
                     ableToInline.add(func);
             } else {
                 IRFunction one;
@@ -102,7 +105,4 @@ public class GlobalInliner extends IRInfoPass {
         }
     }
 
-    private void filter() {
-
-    }
 }

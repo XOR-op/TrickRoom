@@ -31,6 +31,7 @@ public class TrickRoom {
     private static final String SYNTAX = "-fsyntax-only";
     private static final String OPTIMIZATION = "-O2";
     private static final String LLVM = "-emit-llvm";
+    private static final String SSA_DESTRUCT = "-fno-ssa";
     private static final String INPUT_FILE = "-i";
     private static final String VERBOSE = "-v";
     private static final String DEBUG = "-debug";
@@ -47,6 +48,7 @@ public class TrickRoom {
     private Boolean assemblyGenFlag;
     private Boolean optimizationFlag;
     private Boolean entryRenameFlag;
+    private Boolean ssaDestructFlag;
 
     private void logln(String s) {
         System.err.println(s);
@@ -69,6 +71,7 @@ public class TrickRoom {
         assemblyGenFlag = true;
         optimizationFlag = false;
         entryRenameFlag = true;
+        ssaDestructFlag = false;
         boolean specification = false;
         for (int i = 0; i < args.length; ++i) {
             if (args[i].charAt(0) == '-') {
@@ -115,6 +118,7 @@ public class TrickRoom {
                     }
                     case IR64 -> Cst.pointerSize = 8;
                     case NO_RENAME -> entryRenameFlag = false;
+                    case SSA_DESTRUCT -> ssaDestructFlag = true;
                 }
             } else
                 error("wrong argument:" + args[i]);
@@ -131,6 +135,8 @@ public class TrickRoom {
                 if (optimizationFlag) irOptimize(info);
                 if (llvmGenFlag) {
                     try {
+                        if (ssaDestructFlag)
+                            postIROptimization(info);
                         os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
                     } catch (IOException e) {
                         System.err.println(e);
@@ -186,11 +192,13 @@ public class TrickRoom {
     }
 
     private void irOptimize(IRInfo irInfo) {
-        irInfo.forEachFunction(f -> {
-            new BlockCoalesce(f).invoke();
-            new SCCP(f).invoke();
-        });
-        new GlobalInliner(irInfo).invoke();
+        for (int i = 0; i < 5; ++i) {
+            irInfo.forEachFunction(f -> {
+                new BlockCoalesce(f).invoke();
+                new SCCP(f).invoke();
+            });
+            new GlobalInliner(irInfo).invoke();
+        }
     }
 
     private void rvOptimize(RVInfo rvInfo) {
@@ -210,6 +218,7 @@ public class TrickRoom {
     private void postIROptimization(IRInfo info) {
         info.forEachFunction(f -> {
             new SSADestructor(f).invoke();
+            new BlockCoalesce(f).invoke();
             new ConstantDeducer(f).invoke();
         });
     }

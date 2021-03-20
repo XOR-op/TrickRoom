@@ -20,7 +20,7 @@ public class IRFunction {
     public Map<String, IRType> varType = new HashMap<>();
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
-    public Set<IRFunction> invokedFunctions = new HashSet<>();
+    public Map<IRFunction, Integer> invokedFunctions = new HashMap();
     private final boolean isBuiltin;
 
     public IRFunction(String name, IRType returnType, boolean isBuiltin) {
@@ -66,6 +66,11 @@ public class IRFunction {
     public IRFunction addBlock(IRBlock bl) {
         blocks.add(bl);
         return this;
+    }
+
+    public void addInvoked(IRFunction dest) {
+        if (!invokedFunctions.containsKey(dest)) invokedFunctions.put(dest, 1);
+        else invokedFunctions.replace(dest, invokedFunctions.get(dest) + 1);
     }
 
     public String toDeclaration() {

@@ -14,7 +14,7 @@ public class Cst {
     public static final String SHORT_CIRCUIT_COND="__short_cond_";
     public final static String NAME_GENERATE_PREFIX = "__asm_virtual_reg_";
     public final static String RESERVE_PREFIX = "__reserve_";
-    public final static String INLINE_PREFIX = "_inline_";
+    public final static String INLINE_PREFIX = "_inl";
     public final static String SPLIT_PREFIX = "_split_";
     public static String inlinePrefix(String func, int serial){
         return INLINE_PREFIX+"_"+func+serial+"_";

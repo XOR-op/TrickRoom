@@ -28,7 +28,7 @@ public class Register extends IROperand {
     protected String name;
 
     public Register(IRType ty) {
-        this.name = "_A_" + (counter++);
+        this.name = "_A" + (counter++);
         type = ty;
         isAnonymous = true;
     }
@@ -91,6 +91,6 @@ public class Register extends IROperand {
 
     @Override
     public String tell() {
-        return "%" + (renaming == 0 ? "" : ("_" + renaming + "$_")) + name;
+        return "%" + (renaming == 0 ? "" : ("_" + renaming + "$")) + name;
     }
 }
