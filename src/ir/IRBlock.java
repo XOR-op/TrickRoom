@@ -69,13 +69,14 @@ public class IRBlock {
         phiCollection.add(phi);
     }
 
+    public void removeInst(IRInst inst) {
+        if (inst instanceof Phi) phiCollection.remove(inst);
+        else insts.remove(inst);
+    }
+
     public void insertInstFromHead(IRInst inst) {
         this.insts.addFirst(inst);
     }
-
-//    public void defVariable(Register reg) {
-//        definition.add(reg.getName());
-//    }
 
     private void setTerminator(IRInst terInst) {
         assert terminatorInst == null && terInst.isTerminal();

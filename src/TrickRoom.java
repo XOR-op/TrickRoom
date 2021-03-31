@@ -6,15 +6,13 @@ import ir.construct.IRBuilder;
 import ast.exception.*;
 import ir.IRInfo;
 import misc.Cst;
+import optimization.IROptimizer;
 import optimization.assembly.RVBlockCoalesce;
-import optimization.ir.BlockCoalesce;
-import optimization.ir.GlobalInliner;
-import optimization.ir.SCCP;
+import optimization.ir.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import parser.MxStarLexer;
 import parser.MxStarParser;
-import optimization.ir.ConstantDeducer;
 import ir.construct.SSAConverter;
 import ir.construct.SSADestructor;
 
@@ -132,7 +130,7 @@ public class TrickRoom {
             if (optimizationFlag) new ConstantEliminator(rootNode).run();
             if (llvmGenFlag || assemblyGenFlag) {
                 var info = llvmGen(rootNode);
-                if (optimizationFlag) irOptimize(info);
+                if (optimizationFlag) new IROptimizer(info).invoke();
                 if (llvmGenFlag) {
                     try {
                         if (ssaDestructFlag)
@@ -189,16 +187,6 @@ public class TrickRoom {
         if (entryRenameFlag)
             info.renameMain();
         return info;
-    }
-
-    private void irOptimize(IRInfo irInfo) {
-        for (int i = 0; i < 5; ++i) {
-            irInfo.forEachFunction(f -> {
-                new BlockCoalesce(f).invoke();
-                new SCCP(f).invoke();
-            });
-            new GlobalInliner(irInfo).invoke();
-        }
     }
 
     private void rvOptimize(RVInfo rvInfo) {

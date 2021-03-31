@@ -9,6 +9,7 @@ public class Cst {
     public static final String STR_LITERAL="._str_";
     public static final String RETURN_VAL="__ret_val";
     public static final String INIT="_gbl_init";
+    public static final String MALLOC="malloc";
     public static final String COPY_ELIMINATION="__copy_";
     public static final String LOOP_INCRE_NAME ="__loop_new_";
     public static final String SHORT_CIRCUIT_COND="__short_cond_";

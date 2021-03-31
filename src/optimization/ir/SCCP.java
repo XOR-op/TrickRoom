@@ -289,7 +289,7 @@ public class SCCP extends IRFunctionPass {
         lattice.forEach((reg, l) -> {
             if (l.stat == LatticeStat.Stat.constant) {
                 tracker.queryRegisterUses(reg).forEach(inst -> {
-                    inst.replaceRegisterWithOperand(l.constant, tracker.defs.get(reg).iterator().next().dest);
+                    inst.replaceRegisterWithOperand(l.constant, tracker.querySingleDef(reg).dest);
                 });
                 var def = tracker.queryRegisterDefs(reg).iterator().next();
                 if (!def.hasSideEffect())

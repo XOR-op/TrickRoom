@@ -62,6 +62,9 @@ public class RegisterTracker {
         return uses.get(str);
     }
 
+    public IRDestedInst querySingleDef(String str){return defs.get(str).iterator().next();}
+    public IRDestedInst querySingleDef(Register reg){return querySingleDef(reg.identifier());}
+
     public HashSet<IRDestedInst> queryRegisterDefs(Register reg) {
         return queryRegisterDefs(reg.identifier());
     }

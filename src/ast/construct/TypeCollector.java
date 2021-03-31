@@ -326,8 +326,6 @@ public class TypeCollector implements ASTVisitor {
             case "%":
             case ">>":
             case "<<":
-            case "&":
-            case "|":
                 if (!node.type.equals(TypeConst.Int))
                     throw new TypeMismatch(lhs, rhs, node);
                 break;
@@ -336,6 +334,8 @@ public class TypeCollector implements ASTVisitor {
                 if (!node.type.equals(TypeConst.Bool))
                     throw new TypeMismatch(lhs, rhs, node);
                 break;
+            case "&":
+            case "|":
             case "^":
                 if (!(node.type.equals(TypeConst.Int) || node.type.equals(TypeConst.Bool)))
                     throw new TypeMismatch(lhs, rhs, node);

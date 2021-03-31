@@ -20,6 +20,10 @@ public class RedundantOptimizer extends RVFunctionPass {
                     && ((Computation) inst).imm != null && ((Computation) inst).imm.isRealVal() && ((Computation) inst).imm.getVal() == 0) {
                 iter.set(new Move(((Computation) inst).rd, ((Computation) inst).rs1));
             }
+            if (inst instanceof Computation && ((Computation) inst).ct == Computation.CompType.mul
+                    && ((Computation) inst).imm != null && ((Computation) inst).imm.isRealVal() && ((Computation) inst).imm.getVal() == 1) {
+                iter.set(new Move(((Computation) inst).rd, ((Computation) inst).rs1));
+            }
         }
         iter = block.instructions.listIterator();
         while (iter.hasNext()) {

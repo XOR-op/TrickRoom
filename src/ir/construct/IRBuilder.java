@@ -291,7 +291,7 @@ public class IRBuilder implements ASTVisitor {
                 dims.get(level), new IntConstant(elementType.size()));
         IRDestedInst calcSize = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32),
                 new IntConstant(Cst.int32.size()), arrayWidth.dest);
-        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction("malloc"));
+        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
         alloc.push(calcSize.dest);
 
         // calculate real array address
@@ -345,7 +345,7 @@ public class IRBuilder implements ASTVisitor {
         // return pointer to newed object
         // allocate heap with i8* returned
         if (node.isClass) {
-            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction("malloc"));
+            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
             var classType = info.resolveType(node.classNew.type);
             alloc.push(new IntConstant(info.resolveClass((ClassType) node.classNew.type).size()));
             var cast = new BitCast(new Register(classType), alloc.dest);
@@ -599,7 +599,7 @@ public class IRBuilder implements ASTVisitor {
     @Override
     public Object visit(ConditionalNode node) {
         // process branch and generate blocks
-        Register cond = (Register) node.condExpr.accept(this);
+        IROperand cond = (IROperand) node.condExpr.accept(this);
         var beforeBranch = curBlock;
         var trueBlock = new IRBlock("true" + blockSuffix, loopDepth);
         var afterBranch = new IRBlock("after" + blockSuffix, loopDepth);

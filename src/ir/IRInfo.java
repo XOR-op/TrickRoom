@@ -33,7 +33,7 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        addBuiltinFunction(new PointerType(Cst.byte_t), "malloc").addParam(Cst.int32, "len");
+        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
         // string methods
         addStringMethod(Cst.int32, "length");
         addStringMethod(Cst.int32, "parseInt");
