@@ -2,15 +2,14 @@ package ir.construct;
 
 import ir.IRBlock;
 import ir.IRFunction;
-import ir.instruction.Branch;
 import ir.instruction.IRDestedInst;
 import ir.instruction.IRInst;
-import ir.instruction.Ret;
 import ir.operand.GlobalVar;
 import ir.operand.Register;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class RegisterTracker {
@@ -79,10 +78,38 @@ public class RegisterTracker {
         return instToBlock.get(inst);
     }
 
+    public Register nameToRegister(String str){
+        // ugly workaround for design flaw
+        if(defs.containsKey(str))return querySingleDef(str).dest;
+        else if(uses.containsKey(str)&&uses.get(str).size()>0){
+            AtomicReference<Register> reg=new AtomicReference<>();
+            queryRegisterUses(str).iterator().next().forEachRegSrc(src->{
+                if(src.identifier().equals(str)) reg.set(src);
+            });
+            return reg.get();
+        }else {
+            for(var reg:irFunc.parameters){
+                if(reg.identifier().equals(str))return reg;
+            }
+            throw new IllegalStateException();
+        }
+    }
+
     public void removeRegister(Register reg) {
         assert defs.get(reg.identifier()).size() == 1;
         uses.remove(reg.identifier());
         defs.remove(reg.identifier());
+    }
+
+    public boolean isParameter(String str){
+        for(var reg:irFunc.parameters){
+            if(reg.identifier().equals(str))return true;
+        }
+        return false;
+    }
+
+    public boolean isParameter(Register reg){
+        return irFunc.parameters.contains(reg);
     }
 
     private boolean validate() {
@@ -92,4 +119,5 @@ public class RegisterTracker {
         }
         return true;
     }
+
 }

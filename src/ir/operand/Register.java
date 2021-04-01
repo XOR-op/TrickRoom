@@ -74,7 +74,7 @@ public class Register extends IROperand {
     }
 
     public String identifier() {
-        return name + "_" + renaming;
+        return renaming==0?name:(name + "_" + renaming);
     }
 
     public boolean sameIdentifier(IROperand rhs) {

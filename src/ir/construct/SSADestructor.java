@@ -15,16 +15,29 @@ public class SSADestructor extends IRFunctionPass {
 
     private static class ParallelCopy {
         public final HashSet<Assign> copyList = new HashSet<>();
-        private final HashSet<Register> srcCollection = new HashSet<>();
+        private final HashMap<Register,Integer> srcCollection = new HashMap<>();
 
         public void addPair(Register dest, IROperand operand) {
             copyList.add(new Assign(dest, operand));
-            if (operand instanceof Register)
-                srcCollection.add((Register) operand);
+            if (operand instanceof Register) {
+                if(!srcCollection.containsKey(operand))
+                    srcCollection.put((Register) operand,1);
+                else
+                    srcCollection.put((Register) operand,srcCollection.get(operand)+1);
+            }
+        }
+        public void removePair(Register dest, IROperand operand){
+            if(operand instanceof Register){
+                var val=srcCollection.get(operand);
+                if(val==1)
+                    srcCollection.remove(operand);
+                else
+                    srcCollection.put((Register) operand,val-1);
+            }
         }
 
         public boolean notLooped(Assign ass) {
-            return !srcCollection.contains(ass.dest);
+            return !srcCollection.containsKey(ass.dest);
         }
     }
 
@@ -76,18 +89,25 @@ public class SSADestructor extends IRFunctionPass {
         boolean flag;
         do {
             flag = false;
-            for (var iter = theCopy.copyList.iterator(); iter.hasNext(); ) {
-                var cur = iter.next();
-                if (theCopy.notLooped(cur)) {
-                    iter.remove();
-                    theBlock.appendInst(cur);
+            boolean innerFlag;
+            do {
+                innerFlag=false;
+                for (var iter = theCopy.copyList.iterator(); iter.hasNext(); ) {
+                    var cur = iter.next();
+                    if (theCopy.notLooped(cur)) {
+                        iter.remove();
+                        theCopy.removePair(cur.dest, cur.src);
+                        theBlock.appendInst(cur);
+                        innerFlag=true;
+                    }
                 }
-            }
+            }while (innerFlag);
             // detect loop
             for (var iter = theCopy.copyList.iterator(); iter.hasNext(); ) {
                 var cur = iter.next();
                 if (!cur.dest.equals(cur.src)) {
                     iter.remove();
+                    theCopy.removePair(cur.dest,cur.src);
                     flag = true;
                     var substitute = new Assign(new Register(cur.dest.type), cur.src);
                     theBlock.appendInst(substitute);

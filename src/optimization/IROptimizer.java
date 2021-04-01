@@ -11,11 +11,11 @@ public class IROptimizer extends IRInfoPass {
 
     @Override
     protected void run() {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 5; ++i) {
             info.forEachFunction(f -> {
                 new BlockCoalesce(f).invoke();
                 new SCCP(f).invoke();
-                new SimpleDCE(f).invoke();
+                new AggressiveDCE(f).invoke();
                 new CopyPropagation(f).invoke();
             });
             new GlobalInliner(info).invoke();

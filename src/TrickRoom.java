@@ -133,8 +133,10 @@ public class TrickRoom {
                 if (optimizationFlag) new IROptimizer(info).invoke();
                 if (llvmGenFlag) {
                     try {
-                        if (ssaDestructFlag)
+                        if (ssaDestructFlag){
                             postIROptimization(info);
+//                            info.forEachFunction(f->new SSADestructor(f).invoke());
+                        }
                         os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
                     } catch (IOException e) {
                         System.err.println(e);

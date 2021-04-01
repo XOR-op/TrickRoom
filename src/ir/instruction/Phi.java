@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Phi extends IRDestedInst {
-    public class Source {
+    public static class Source {
         public IROperand val;
         public IRBlock block;
 

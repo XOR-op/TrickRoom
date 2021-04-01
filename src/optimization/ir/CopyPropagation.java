@@ -13,7 +13,7 @@ import java.util.HashSet;
  */
 public class CopyPropagation extends IRFunctionPass {
     private final RegisterTracker tracker;
-    private final HashMap<Register, Register> unionFind = new HashMap<>();
+    private final HashMap<String, String> unionFind = new HashMap<>();
     private final HashSet<Register> eliminated = new HashSet<>();
 
     public CopyPropagation(IRFunction f) {
@@ -21,7 +21,7 @@ public class CopyPropagation extends IRFunctionPass {
         tracker = new RegisterTracker(f);
     }
 
-    private Register query(Register reg) {
+    private String query(String reg) {
         if(!unionFind.containsKey(reg))
             return reg;
         var root=query(unionFind.get(reg));
@@ -37,7 +37,7 @@ public class CopyPropagation extends IRFunctionPass {
             if (def instanceof Assign) {
                 if (((Assign) def).src instanceof Register) {
                     var source = (Register) ((Assign) def).src;
-                    unionFind.put(def.dest, query(source));
+                    unionFind.put(def.dest.identifier(), query(source.identifier()));
                     eliminated.add(def.dest);
                     tracker.queryInstBelongedBlock(def).removeInst(def);
                     tracker.queryRegisterUses(source).remove(def);
@@ -45,7 +45,10 @@ public class CopyPropagation extends IRFunctionPass {
             }
         });
         eliminated.forEach(r -> {
-            tracker.queryRegisterUses(r).forEach(inst -> inst.replaceRegisterWithOperand(query(r), r));
+            tracker.queryRegisterUses(r).forEach(inst ->
+                    inst.replaceRegisterWithOperand(tracker.nameToRegister(query(r.identifier())), r));
         });
+        var newTrack=new RegisterTracker(irFunc);
+        newTrack.run();
     }
 }
