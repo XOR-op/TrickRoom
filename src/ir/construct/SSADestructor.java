@@ -15,29 +15,32 @@ public class SSADestructor extends IRFunctionPass {
 
     private static class ParallelCopy {
         public final HashSet<Assign> copyList = new HashSet<>();
-        private final HashMap<Register,Integer> srcCollection = new HashMap<>();
+        private final HashMap<String, Integer> srcCollection = new HashMap<>();
 
         public void addPair(Register dest, IROperand operand) {
             copyList.add(new Assign(dest, operand));
             if (operand instanceof Register) {
-                if(!srcCollection.containsKey(operand))
-                    srcCollection.put((Register) operand,1);
+                var name=((Register) operand).identifier();
+                if (!srcCollection.containsKey(name))
+                    srcCollection.put(name, 1);
                 else
-                    srcCollection.put((Register) operand,srcCollection.get(operand)+1);
-            }
-        }
-        public void removePair(Register dest, IROperand operand){
-            if(operand instanceof Register){
-                var val=srcCollection.get(operand);
-                if(val==1)
-                    srcCollection.remove(operand);
-                else
-                    srcCollection.put((Register) operand,val-1);
+                    srcCollection.put(name, srcCollection.get(name) + 1);
             }
         }
 
-        public boolean notLooped(Assign ass) {
-            return !srcCollection.containsKey(ass.dest);
+        public void removePair(Assign ass) {
+            if (ass.src instanceof Register) {
+                var name = ((Register) ass.src).identifier();
+                var val = srcCollection.get(name);
+                if (val == 1)
+                    srcCollection.remove(name);
+                else
+                    srcCollection.put(name, val - 1);
+            }
+        }
+
+        public boolean freeToAdd(Assign ass) {
+            return !srcCollection.containsKey(ass.dest.identifier());
         }
     }
 
@@ -91,23 +94,23 @@ public class SSADestructor extends IRFunctionPass {
             flag = false;
             boolean innerFlag;
             do {
-                innerFlag=false;
+                innerFlag = false;
                 for (var iter = theCopy.copyList.iterator(); iter.hasNext(); ) {
                     var cur = iter.next();
-                    if (theCopy.notLooped(cur)) {
+                    if (theCopy.freeToAdd(cur)) {
                         iter.remove();
-                        theCopy.removePair(cur.dest, cur.src);
+                        theCopy.removePair(cur);
                         theBlock.appendInst(cur);
-                        innerFlag=true;
+                        innerFlag = true;
                     }
                 }
-            }while (innerFlag);
+            } while (innerFlag);
             // detect loop
             for (var iter = theCopy.copyList.iterator(); iter.hasNext(); ) {
                 var cur = iter.next();
                 if (!cur.dest.equals(cur.src)) {
                     iter.remove();
-                    theCopy.removePair(cur.dest,cur.src);
+                    theCopy.removePair(cur);
                     flag = true;
                     var substitute = new Assign(new Register(cur.dest.type), cur.src);
                     theBlock.appendInst(substitute);

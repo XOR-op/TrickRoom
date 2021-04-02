@@ -22,6 +22,11 @@ public class GlobalInliner extends IRInfoPass {
         super(info);
     }
 
+    public static boolean inlinePolicy(IRFunction f){
+        var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
+        return !(f.blocks.size() > 10 || instSum > 50);
+    }
+
     @Override
     protected void run() {
         collectDependency();
@@ -38,10 +43,7 @@ public class GlobalInliner extends IRInfoPass {
     }
 
     private void inlineFilter() {
-//        ableToInline.removeIf(f -> {
-//            var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
-//            return f.blocks.size() > 8 || instSum > 30;
-//        });
+        ableToInline.removeIf(f->!inlinePolicy(f));
     }
 
     private void dfsInline(IRFunction func) {

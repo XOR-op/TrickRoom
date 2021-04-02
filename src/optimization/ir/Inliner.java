@@ -28,6 +28,10 @@ public class Inliner extends IRFunctionPass {
         irFunc.blocks.addAll(pendingBlocks);
     }
 
+    private boolean okToInline(IRFunction function){
+        return inlineCandidates.contains(function)&&GlobalInliner.inlinePolicy(function);
+    }
+
     private void replaceInBlock(IRBlock block){
         replaceInBlock(block,0);
     }
@@ -39,7 +43,7 @@ public class Inliner extends IRFunctionPass {
         for (var iter = block.insts.iterator(); iter.hasNext(); ) {
             var inst = iter.next();
             if (call == null) {
-                if (inst instanceof Call && inlineCandidates.contains(((Call) inst).function)) {
+                if (inst instanceof Call && okToInline(((Call) inst).function)) {
                     call = (Call) inst;
                     iter.remove();
                 }
