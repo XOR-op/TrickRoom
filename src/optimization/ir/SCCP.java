@@ -1,6 +1,5 @@
 package optimization.ir;
 
-import assembly.instruction.Move;
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.construct.RegisterTracker;
@@ -101,8 +100,8 @@ public class SCCP extends IRFunctionPass {
                 var ele = blockUpdateQueue.pop();
                 visitBlock(ele);
             }
-            if(!phiUpdateQueue.isEmpty()){
-                var phi=phiUpdateQueue.pop();
+            if (!phiUpdateQueue.isEmpty()) {
+                var phi = phiUpdateQueue.pop();
                 visitPhi(phi);
             }
         }
@@ -309,17 +308,7 @@ public class SCCP extends IRFunctionPass {
                         b.setJumpTerminator(block == tmp.trueBranch ? tmp.falseBranch : tmp.trueBranch);
                     }
                 });
-                block.nexts.forEach(b -> {
-                    for (var phiIter = b.phiCollection.iterator(); phiIter.hasNext(); ) {
-                        var phi = phiIter.next();
-                        phi.arguments.removeIf(source -> source.block == block);
-                        if (phi.arguments.size() == 1) {
-                            phiIter.remove();
-                            b.insertInstFromHead(new Assign(phi.dest, phi.arguments.get(0).val));
-                        }
-                    }
-                    b.prevs.remove(block);
-                });
+                block.nexts.forEach(block::removeFromNext);
             }
         }
     }

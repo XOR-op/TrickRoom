@@ -51,7 +51,7 @@ public class GraphRegisterAllocator {
                 coalescedSet = new HashSet<>(),
                 coloredSet = new HashSet<>();
 
-        private final Stack<RVRegister> selectedRegisterStack = new Stack<>();
+        private final LinkedHashSet<RVRegister> selectedRegisterStack = new LinkedHashSet<>();
 
         // move instructions
         private final Set<Move>
@@ -109,12 +109,18 @@ public class GraphRegisterAllocator {
 
         private void singleEdge(RVRegister rv1, RVRegister rv2) {
             if (!interferenceGraph.containsKey(rv1)) {
-                interferenceGraph.put(rv1, new HashSet<>());
-                degrees.put(rv1, 0);
-            } else if (interferenceGraph.get(rv1).contains(rv2)) return;
-            interferenceGraph.get(rv1).add(rv2);
-            if (!preColored.contains(rv1)) {
-                degrees.replace(rv1, degrees.get(rv1) + 1);
+                var newSet = new HashSet<RVRegister>();
+                newSet.add(rv2);
+                interferenceGraph.put(rv1, newSet);
+                degrees.put(rv1, preColored.contains(rv1) ? 0 : 1);
+            } else {
+                var getSet = interferenceGraph.get(rv1);
+                if (!getSet.contains(rv2)) {
+                    getSet.add(rv2);
+                    if (!preColored.contains(rv1)) {
+                        degrees.replace(rv1, degrees.get(rv1) + 1);
+                    }
+                }
             }
         }
 
@@ -231,19 +237,18 @@ public class GraphRegisterAllocator {
                 enableMoves(reg);
                 forEachAdjacent(reg, this::enableMoves);
                 // move to correct work list
-                assert highDegreeWorkList.contains(reg)|| freezeWorkList.contains(reg);
+                assert highDegreeWorkList.contains(reg) || freezeWorkList.contains(reg);
                 /*
                  * Here is something different with what in the Tiger Book.
                  * We want to guarantee any remove is valid, and while the algorithm in Tiger Book
                  * won't execute the else branch if reg is in freezeWorkList, it can be wrote down explicitly.
                  */
-                if(highDegreeWorkList.contains(reg))
+                if (highDegreeWorkList.contains(reg))
                     highDegreeWorkList.remove(reg);
                 else freezeWorkList.remove(reg);
                 if (isRegRelatedToMove(reg)) {
                     freezeWorkList.add(reg);
-                }
-                else
+                } else
                     simplifyWorkList.add(reg);
             }
         }
@@ -305,7 +310,7 @@ public class GraphRegisterAllocator {
         private void combine(RVRegister to, RVRegister from) {
             if (freezeWorkList.contains(from))
                 freezeWorkList.remove(from);
-            else{
+            else {
                 assert highDegreeWorkList.contains(from);
                 highDegreeWorkList.remove(from);
             }
@@ -397,8 +402,10 @@ public class GraphRegisterAllocator {
         }
 
         private void assignColor() {
-            while (!selectedRegisterStack.isEmpty()) {
-                var reg = selectedRegisterStack.pop();
+            Stack<RVRegister> tmpStack=new Stack<>();
+            for(var ele:selectedRegisterStack)tmpStack.push(ele);
+            while (!tmpStack.isEmpty()) {
+                var reg = tmpStack.pop();
                 var remainingColor = new HashSet<>(immutableColorList);
                 if (interferenceGraph.containsKey(reg)) {
                     interferenceGraph.get(reg).forEach(adj -> {
@@ -476,17 +483,17 @@ public class GraphRegisterAllocator {
             });
         }
 
-        private boolean testEnum(RVRegister reg){
-            int belong=0;
-            if(preColored.contains(reg))++belong;
-            if(initialList.contains(reg))++belong;
-            if(simplifyWorkList.contains(reg))++belong;
-            if(freezeWorkList.contains(reg))++belong;
-            if(decidedSpillSet.contains(reg))++belong;
-            if(coalescedSet.contains(reg))++belong;
-            if(coloredSet.contains(reg))++belong;
-            if(selectedRegisterStack.contains(reg))++belong;
-            if (highDegreeWorkList.contains(reg))++belong;
+        private boolean testEnum(RVRegister reg) {
+            int belong = 0;
+            if (preColored.contains(reg)) ++belong;
+            if (initialList.contains(reg)) ++belong;
+            if (simplifyWorkList.contains(reg)) ++belong;
+            if (freezeWorkList.contains(reg)) ++belong;
+            if (decidedSpillSet.contains(reg)) ++belong;
+            if (coalescedSet.contains(reg)) ++belong;
+            if (coloredSet.contains(reg)) ++belong;
+            if (selectedRegisterStack.contains(reg)) ++belong;
+            if (highDegreeWorkList.contains(reg)) ++belong;
             assert belong == 1;
             return true;
         }

@@ -7,16 +7,22 @@ import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Stack;
 
 public class BlockCoalesce extends IRFunctionPass {
     public BlockCoalesce(IRFunction f) {
         super(f);
     }
 
+    private final Stack<IRBlock> dfsStack=new Stack<>();
+
     private HashMap<IRBlock, IRBlock> dfs() {
         HashMap<IRBlock, IRBlock> rt = new HashMap<>();
         HashSet<IRBlock> looked = new HashSet<>(), cannot = new HashSet<>();
-        dfs(rt, looked, cannot, irFunc.entryBlock);
+        dfsStack.push(irFunc.entryBlock);
+        while (!dfsStack.isEmpty()) {
+            dfs(rt, looked, cannot, dfsStack.pop());
+        }
         return rt;
     }
 
@@ -30,7 +36,7 @@ public class BlockCoalesce extends IRFunctionPass {
                 cannot.add(dest); // avoid overlapping edge
             }
         }
-        cur.nexts.forEach(n -> dfs(meet, looked, cannot, n));
+        cur.nexts.forEach(dfsStack::push);
     }
 
     @Override

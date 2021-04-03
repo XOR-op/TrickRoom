@@ -22,9 +22,9 @@ public class GlobalInliner extends IRInfoPass {
         super(info);
     }
 
-    public static boolean inlinePolicy(IRFunction f){
+    public static boolean inlinePolicy(IRFunction f) {
         var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
-        return !(f.blocks.size() > 10 || instSum > 50);
+        return !(f.blocks.size() > 20 || instSum > 100);
     }
 
     @Override
@@ -43,21 +43,21 @@ public class GlobalInliner extends IRInfoPass {
     }
 
     private void inlineFilter() {
-        ableToInline.removeIf(f->!inlinePolicy(f));
+        ableToInline.removeIf(f -> !inlinePolicy(f));
     }
 
     private void dfsInline(IRFunction func) {
         if (!dfsInlineVisited.contains(func)) {
             dfsInlineVisited.add(func);
-            AtomicBoolean flag = new AtomicBoolean(false);
-            callGraph.get(func).forEach(f -> {
+            boolean flag = false;
+            for (IRFunction f : callGraph.get(func)) {
                 if (ableToInline.contains(f)) {
-                    flag.set(true);
+                    flag = true;
                     dfsInline(func);
                 }
-            });
+            }
             // if func contains inlined func
-            if (flag.get())
+            if (flag)
                 new Inliner(func, ableToInline).invoke();
         }
     }

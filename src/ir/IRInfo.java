@@ -221,6 +221,14 @@ public class IRInfo {
                 f.name = "main";
             }
         });
+
+    }
+
+    public IRFunction getMain(){
+        for (var entry : functions.entrySet()) {
+            if (entry.getValue().name.equals("main")) return entry.getValue();
+        }
+        throw new IllegalStateException();
     }
 
 }

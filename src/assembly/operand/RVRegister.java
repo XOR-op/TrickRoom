@@ -21,14 +21,6 @@ public abstract class RVRegister extends RVOperand implements Comparable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RVRegister that = (RVRegister) o;
-        return name.equals(that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
+        return this==o;
     }
 }

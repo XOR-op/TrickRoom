@@ -8,17 +8,21 @@ import misc.pass.RVFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Stack;
 
 public class RVBlockCoalesce extends RVFunctionPass {
     public RVBlockCoalesce(RVFunction f) {
         super(f);
     }
 
+    private final Stack<RVBlock> dfsStack = new Stack<>();
 
     private HashMap<RVBlock, RVBlock> dfs() {
         HashMap<RVBlock, RVBlock> rt = new HashMap<>();
         HashSet<RVBlock> looked = new HashSet<>(), cannot = new HashSet<>();
-        dfs(rt, looked, cannot, rvFunc.blocks.get(0));
+        dfsStack.push(rvFunc.blocks.get(0));
+        while (!dfsStack.isEmpty())
+            dfs(rt, looked, cannot, dfsStack.pop());
         return rt;
     }
 
@@ -32,13 +36,15 @@ public class RVBlockCoalesce extends RVFunctionPass {
                 cannot.add(dest); // avoid overlapping edge
             }
         }
-        cur.nexts.forEach(n -> dfs(meet, looked, cannot, n));
+        cur.nexts.forEach(dfsStack::push);
     }
 
     private HashSet<RVBlock> dfsForForward() {
         HashSet<RVBlock> redundant = new HashSet<>();
         HashSet<RVBlock> looked = new HashSet<>(), cannot = new HashSet<>();
-        dfsForForward(redundant, looked, cannot, rvFunc.blocks.get(0));
+        dfsStack.push(rvFunc.blocks.get(0));
+        while (!dfsStack.isEmpty())
+            dfsForForward(redundant, looked, cannot, dfsStack.pop());
         return redundant;
     }
 
@@ -51,7 +57,7 @@ public class RVBlockCoalesce extends RVFunctionPass {
             cannot.addAll(cur.prevs);
             cannot.addAll(cur.nexts);
         }
-        cur.nexts.forEach(n -> dfsForForward(redundant, looked, cannot, n));
+        cur.nexts.forEach(dfsStack::push);
     }
 
     private void runToCoalesce() {
@@ -86,7 +92,7 @@ public class RVBlockCoalesce extends RVFunctionPass {
                     ((ControlFlowInst) prev.instructions.getLast()).replaceBlock(next, blk);
                 });
                 if (rvFunc.entry == blk) {
-                    rvFunc.entry=next;
+                    rvFunc.entry = next;
                 }
                 rvFunc.blocks.remove(blk);
             });

@@ -106,6 +106,18 @@ public class IRBlock {
         return newBlock;
     }
 
+    public void removeFromNext(IRBlock next) {
+        for (var phiIter = next.phiCollection.iterator(); phiIter.hasNext(); ) {
+            var phi = phiIter.next();
+            phi.arguments.removeIf(source -> source.block == this);
+            if (phi.arguments.size() == 1) {
+                phiIter.remove();
+                next.insertInstFromHead(new Assign(phi.dest, phi.arguments.get(0).val));
+            }
+        }
+        next.prevs.remove(this);
+    }
+
     public String getBlockName() {
         return blockName;
     }

@@ -80,7 +80,8 @@ public class AssemblyBuilder {
 
     public RVInfo constructAssembly() {
         irInfo.forEachFunction(f -> {
-            buildFunction(rvInfo.getFunc(f), f);
+            if(rvInfo.isReachableFunc(f))
+                buildFunction(rvInfo.getFunc(f), f);
         });
         return rvInfo;
     }
@@ -292,7 +293,7 @@ public class AssemblyBuilder {
                 rs2 = getRegister(inst.operand2);
             else imm = ((IntConstant) inst.operand2).value;
         }
-        if (imm != null && RVInfo.hasHigh(imm)) {
+        if (imm != null && !RVInfo.isShortImm(imm)) {
             // check if exceed 12-bits
             rs2 = ng.gen();
             curBlock.addInst(new LoadImm(rs2, imm));

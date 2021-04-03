@@ -22,6 +22,7 @@ public class IRFunction {
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
     private final boolean isBuiltin;
+    public int inlineSerial = 0;
 
     public IRFunction(String name, IRType returnType, boolean isBuiltin) {
         this.name = name;

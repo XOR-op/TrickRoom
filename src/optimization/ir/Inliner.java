@@ -15,7 +15,6 @@ import java.util.*;
 public class Inliner extends IRFunctionPass {
     private final Set<IRFunction> inlineCandidates;
     private final List<IRBlock> pendingBlocks = new LinkedList<>();
-    private int serial = 0;
 
     public Inliner(IRFunction f, Set<IRFunction> inlineCandidates) {
         super(f);
@@ -59,8 +58,8 @@ public class Inliner extends IRFunctionPass {
             if (irFunc.exitBlock == block)
                 irFunc.exitBlock = newBlock;
             pendingBlocks.add(newBlock);
-            var prefix = Cst.inlinePrefix(inlinedFunc.name, serial);
-            var tuple = inlinedFunc.inlineClone(serial++);
+            var prefix = Cst.inlinePrefix(inlinedFunc.name, irFunc.inlineSerial);
+            var tuple = inlinedFunc.inlineClone(irFunc.inlineSerial++);
             // (entryBlock:IRBlock, exitBlock:IRBlock, blockSet:HashSet<IRBlock>)
             assert tuple.length == 3;
             assert tuple[0] instanceof IRBlock && tuple[1] instanceof IRBlock && tuple[2] instanceof HashSet;

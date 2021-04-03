@@ -3,6 +3,7 @@ package assembly;
 import assembly.construct.GraphRegisterAllocator;
 import assembly.operand.PhysicalRegister;
 import assembly.operand.RVRegister;
+import ir.instruction.Call;
 import misc.Cst;
 import ir.IRFunction;
 import ir.IRInfo;
@@ -10,6 +11,8 @@ import optimization.assembly.RedundantOptimizer;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.function.Consumer;
 
 public class RVInfo {
@@ -17,12 +20,18 @@ public class RVInfo {
     private final HashMap<String, String> strData = new HashMap<>();
     private final HashMap<String, Integer> globalToSize = new HashMap<>();
     private final IRInfo irInfo;
+    private final HashSet<IRFunction> reachable=new HashSet<>();
 
     public RVInfo(IRInfo irInfo) {
         this.irInfo = irInfo;
+//        buildReachable();
+        irInfo.forEachFunction(reachable::add);
+        // add
         irInfo.forEachFunctionIncludingBuiltin(f -> {
-            if (!f.isBuiltin())
-                funcCollection.put(f.name, new RVFunction(f));
+            if (!f.isBuiltin()) {
+                if(reachable.contains(f))
+                    funcCollection.put(f.name, new RVFunction(f));
+            }
             else
                 funcCollection.put(f.name, new RVFunction(f, true));
         });
@@ -33,6 +42,30 @@ public class RVInfo {
             globalToSize.put(v.getName(), v.type.size());
         });
     }
+
+    private void buildReachable(){
+        var queue=new HashSet<IRFunction>();
+        var main=irInfo.getMain();
+        reachable.add(main);
+        queue.add(main);
+        while (!queue.isEmpty()){
+            var iter=queue.iterator();
+            var f=iter.next();
+            iter.remove();
+            f.blocks.forEach(b->{
+                b.insts.forEach(inst->{
+                    if(inst instanceof Call){
+                        var dest=((Call) inst).function;
+                        if(!reachable.contains(dest))
+                            queue.add(dest);
+                        reachable.add(dest);
+                    }
+                });
+            });
+        }
+    }
+
+    public boolean isReachableFunc(IRFunction irF){return reachable.contains(irF);}
 
     public RVFunction getFunc(IRFunction irFunc) {
         return funcCollection.get(irFunc.name);
@@ -122,7 +155,8 @@ public class RVInfo {
         return calleeSave;
     }
 
-    public static boolean hasHigh(int val) {
-        return (val & 0xfffff000) != 0;
+    public static boolean isShortImm(int val) {
+        // fit in sign-extended 12-bit
+        return ((val & 0xfffff800) == 0)||((val|0x7ff)==0xffffffff);
     }
 }
