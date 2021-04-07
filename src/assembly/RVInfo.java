@@ -24,8 +24,8 @@ public class RVInfo {
 
     public RVInfo(IRInfo irInfo) {
         this.irInfo = irInfo;
-//        buildReachable();
-        irInfo.forEachFunction(reachable::add);
+        buildReachable();
+//        irInfo.forEachFunction(reachable::add);
         // add
         irInfo.forEachFunctionIncludingBuiltin(f -> {
             if (!f.isBuiltin()) {
@@ -85,7 +85,7 @@ public class RVInfo {
     public void registerAllocate() {
         funcCollection.forEach((k, func) -> {
             if (!func.isBuiltin()) {
-                new GraphRegisterAllocator(func).run();
+                new GraphRegisterAllocator(func).runAll();
                 new RedundantOptimizer(func).invoke();
             }
         });

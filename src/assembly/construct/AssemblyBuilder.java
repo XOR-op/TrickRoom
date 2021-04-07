@@ -80,7 +80,7 @@ public class AssemblyBuilder {
 
     public RVInfo constructAssembly() {
         irInfo.forEachFunction(f -> {
-            if(rvInfo.isReachableFunc(f))
+            if (rvInfo.isReachableFunc(f))
                 buildFunction(rvInfo.getFunc(f), f);
         });
         return rvInfo;
@@ -331,7 +331,6 @@ public class AssemblyBuilder {
                 curBlock.addInst(new Move(PhysicalRegister.get("a" + i), getRegister(operand)));
         }
         if (inst.args.size() > 8) {
-            // todo special judge to fill the 16-align hole
             // store to the sp
             int curOff = 0;
             curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
@@ -343,11 +342,10 @@ public class AssemblyBuilder {
             }
             curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
             if (inst.containsDest()) {
-                curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("s0")));
+                curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
             }
-        }
-
-        curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
+        } else
+            curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
 
         if (inst.args.size() > 8) {
             // restore sp

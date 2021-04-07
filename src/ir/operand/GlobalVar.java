@@ -23,4 +23,9 @@ public class GlobalVar extends Register {
     public Register copy(String arg) {
         return new GlobalVar(type, name, initValue);
     }
+
+    @Override
+    public String identifier() {
+        return "@"+super.identifier();
+    }
 }

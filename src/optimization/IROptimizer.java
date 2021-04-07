@@ -5,13 +5,13 @@ import misc.pass.IRInfoPass;
 import optimization.ir.*;
 
 public class IROptimizer extends IRInfoPass {
-    public IROptimizer(IRInfo irInfo){
+    public IROptimizer(IRInfo irInfo) {
         super(irInfo);
     }
 
     @Override
     protected void run() {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 5; ++i) {
             info.forEachFunction(f -> {
                 new BlockCoalesce(f).invoke();
                 new SCCP(f).invoke();
@@ -19,6 +19,7 @@ public class IROptimizer extends IRInfoPass {
                 new CopyPropagation(f).invoke();
                 new LocalCSE(f).invoke();
                 new InstOptimizer(f).invoke();
+//                new AliasOptimizer(f, info).invoke();
             });
             new GlobalInliner(info).invoke();
         }
