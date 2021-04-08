@@ -13,6 +13,7 @@ import misc.Cst;
 import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 /*
  * Address registers emerge from GlobalVar, Assign, BitCast, Call, GetElementPtr, Load and Phi.
@@ -36,6 +37,7 @@ public class AliasOptimizer extends IRFunctionPass {
         analyze();
         irFunc.blocks.forEach(block -> {
             var memRefStorage = new HashMap<String, IROperand>();
+            var dirty = new HashSet<String>();
             for (var iter = block.insts.listIterator(); iter.hasNext(); ) {
                 var inst = iter.next();
                 if ((inst instanceof Load)) {
@@ -56,7 +58,11 @@ public class AliasOptimizer extends IRFunctionPass {
                         for (var mapIter = memRefStorage.entrySet().iterator(); mapIter.hasNext(); ) {
                             var s = mapIter.next();
                             if (check(s.getKey(), root) != stat.NEVER) {
-                                iter.add(new Store(s.getValue(), str2reg(s.getKey())));
+                                // store conflicted memory data
+                                if (dirty.contains(s.getKey())) {
+                                    dirty.remove(s.getKey());
+                                    iter.add(new Store(s.getValue(), str2reg(s.getKey())));
+                                }
                                 mapIter.remove();
                             }
                         }
@@ -73,6 +79,7 @@ public class AliasOptimizer extends IRFunctionPass {
                             iter.remove();
                         } else {
                             memRefStorage.put(addr, store.source);
+                            dirty.add(addr);
                         }
                     } else {
                         // no previous record
@@ -80,6 +87,7 @@ public class AliasOptimizer extends IRFunctionPass {
                     }
                 } else if (inst instanceof Call) {
                     memRefStorage.clear();
+                    dirty.clear();
                 }
             }
         });

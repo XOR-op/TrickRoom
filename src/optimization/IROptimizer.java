@@ -19,7 +19,7 @@ public class IROptimizer extends IRInfoPass {
                 new CopyPropagation(f).invoke();
                 new LocalCSE(f).invoke();
                 new InstOptimizer(f).invoke();
-//                new AliasOptimizer(f, info).invoke();
+                new AliasOptimizer(f, info).invoke();
             });
             new GlobalInliner(info).invoke();
         }
