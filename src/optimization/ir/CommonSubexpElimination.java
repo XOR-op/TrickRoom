@@ -1,5 +1,6 @@
 package optimization.ir;
 
+import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.*;
 import ir.operand.Register;
@@ -7,7 +8,9 @@ import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 
-public class LocalCSE extends IRFunctionPass {
+public class CommonSubexpElimination extends IRFunctionPass {
+
+    public enum Type {LOCAL, GLOBAL}
 
     protected static class LookUpTable {
         private final HashMap<String, Register> table = new HashMap<>();
@@ -41,12 +44,21 @@ public class LocalCSE extends IRFunctionPass {
         }
     }
 
-    public LocalCSE(IRFunction f) {
+    private final Type type;
+
+    public CommonSubexpElimination(IRFunction f, Type type) {
         super(f);
+        this.type = type;
     }
 
     @Override
     protected void run() {
+       if(type== CommonSubexpElimination.Type.LOCAL)
+           local();
+       else global();
+    }
+
+    private void local(){
         irFunc.blocks.forEach(block -> {
             LookUpTable table = new LookUpTable();
             for (var iter = block.insts.listIterator(); iter.hasNext(); ) {
@@ -58,4 +70,8 @@ public class LocalCSE extends IRFunctionPass {
         });
     }
 
+    private void global(){
+        var mapping=new HashMap<IRBlock,LookUpTable>();
+        // todo
+    }
 }

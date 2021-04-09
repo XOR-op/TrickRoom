@@ -10,7 +10,7 @@ import java.util.function.Function;
 public class Jump extends IRInst {
 
     // unconditional branch
-    public final IRBlock target;
+    public IRBlock target;
 
     public Jump(IRBlock tgt) {
         target = tgt;

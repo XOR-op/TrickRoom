@@ -28,8 +28,8 @@ public class IRFunction {
         this.name = name;
         this.isBuiltin = isBuiltin;
         retTy = returnType;
-        entryBlock = new IRBlock("entry", 0);
-        exitBlock = new IRBlock("exit", 0);
+        entryBlock = new IRBlock("entry");
+        exitBlock = new IRBlock("exit");
         blocks.add(entryBlock);
     }
 
@@ -99,7 +99,7 @@ public class IRFunction {
     public Object[] inlineClone(int serial) {
         HashMap<IRBlock, IRBlock> originToNew = new HashMap<>();
         String prefix = Cst.inlinePrefix(name, serial);
-        blocks.forEach(b -> originToNew.put(b, new IRBlock(prefix + b.blockName, b.loopDepth)));
+        blocks.forEach(b -> originToNew.put(b, new IRBlock(prefix + b.blockName)));
         for (var pair : originToNew.entrySet()) {
             var origin = pair.getKey();
             var substitute = pair.getValue();

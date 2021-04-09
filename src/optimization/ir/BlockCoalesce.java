@@ -4,6 +4,7 @@ import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.Jump;
 import misc.pass.IRFunctionPass;
+import misc.tools.DisjointSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,7 +15,7 @@ public class BlockCoalesce extends IRFunctionPass {
         super(f);
     }
 
-    private final Stack<IRBlock> dfsStack=new Stack<>();
+    private final Stack<IRBlock> dfsStack = new Stack<>();
 
     private HashMap<IRBlock, IRBlock> dfs() {
         HashMap<IRBlock, IRBlock> rt = new HashMap<>();
@@ -43,7 +44,7 @@ public class BlockCoalesce extends IRFunctionPass {
     protected void run() {
         while (true) {
             var list = dfs();
-            if (list.isEmpty()) return;
+            if (list.isEmpty()) break;
             list.forEach((from, to) -> {
                 from.nexts = to.nexts;
                 from.terminatorInst = to.terminatorInst;

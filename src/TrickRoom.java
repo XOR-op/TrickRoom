@@ -135,7 +135,6 @@ public class TrickRoom {
                     try {
                         if (ssaDestructFlag){
                             postIROptimization(info);
-//                            info.forEachFunction(f->new SSADestructor(f).invoke());
                         }
                         os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
                     } catch (IOException e) {
@@ -210,6 +209,9 @@ public class TrickRoom {
             new SSADestructor(f).invoke();
             new BlockCoalesce(f).invoke();
             new ConstantDeducer(f).invoke();
+            var la=new LoopAnalyzer(f);
+            la.invoke();
+            la.calculateDepth();
         });
     }
 

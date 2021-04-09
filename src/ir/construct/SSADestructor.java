@@ -65,8 +65,7 @@ public class SSADestructor extends IRFunctionPass {
             oneBlk.prevs.forEach(onePrev -> {
                 ParallelCopy pCopy = new ParallelCopy();
                 if (onePrev.nexts.size() > 1) {
-                    var inter = new IRBlock("F" + onePrev.blockName.substring(2) + "T" + oneBlk.blockName.substring(2),
-                            oneBlk.loopDepth);
+                    var inter = new IRBlock("F" + onePrev.blockName.substring(2) + "T" + oneBlk.blockName.substring(2));
                     prevToAdd.put(onePrev, inter);
                     prevToCopy.put(onePrev, pCopy);
                     blockToCopy.put(inter, pCopy);

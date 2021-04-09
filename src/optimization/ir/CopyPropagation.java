@@ -5,28 +5,22 @@ import ir.construct.RegisterTracker;
 import ir.instruction.Assign;
 import ir.operand.Register;
 import misc.pass.IRFunctionPass;
+import misc.tools.DisjointSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
+
 /*
  * do not avail against performance
  */
 public class CopyPropagation extends IRFunctionPass {
     private final RegisterTracker tracker;
-    private final HashMap<String, String> unionFind = new HashMap<>();
+    private final DisjointSet<String> unionFind = new DisjointSet<>();
     private final HashSet<Register> eliminated = new HashSet<>();
 
     public CopyPropagation(IRFunction f) {
         super(f);
         tracker = new RegisterTracker(f);
-    }
-
-    private String query(String reg) {
-        if(!unionFind.containsKey(reg))
-            return reg;
-        var root=query(unionFind.get(reg));
-        unionFind.put(reg,root);
-        return root;
     }
 
     @Override
@@ -37,7 +31,7 @@ public class CopyPropagation extends IRFunctionPass {
             if (def instanceof Assign) {
                 if (((Assign) def).src instanceof Register) {
                     var source = (Register) ((Assign) def).src;
-                    unionFind.put(def.dest.identifier(), query(source.identifier()));
+                    unionFind.put(def.dest.identifier(), unionFind.query(source.identifier()));
                     eliminated.add(def.dest);
                     tracker.queryInstBelongedBlock(def).removeInst(def);
                     tracker.queryRegisterUses(source).remove(def);
@@ -46,9 +40,9 @@ public class CopyPropagation extends IRFunctionPass {
         });
         eliminated.forEach(r -> {
             tracker.queryRegisterUses(r).forEach(inst ->
-                    inst.replaceRegisterWithOperand(tracker.nameToRegister(query(r.identifier())), r));
+                    inst.replaceRegisterWithOperand(tracker.nameToRegister(unionFind.query(r.identifier())), r));
         });
-        var newTrack=new RegisterTracker(irFunc);
+        var newTrack = new RegisterTracker(irFunc);
         newTrack.run();
     }
 }

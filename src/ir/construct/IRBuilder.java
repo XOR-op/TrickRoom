@@ -27,7 +27,6 @@ public class IRBuilder implements ASTVisitor {
     private final RootNode root;
     private int blockSuffix = 0;
     private int loopSuffix = 0;
-    private int loopDepth = 0;
 
 
     public IRBuilder(RootNode rootNode) {
@@ -97,8 +96,8 @@ public class IRBuilder implements ASTVisitor {
                 // short circuit
                 switch (binst) {
                     case logic_and -> {
-                        IRBlock second = new IRBlock("and_second" + blockSuffix, loopDepth);
-                        IRBlock after = new IRBlock("and_after" + blockSuffix, loopDepth);
+                        IRBlock second = new IRBlock("and_second" + blockSuffix);
+                        IRBlock after = new IRBlock("and_after" + blockSuffix);
                         curFunc.addBlock(second).addBlock(after);
                         var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "and" + blockSuffix);
                         curFunc.declareVar(condReg);
@@ -118,8 +117,8 @@ public class IRBuilder implements ASTVisitor {
                         return condReg;
                     }
                     case logic_or -> {
-                        IRBlock second = new IRBlock("or_second" + blockSuffix, loopDepth);
-                        IRBlock after = new IRBlock("or_after" + blockSuffix, loopDepth);
+                        IRBlock second = new IRBlock("or_second" + blockSuffix);
+                        IRBlock after = new IRBlock("or_after" + blockSuffix);
                         curFunc.addBlock(second).addBlock(after);
                         var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
                         curFunc.declareVar(condReg);
@@ -286,7 +285,6 @@ public class IRBuilder implements ASTVisitor {
     private Register arrayInitialize(int level, ArrayList<IROperand> dims, IRType elementType) {
         // n-dim nested loop
         // if using stack, it may be more efficient by eliminate repeated calculation of size
-        ++loopDepth;
         IRDestedInst arrayWidth = new Binary(Binary.BinInstEnum.mul, new Register(Cst.int32),
                 dims.get(level), new IntConstant(elementType.size()));
         IRDestedInst calcSize = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32),
@@ -313,9 +311,9 @@ public class IRBuilder implements ASTVisitor {
             curFunc.defineVar(loopedAddr, curBlock);
             curBlock.appendInst(copyAddr);
             // initialize subarray
-            var cond = new IRBlock("imp_cond" + blockSuffix, loopDepth);
-            var loopBody = new IRBlock("imp_body" + blockSuffix, loopDepth);
-            var afterLoop = new IRBlock("imp_after" + blockSuffix, loopDepth - 1);
+            var cond = new IRBlock("imp_cond" + blockSuffix);
+            var loopBody = new IRBlock("imp_body" + blockSuffix);
+            var afterLoop = new IRBlock("imp_after" + blockSuffix);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
             IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
@@ -336,7 +334,6 @@ public class IRBuilder implements ASTVisitor {
             curBlock.setJumpTerminator(cond);
             curBlock = afterLoop;
         } // we assume no initialization is needed for the most internal elements
-        --loopDepth;
         return returnCast.dest;
     }
 
@@ -473,7 +470,7 @@ public class IRBuilder implements ASTVisitor {
             if (curFunc.returnBlocks.size() == 1) {
                 curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
-                var exit = new IRBlock("exit", loopDepth);
+                var exit = new IRBlock("exit");
                 exit.setVoidRetTerminator();
                 curFunc.returnBlocks.forEach(b -> {
                     b.terminatorInst = null;
@@ -494,7 +491,7 @@ public class IRBuilder implements ASTVisitor {
             } else if (curFunc.returnBlocks.size() == 1) {
                 curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
-                var exit = new IRBlock("exit", loopDepth);
+                var exit = new IRBlock("exit");
                 var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
                 curFunc.entryBlock.insertInstFromHead(new Assign(returnValue, new UndefConstant(returnValue.type)));
                 curFunc.declareVar(returnValue);
@@ -552,17 +549,16 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Object visit(LoopNode node) {
-        ++loopDepth;
         if (node.initExpr != null) node.initExpr.accept(this);
         else if (node.initDecl != null) node.initDecl.accept(this);
         boolean hasCond = node.condExpr != null;
         boolean hasUpdate = node.updateExpr != null;
         // blocks
         var beforeLoop = curBlock;
-        var conditionBlock = new IRBlock("cond" + blockSuffix, loopDepth);
-        var loopBody = new IRBlock("body" + blockSuffix, loopDepth);
-        var updateBlock = new IRBlock("upd" + blockSuffix, loopDepth);
-        var afterLoop = new IRBlock("after" + blockSuffix, loopDepth - 1);
+        var conditionBlock = new IRBlock("cond" + blockSuffix);
+        var loopBody = new IRBlock("body" + blockSuffix);
+        var updateBlock = new IRBlock("upd" + blockSuffix);
+        var afterLoop = new IRBlock("after" + blockSuffix);
         blockSuffix++;
         AfterLoopStack.push(afterLoop);
         UpdBlockStack.push(updateBlock);
@@ -592,7 +588,6 @@ public class IRBuilder implements ASTVisitor {
         curBlock = afterLoop;
         UpdBlockStack.pop();
         AfterLoopStack.pop();
-        --loopDepth;
         return null;
     }
 
@@ -601,10 +596,10 @@ public class IRBuilder implements ASTVisitor {
         // process branch and generate blocks
         IROperand cond = (IROperand) node.condExpr.accept(this);
         var beforeBranch = curBlock;
-        var trueBlock = new IRBlock("true" + blockSuffix, loopDepth);
-        var afterBranch = new IRBlock("after" + blockSuffix, loopDepth);
+        var trueBlock = new IRBlock("true" + blockSuffix);
+        var afterBranch = new IRBlock("after" + blockSuffix);
         boolean hasFalse = node.falseStat != null;
-        var falseBlock = hasFalse ? new IRBlock("false" + blockSuffix, loopDepth) : null;
+        var falseBlock = hasFalse ? new IRBlock("false" + blockSuffix) : null;
         blockSuffix++;
         beforeBranch.setBranchTerminator(cond, trueBlock, hasFalse ? falseBlock : afterBranch);
         curFunc.addBlock(trueBlock);

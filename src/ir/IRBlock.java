@@ -16,9 +16,8 @@ public class IRBlock {
     //    public Set<String> definition = new HashSet<>();
     public int loopDepth = 0;
 
-    public IRBlock(String name, int depth) {
+    public IRBlock(String name) {
         blockName = "l_" + name;
-        this.loopDepth = depth;
     }
 
     public IRBlock appendInst(IRInst newInst) {
@@ -87,7 +86,7 @@ public class IRBlock {
         var newName = count == 0 ? (Cst.SPLIT_PREFIX + "000" + blockName) :
                 (Cst.SPLIT_PREFIX + "0".repeat(Math.max(0, (int) (2 - Math.floor(Math.log10(count)))))
                         + count + blockName.substring(Cst.SPLIT_PREFIX.length() + 5));
-        var newBlock = new IRBlock(newName, loopDepth);
+        var newBlock = new IRBlock(newName);
         newBlock.insts = instsOfNewBlock;
         nexts.forEach(successor -> {
             successor.prevs.remove(this);

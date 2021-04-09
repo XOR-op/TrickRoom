@@ -61,8 +61,21 @@ public class RegisterTracker {
         return uses.get(str);
     }
 
-    public IRDestedInst querySingleDef(String str){return defs.get(str).iterator().next();}
-    public IRDestedInst querySingleDef(Register reg){return querySingleDef(reg.identifier());}
+    public IRDestedInst querySingleDef(String str) {
+        return defs.get(str).iterator().next();
+    }
+
+    public IRDestedInst querySingleDef(Register reg) {
+        return querySingleDef(reg.identifier());
+    }
+
+    public IRBlock querySingleDefBlock(String str) {
+        return instToBlock.get(querySingleDef(str));
+    }
+
+    public IRBlock querySingleDefBlock(Register reg) {
+        return instToBlock.get(querySingleDef(reg));
+    }
 
     public HashSet<IRDestedInst> queryRegisterDefs(Register reg) {
         return queryRegisterDefs(reg.identifier());
@@ -78,21 +91,25 @@ public class RegisterTracker {
         return instToBlock.get(inst);
     }
 
-    public Register nameToRegister(String str){
+    public Register nameToRegister(String str) {
         // ugly workaround for design flaw
-        if(defs.containsKey(str))return querySingleDef(str).dest;
-        else if(uses.containsKey(str)&&uses.get(str).size()>0){
-            AtomicReference<Register> reg=new AtomicReference<>();
-            queryRegisterUses(str).iterator().next().forEachRegSrc(src->{
-                if(src.identifier().equals(str)) reg.set(src);
+        if (defs.containsKey(str)) return querySingleDef(str).dest;
+        else if (uses.containsKey(str) && uses.get(str).size() > 0) {
+            AtomicReference<Register> reg = new AtomicReference<>();
+            queryRegisterUses(str).iterator().next().forEachRegSrc(src -> {
+                if (src.identifier().equals(str)) reg.set(src);
             });
             return reg.get();
-        }else {
-            for(var reg:irFunc.parameters){
-                if(reg.identifier().equals(str))return reg;
+        } else {
+            for (var reg : irFunc.parameters) {
+                if (reg.identifier().equals(str)) return reg;
             }
             throw new IllegalStateException();
         }
+    }
+
+    public void updateInstBelonging(IRInst inst, IRBlock newBlock){
+        instToBlock.put(inst,newBlock);
     }
 
     public void removeRegister(Register reg) {
@@ -101,14 +118,14 @@ public class RegisterTracker {
         defs.remove(reg.identifier());
     }
 
-    public boolean isParameter(String str){
-        for(var reg:irFunc.parameters){
-            if(reg.identifier().equals(str))return true;
+    public boolean isParameter(String str) {
+        for (var reg : irFunc.parameters) {
+            if (reg.identifier().equals(str)) return true;
         }
         return false;
     }
 
-    public boolean isParameter(Register reg){
+    public boolean isParameter(Register reg) {
         return irFunc.parameters.contains(reg);
     }
 

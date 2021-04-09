@@ -11,6 +11,7 @@ import ir.operand.IntConstant;
 import ir.operand.Register;
 import misc.Cst;
 import misc.pass.IRFunctionPass;
+import misc.tools.DisjointSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +23,7 @@ public class AliasOptimizer extends IRFunctionPass {
     private enum stat {NEVER, MAY, MUST}
 
     private final RegisterTracker tracker;
-    private final HashMap<String, String> unionFind = new HashMap<>();
+    private final DisjointSet<String> unionFind = new DisjointSet<>();
     private final IRInfo irInfo;
 
     public AliasOptimizer(IRFunction f, IRInfo irInfo) {
@@ -44,7 +45,7 @@ public class AliasOptimizer extends IRFunctionPass {
                     var load = (Load) inst;
                     assert load.address instanceof Register;
                     var addressName = ((Register) load.address).identifier();
-                    var root = query(addressName);
+                    var root = unionFind.query(addressName);
                     if (noConflict(memRefStorage, root)) {
                         if (!memRefStorage.containsKey(root)) {
                             // first load
@@ -99,27 +100,17 @@ public class AliasOptimizer extends IRFunctionPass {
         return true;
     }
 
-    private String query(String reg) {
-        if (!unionFind.containsKey(reg)) return reg;
-        var root = query(unionFind.get(reg));
-        unionFind.put(reg, root);
-        return root;
-    }
 
     private void analyze() {
         tracker.defs.forEach((name, inst) -> {
             var def = inst.iterator().next();
             Register reg = null;
             if (def instanceof Assign && ((Assign) def).src instanceof Register) {
-                unionFind.put(def.dest.identifier(), query(((Register) ((Assign) def).src).identifier()));
+                unionFind.put(def.dest.identifier(), unionFind.query(((Register) ((Assign) def).src).identifier()));
                 reg = (Register) ((Assign) def).src;
             }
-//            else if (def instanceof BitCast && ((BitCast) def).from instanceof Register) {
-//                unionFind.put(def.dest.identifier(), query(((Register) ((BitCast) def).from).identifier()));
-//                reg = (Register) ((BitCast) def).from;
-//            }
             if (reg != null)
-                unionFind.put(def.dest.identifier(), query(reg.identifier()));
+                unionFind.put(def.dest.identifier(), unionFind.query(reg.identifier()));
         });
     }
 
@@ -133,7 +124,7 @@ public class AliasOptimizer extends IRFunctionPass {
 
     private boolean isMalloc(String reg) {
         if (isGlobal(reg)) return false;
-        var inst = tracker.querySingleDef(query(reg));
+        var inst = tracker.querySingleDef(unionFind.query(reg));
         return inst instanceof Call && ((Call) inst).function == irInfo.getFunction(Cst.MALLOC);
     }
 
@@ -141,6 +132,26 @@ public class AliasOptimizer extends IRFunctionPass {
     private stat check(String reg1, String reg2) {
         if (isGlobal(reg1) || isGlobal(reg2)) return eqOrNot(reg1, reg2);
         else if (isMalloc(reg1) && isMalloc(reg2)) return eqOrNot(reg1, reg2);
+        else {
+            var inst1 = tracker.querySingleDef(unionFind.query(reg1));
+            var inst2 = tracker.querySingleDef(unionFind.query(reg1));
+            if (inst1 instanceof GetElementPtr && inst2 instanceof GetElementPtr) {
+                if (((Register) ((GetElementPtr) inst1).base).sameIdentifier(((GetElementPtr) inst2).base)) {
+                    if (((GetElementPtr) inst1).indexing instanceof Register
+                            && ((Register) ((GetElementPtr) inst1).indexing).sameIdentifier(((GetElementPtr) inst2).indexing) ||
+                            (((GetElementPtr) inst1).indexing instanceof IntConstant && ((GetElementPtr) inst2).indexing instanceof IntConstant &&
+                                    ((IntConstant) ((GetElementPtr) inst1).indexing).sameConst((IRConstant) ((GetElementPtr) inst2).indexing))) {
+                        if (((GetElementPtr) inst1).offset == null ^ ((GetElementPtr) inst2).offset == null) {
+                            return stat.NEVER;
+                        } else if (((GetElementPtr) inst1).offset == null && ((GetElementPtr) inst2).offset == null) {
+                            return stat.MUST;
+                        } else {
+                            return ((GetElementPtr) inst1).offset.sameConst(((GetElementPtr) inst2).offset) ? stat.MUST : stat.NEVER;
+                        }
+                    }
+                }
+            }
+        }
         return stat.MAY;
     }
 

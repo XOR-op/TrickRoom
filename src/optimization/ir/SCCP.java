@@ -285,6 +285,7 @@ public class SCCP extends IRFunctionPass {
     }
 
     private void postProcessing() {
+        assert reachableBlock.contains(irFunc.exitBlock);
         lattice.forEach((reg, l) -> {
             if (l.stat == LatticeStat.Stat.constant) {
                 tracker.queryRegisterUses(reg).forEach(inst -> {

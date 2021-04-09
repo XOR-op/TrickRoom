@@ -5,6 +5,7 @@ import assembly.RVFunction;
 import assembly.instruction.ControlFlowInst;
 import assembly.instruction.Jump;
 import misc.pass.RVFunctionPass;
+import misc.tools.DisjointSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,28 +17,7 @@ public class RVBlockCoalesce extends RVFunctionPass {
     }
 
     private final Stack<RVBlock> dfsStack = new Stack<>();
-
-    private HashMap<RVBlock, RVBlock> dfs() {
-        HashMap<RVBlock, RVBlock> rt = new HashMap<>();
-        HashSet<RVBlock> looked = new HashSet<>(), cannot = new HashSet<>();
-        dfsStack.push(rvFunc.blocks.get(0));
-        while (!dfsStack.isEmpty())
-            dfs(rt, looked, cannot, dfsStack.pop());
-        return rt;
-    }
-
-    private void dfs(HashMap<RVBlock, RVBlock> meet, HashSet<RVBlock> looked, HashSet<RVBlock> cannot, RVBlock cur) {
-        if (looked.contains(cur) || cannot.contains(cur)) return;
-        looked.add(cur);
-        if (cur.instructions.getLast() instanceof Jump) {
-            var dest = ((Jump) cur.instructions.getLast()).getDest();
-            if (dest.prevs.size() == 1) {
-                meet.put(cur, dest);
-                cannot.add(dest); // avoid overlapping edge
-            }
-        }
-        cur.nexts.forEach(dfsStack::push);
-    }
+    private final DisjointSet<RVBlock> unionFind = new DisjointSet<>();
 
     private HashSet<RVBlock> dfsForForward() {
         HashSet<RVBlock> redundant = new HashSet<>();
@@ -60,23 +40,6 @@ public class RVBlockCoalesce extends RVFunctionPass {
         cur.nexts.forEach(dfsStack::push);
     }
 
-    private void runToCoalesce() {
-        while (true) {
-            var list = dfs();
-            if (list.isEmpty()) return;
-            list.forEach((from, to) -> {
-                from.nexts = to.nexts;
-                from.instructions.removeLast();
-                from.instructions.addAll(to.instructions);
-                to.nexts.forEach(n -> {
-                    n.prevs.remove(to);
-                    n.prevs.add(from);
-                });
-                rvFunc.blocks.remove(to);
-            });
-        }
-    }
-
     private void runToEliminate() {
         while (true) {
             var list = dfsForForward();
@@ -97,6 +60,27 @@ public class RVBlockCoalesce extends RVFunctionPass {
                 rvFunc.blocks.remove(blk);
             });
         }
+    }
+
+    private void jumpMerge() {
+        var coll = new HashSet<RVBlock>();
+        rvFunc.blocks.forEach(irBlock -> {
+            if (irBlock.instructions.size() == 1 && irBlock.instructions.get(0) instanceof Jump) {
+                unionFind.put(irBlock, ((Jump) irBlock.instructions.get(0)).getDest());
+                coll.add(irBlock);
+            }
+        });
+        coll.forEach(block -> {
+            var next = ((Jump) block.instructions.get(0)).getDest();
+            var trueNext = unionFind.query(block);
+            if (next != trueNext) {
+                block.nexts.remove(next);
+                block.nexts.add(trueNext);
+                next.prevs.remove(block);
+                trueNext.prevs.add(block);
+                block.instructions.set(0,new Jump(trueNext));
+            }
+        });
     }
 
     @Override
