@@ -158,7 +158,7 @@ public class GraphRegisterAllocator {
 
     private boolean run() {
         build();
-        new LiveAnalyzer(asmFunc).run();
+        new LivenessAnalyzer(asmFunc).run();
         buildInterfere();
         buildWorkList();
         while (!(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty() && highDegreeWorkList.isEmpty())) {

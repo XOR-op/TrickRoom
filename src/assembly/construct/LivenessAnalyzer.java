@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class LiveAnalyzer {
+public class LivenessAnalyzer {
     /*
      *  LiveOut(n)=|{next in n.nexts}(allUses(next)|(LiveOut(next)&(!allDefs(next)))))
      */
@@ -69,7 +69,7 @@ public class LiveAnalyzer {
         LiveOut.forEach((b, s) -> b.liveOut = s);
     }
 
-    public LiveAnalyzer(RVFunction asmFunc) {
+    public LivenessAnalyzer(RVFunction asmFunc) {
         this.asmFunc = asmFunc;
     }
 }

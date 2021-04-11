@@ -2,6 +2,7 @@ package optimization.ir;
 
 import ir.IRFunction;
 import ir.IRInfo;
+import ir.instruction.Call;
 import misc.pass.IRInfoPass;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class GlobalInliner extends IRInfoPass {
     private int counter = 0;
     private final Set<IRFunction> ableToInline = new HashSet<>();
     private final Set<IRFunction> dfsInlineVisited = new HashSet<>();
+    private final Set<IRFunction> selfRecursion = new HashSet<>();
 
     public GlobalInliner(IRInfo info) {
         super(info);
@@ -24,13 +26,23 @@ public class GlobalInliner extends IRInfoPass {
 
     public static boolean inlinePolicy(IRFunction f) {
         var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
-        return !(f.blocks.size() > 20 || instSum > 100);
+        return !(f.blocks.size() > 30 || instSum > 100);
+    }
+
+    public static int recurUnfoldPolicy(IRFunction f) {
+        int recursionCall = 0;
+        for (var b : f.blocks) {
+            for (var inst : b.insts) if (inst instanceof Call && ((Call) inst).function == f) recursionCall++;
+        }
+        return (recursionCall <= 2 && f.originDuplication <= 4 && f.blocks.stream().mapToInt(b -> b.insts.size()).sum() < 50) ? recursionCall : -1;
     }
 
     @Override
     protected void run() {
         collectDependency();
         inlineFilter();
+        ableToInline.addAll(selfRecursion);
+        dfsInlineVisited.addAll(selfRecursion);
         dfsInline();
         info.forEachFunction(f -> {
             if (!ableToInline.contains(f))
@@ -53,10 +65,10 @@ public class GlobalInliner extends IRInfoPass {
             for (IRFunction f : callGraph.get(func)) {
                 if (ableToInline.contains(f)) {
                     flag = true;
-                    dfsInline(func);
+                    dfsInline(f);
                 }
             }
-            // if func contains inlined func
+            // if func contains inlined-able func
             if (flag)
                 new Inliner(func, ableToInline).invoke();
         }
@@ -97,6 +109,16 @@ public class GlobalInliner extends IRInfoPass {
                 tarjanStack.pop();
                 if (!func.invokedFunctions.containsKey(func))
                     ableToInline.add(func);
+                else {
+                    int callNumber = recurUnfoldPolicy(func);
+                    if (callNumber > 0) {
+                        for (; callNumber > 0; callNumber = recurUnfoldPolicy(func)) {
+                            new Inliner(func, ableToInline, callNumber).invoke();
+                            func.originDuplication *= 1 << callNumber;
+                        }
+                        selfRecursion.add(func);
+                    }
+                }
             } else {
                 IRFunction one;
                 do {

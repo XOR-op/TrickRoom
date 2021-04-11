@@ -23,6 +23,7 @@ public class IRFunction {
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
     private final boolean isBuiltin;
     public int inlineSerial = 0;
+    public int originDuplication = 1;
 
     public IRFunction(String name, IRType returnType, boolean isBuiltin) {
         this.name = name;
@@ -119,6 +120,7 @@ public class IRFunction {
                 substitute.terminatorInst = (origin.terminatorInst).copy(prefix);
             } else if (origin.terminatorInst instanceof Jump) {
                 var oldJump = (Jump) origin.terminatorInst;
+                assert originToNew.containsKey(oldJump.target);
                 substitute.terminatorInst = oldJump.copy(originToNew.get(oldJump.target));
             } else {
                 assert origin.terminatorInst instanceof Branch;
