@@ -21,7 +21,7 @@ public class CommonSubexpElimination extends IRFunctionPass {
 
         public static String hash(IRInst inst) {
             if (inst instanceof Binary) {
-                return "!" + ((Binary) inst).operand1.tell() + ((Binary) inst).inst + ((Binary) inst).operand2.tell();
+                return "!" + ((Binary) inst).operand1.tell() + ((Binary) inst).op + ((Binary) inst).operand2.tell();
             } else if (inst instanceof Compare) {
                 return "@" + ((Compare) inst).operand1.tell() + ((Compare) inst).type + ((Compare) inst).operand2.tell();
             } else if (inst instanceof GetElementPtr) {

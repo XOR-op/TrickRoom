@@ -44,5 +44,11 @@ public class PostCleaner extends RVFunctionPass {
                 }
             });
         }
+        // solve too-long label name error
+        rvFunc.blocks.forEach(b -> {
+            if (b.name.length() >= 64) {
+                b.name = "_HASH_" + b.name.hashCode();
+            }
+        });
     }
 }

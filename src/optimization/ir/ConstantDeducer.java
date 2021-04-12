@@ -21,7 +21,7 @@ public class ConstantDeducer extends IRFunctionPass {
                     var bInst = (Binary) inst;
                     if (bInst.operand1 instanceof IntConstant && bInst.operand2 instanceof IntConstant) {
                         int val1 = ((IntConstant) bInst.operand1).value, val2 = ((IntConstant) bInst.operand2).value, finalResult;
-                        switch (bInst.inst) {
+                        switch (bInst.op) {
                             case add -> finalResult = val1 + val2;
                             case sub -> finalResult = val1 - val2;
                             case mul -> finalResult = val1 * val2;

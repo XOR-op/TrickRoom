@@ -179,7 +179,7 @@ public class SCCP extends IRFunctionPass {
             var lattice = getLattice(inst.dest);
             if (v1 != null && v2 != null && lattice.stat == LatticeStat.Stat.unsure) {
                 try {
-                    IRConstant result = Binary.evaluateConstant(inst.inst, v1, v2);
+                    IRConstant result = Binary.evaluateConstant(inst.op, v1, v2);
                     lattice.stat = LatticeStat.Stat.constant;
                     lattice.constant = result;
                 } catch (DividedByZero dividedByZero) {

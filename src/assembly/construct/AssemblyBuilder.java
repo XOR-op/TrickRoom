@@ -267,7 +267,7 @@ public class AssemblyBuilder {
     private void buildBinary(Binary inst) {
         // should be optimized
         assert !(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant);
-        var ct = Computation.getCompType(inst.inst);
+        var ct = Computation.getCompType(inst.op);
         var rd = getRegister(inst.dest);
         RVRegister rs1, rs2 = null;
         Integer imm = null;

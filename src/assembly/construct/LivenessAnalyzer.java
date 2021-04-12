@@ -5,10 +5,7 @@ import assembly.RVFunction;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 public class LivenessAnalyzer {
     /*
@@ -41,7 +38,7 @@ public class LivenessAnalyzer {
         var conjunction = new HashSet<RVRegister>();
         block.nexts.forEach(n -> conjunction.addAll(LiveIn.get(n)));
         LiveOut.put(block, conjunction);
-        var newLiveIn = new HashSet<>(conjunction);
+        var newLiveIn = new HashSet<RVRegister>(conjunction);
         newLiveIn.removeAll(allDefs.get(block));
         newLiveIn.addAll(allUses.get(block));
 
@@ -64,8 +61,9 @@ public class LivenessAnalyzer {
         asmFunc.blocks.forEach(block -> {
             if (block.nexts.isEmpty()) workList.addAll(block.prevs);
         });
-        while (!workList.isEmpty())
+        while (!workList.isEmpty()) {
             update(workList.poll(), workList);
+        }
         LiveOut.forEach((b, s) -> b.liveOut = s);
     }
 

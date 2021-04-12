@@ -11,12 +11,12 @@ public class Binary extends IRDestedInst {
 
     public enum BinInstEnum {add, sub, mul, sdiv, srem, shl, ashr, and, or, xor, logic_and, logic_or}
 
-    public BinInstEnum inst;
+    public BinInstEnum op;
     public IROperand operand1, operand2;
 
     @Override
     public String tell() {
-        return dest + " = " + inst + " " + dest.type + ' ' + operand1 + ", " + operand2;
+        return dest + " = " + op + " " + dest.type + ' ' + operand1 + ", " + operand2;
     }
 
     @Override
@@ -48,8 +48,8 @@ public class Binary extends IRDestedInst {
         return false;
     }
 
-    public Binary(BinInstEnum inst, Register dest, IROperand op1, IROperand op2) {
-        this.inst = inst;
+    public Binary(BinInstEnum op, Register dest, IROperand op1, IROperand op2) {
+        this.op = op;
         this.dest = dest;
         operand1 = op1;
         operand2 = op2;
@@ -136,6 +136,6 @@ public class Binary extends IRDestedInst {
 
     @Override
     public IRDestedInst copy(String arg) {
-        return new Binary(inst, dest.copy(arg), operand1.copy(arg), operand2.copy(arg));
+        return new Binary(op, dest.copy(arg), operand1.copy(arg), operand2.copy(arg));
     }
 }
