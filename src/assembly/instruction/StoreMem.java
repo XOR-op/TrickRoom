@@ -7,9 +7,9 @@ import assembly.operand.VirtualImm;
 import java.util.function.Consumer;
 
 public class StoreMem extends RVInst {
-    private RVRegister rs1, rs2;
-    private Imm imm;
-    private WidthType wt;
+    public RVRegister rs1, rs2;
+    public Imm imm;
+    public WidthType wt;
 
     public StoreMem(WidthType wt, RVRegister addr, RVRegister src, Imm offset) {
         this.wt = wt;

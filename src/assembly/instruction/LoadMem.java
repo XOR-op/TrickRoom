@@ -8,9 +8,9 @@ import java.util.function.Consumer;
 
 public class LoadMem extends RVInst {
 
-    protected RVRegister rd, rs1;
-    protected Imm imm;
-    protected WidthType wt;
+    public RVRegister rd, rs1;
+    public Imm imm;
+    public WidthType wt;
 
     public LoadMem(RVRegister rd, WidthType wt, RVRegister rs1, Imm imm) {
         this.rd = rd;

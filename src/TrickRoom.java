@@ -6,6 +6,7 @@ import ir.construct.IRBuilder;
 import ast.exception.*;
 import ir.IRInfo;
 import misc.Cst;
+import optimization.AsmOptimizer;
 import optimization.IROptimizer;
 import optimization.assembly.RVBlockCoalesce;
 import optimization.ir.*;
@@ -133,7 +134,7 @@ public class TrickRoom {
                 if (optimizationFlag) new IROptimizer(info).invoke();
                 if (llvmGenFlag) {
                     try {
-                        if (ssaDestructFlag){
+                        if (ssaDestructFlag) {
                             postIROptimization(info);
                         }
                         os.write(info.toLLVMir().getBytes(StandardCharsets.UTF_8));
@@ -144,7 +145,7 @@ public class TrickRoom {
                 if (assemblyGenFlag) {
                     postIROptimization(info);
                     var rvInfo = assemblyGen(info);
-                    if (optimizationFlag) rvOptimize(rvInfo);
+                    if (optimizationFlag) new AsmOptimizer(rvInfo).invoke();
                     try {
                         os.write(rvInfo.tell().getBytes(StandardCharsets.UTF_8));
                     } catch (IOException e) {
@@ -190,12 +191,6 @@ public class TrickRoom {
         return info;
     }
 
-    private void rvOptimize(RVInfo rvInfo) {
-        rvInfo.forEachFunction(f -> {
-            new RVBlockCoalesce(f).invoke();
-        });
-    }
-
     private RVInfo assemblyGen(IRInfo irInfo) {
         var builder = new AssemblyBuilder(irInfo);
         var info = builder.constructAssembly();
@@ -209,7 +204,7 @@ public class TrickRoom {
             new SSADestructor(f).invoke();
             new BlockCoalesce(f).invoke();
             new ConstantDeducer(f).invoke();
-            var la=new LoopAnalyzer(f);
+            var la = new LoopAnalyzer(f);
             la.invoke();
             la.calculateDepth();
         });

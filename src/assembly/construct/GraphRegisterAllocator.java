@@ -100,8 +100,8 @@ public class GraphRegisterAllocator {
         };
         asmFunc.blocks.forEach(blk -> {
             blk.instructions.forEach(inst -> {
-                inst.forEachRegDest(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
-                inst.forEachRegSrc(reg -> plus.accept(reg, (int) Math.pow(10, blk.loopDepth)));
+                inst.forEachRegDest(reg -> plus.accept(reg, (int) Math.pow(6, blk.loopDepth)));
+                inst.forEachRegSrc(reg -> plus.accept(reg, (int) Math.pow(6, blk.loopDepth)));
                 inst.forEachRegSrc(reg -> {
                     if (!preColored.contains(reg)) initialList.add(reg);
                 });
@@ -443,6 +443,19 @@ public class GraphRegisterAllocator {
     }
 
     private void rewriteProgram() {
+        /*
+        if (decidedSpillSet.size() > 100) {
+            PriorityQueue<Object[]> queue = new PriorityQueue<>((e1, e2) -> (int) e2[1] - (int) e1[1]);
+            decidedSpillSet.forEach(r -> {
+                var o = new Object[2];
+                o[0] = r;
+                o[1] = weights.get(r);
+                queue.offer(o);
+            });
+            for(int i=0,total=decidedSpillSet.size()/4;i<total;++i){
+                decidedSpillSet.remove(queue.poll()[0]);
+            }
+        }*/
         decidedSpillSet.forEach(asmFunc::addVarOnStack);
         asmFunc.blocks.forEach(block -> {
             var iter = block.instructions.listIterator();
