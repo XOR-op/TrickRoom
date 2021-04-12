@@ -64,9 +64,14 @@ public class IRBuilder implements ASTVisitor {
         return null;
     }
 
+    private IRBlock prevAndLogicalSecond;
+    private Register prevAndCondVar;
+
+    private IRBlock prevOrLogicalSecond;
+    private Register prevOrCondVar;
 
     @Override
-    public Register visit(BinaryExprNode node) {
+    public IROperand visit(BinaryExprNode node) {
         if (node.lhs.type.equals(TypeConst.String) || node.rhs.type.equals(TypeConst.String)) {
             // implicit function
             IRFunction f;
@@ -97,45 +102,89 @@ public class IRBuilder implements ASTVisitor {
                 switch (binst) {
                     case logic_and -> {
                         IRBlock second = new IRBlock("and_second" + blockSuffix);
-                        IRBlock after = new IRBlock("and_after" + blockSuffix);
-                        curFunc.addBlock(second).addBlock(after);
-                        var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "and" + blockSuffix);
-                        curFunc.declareVar(condReg);
-                        curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
-                        blockSuffix++;
+                        curFunc.addBlock(second);
+                        if (node.lhs instanceof BinaryExprNode && ((BinaryExprNode) node.lhs).lexerSign.equals(Cst.AND_LOGIC)) {
+                            blockSuffix++;
+                            node.lhs.accept(this);
+                            assert prevAndLogicalSecond != null && prevAndCondVar != null;
+                            assert prevAndLogicalSecond.nexts.contains(curBlock);
+                            var allAfter = curBlock;
+                            prevAndLogicalSecond.terminatorInst = null;
+                            prevAndLogicalSecond.setBranchTerminator(prevAndCondVar, second, allAfter);
 
-                        regAssign(condReg, (IROperand) node.lhs.accept(this));
-                        curFunc.defineVar(condReg, curBlock);
-                        curBlock.setBranchTerminator(condReg, second, after);
+                            curBlock = second;
+                            regAssign(prevAndCondVar, (IROperand) node.rhs.accept(this));
+                            curFunc.defineVar(prevAndCondVar, curBlock);
+                            curBlock.setJumpTerminator(allAfter);
 
-                        curBlock = second;
-                        regAssign(condReg, (IROperand) node.rhs.accept(this));
-                        curFunc.defineVar(condReg, curBlock);
-                        curBlock.setJumpTerminator(after);
+                            curBlock = allAfter;
+                            prevAndLogicalSecond = second;
+                            return prevAndCondVar;
+                        } else {
+                            IRBlock after = new IRBlock("and_after" + blockSuffix);
+                            curFunc.addBlock(after);
+                            var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "and" + blockSuffix);
+                            curFunc.declareVar(condReg);
+                            curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
+                            blockSuffix++;
 
-                        curBlock = after;
-                        return condReg;
+                            regAssign(condReg, (IROperand) node.lhs.accept(this));
+                            curFunc.defineVar(condReg, curBlock);
+                            curBlock.setBranchTerminator(condReg, second, after);
+
+                            curBlock = second;
+                            regAssign(condReg, (IROperand) node.rhs.accept(this));
+                            curFunc.defineVar(condReg, curBlock);
+                            curBlock.setJumpTerminator(after);
+
+                            prevAndLogicalSecond = curBlock;
+                            curBlock = after;
+                            prevAndCondVar = condReg;
+                            return condReg;
+                        }
                     }
                     case logic_or -> {
                         IRBlock second = new IRBlock("or_second" + blockSuffix);
-                        IRBlock after = new IRBlock("or_after" + blockSuffix);
-                        curFunc.addBlock(second).addBlock(after);
-                        var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
-                        curFunc.declareVar(condReg);
-                        curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
-                        blockSuffix++;
+                        curFunc.addBlock(second);/*
+                        if (node.lhs instanceof BinaryExprNode && ((BinaryExprNode) node.lhs).lexerSign.equals(Cst.OR_LOGIC)) {
+                            blockSuffix++;
+                            node.lhs.accept(this);
+                            assert prevOrCondVar != null && prevOrLogicalSecond != null;
+                            assert prevOrLogicalSecond.nexts.contains(curBlock);
+                            var allAfter = curBlock;
+                            prevOrLogicalSecond.terminatorInst = null;
+                            prevOrLogicalSecond.setBranchTerminator(prevOrCondVar, allAfter, second);
 
-                        regAssign(condReg, (IROperand) node.lhs.accept(this));
-                        curFunc.defineVar(condReg, curBlock);
-                        curBlock.setBranchTerminator(condReg, after, second);
+                            curBlock = second;
+                            regAssign(prevOrCondVar, (IROperand) node.rhs.accept(this));
+                            curFunc.defineVar(prevOrCondVar, curBlock);
+                            curBlock.setJumpTerminator(allAfter);
 
-                        curBlock = second;
-                        regAssign(condReg, (IROperand) node.rhs.accept(this));
-                        curFunc.defineVar(condReg, curBlock);
-                        curBlock.setJumpTerminator(after);
+                            curBlock = allAfter;
+                            prevOrLogicalSecond = second;
+                            return prevOrCondVar;
+                        } else */{
+                            IRBlock after = new IRBlock("or_after" + blockSuffix);
+                            curFunc.addBlock(after);
+                            var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
+                            curFunc.declareVar(condReg);
+                            curFunc.entryBlock.insertInstFromHead(new Assign(condReg, new UndefConstant(condReg.type)));
+                            blockSuffix++;
 
-                        curBlock = after;
-                        return condReg;
+                            regAssign(condReg, (IROperand) node.lhs.accept(this));
+                            curFunc.defineVar(condReg, curBlock);
+                            curBlock.setBranchTerminator(condReg, after, second);
+
+                            curBlock = second;
+                            regAssign(condReg, (IROperand) node.rhs.accept(this));
+                            curFunc.defineVar(condReg, curBlock);
+                            curBlock.setJumpTerminator(after);
+
+                            prevOrLogicalSecond=curBlock;
+                            prevOrCondVar=condReg;
+                            curBlock = after;
+                            return condReg;
+                        }
                     }
                     default -> {
                         // binary instruction

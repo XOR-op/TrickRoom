@@ -144,4 +144,16 @@ public class IRBlock {
     public String toString() {
         return blockName;
     }
+
+    public boolean selfTest() {
+        if (terminatorInst instanceof Jump) {
+            assert nexts.size() == 1 && nexts.contains(((Jump) terminatorInst).target);
+        } else if (terminatorInst instanceof Branch) {
+            assert nexts.size() == 2 && nexts.contains(((Branch) terminatorInst).trueBranch) && nexts.contains(((Branch) terminatorInst).falseBranch);
+        }
+        prevs.forEach(p->{
+            assert p.nexts.contains(this);
+        });
+        return true;
+    }
 }
