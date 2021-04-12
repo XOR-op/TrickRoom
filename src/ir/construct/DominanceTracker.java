@@ -32,7 +32,7 @@ public class DominanceTracker extends IRFunctionPass {
 
     private void reversePostorder() {
         reversePostorder(irFunc.entryBlock, new HashSet<>());
-        assert order.size()==maxOrder;
+        assert order.size()<=maxOrder;
         Collections.reverse(blocksByOrder);
     }
 

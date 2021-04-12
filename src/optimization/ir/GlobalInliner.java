@@ -26,7 +26,7 @@ public class GlobalInliner extends IRInfoPass {
 
     public static boolean inlinePolicy(IRFunction f) {
         var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
-        return !(f.blocks.size() > 30 || instSum > 100);
+        return !(f.blocks.size() > 30 || instSum > 80);
     }
 
     public static int recurUnfoldPolicy(IRFunction f) {

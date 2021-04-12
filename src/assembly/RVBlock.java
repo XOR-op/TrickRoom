@@ -1,5 +1,7 @@
 package assembly;
 
+import assembly.instruction.Jump;
+import assembly.instruction.RVBranch;
 import assembly.instruction.RVInst;
 import assembly.operand.RVRegister;
 
@@ -41,6 +43,31 @@ public class RVBlock {
         StringBuilder builder = new StringBuilder();
         builder.append(getName()).append(":\n");
         instructions.forEach(inst -> builder.append("\t").append(inst.tell()).append('\n'));
+        return builder.toString();
+    }
+
+    public String tellWithoutLast(RVBlock next) {
+        if (instructions.size() == 1 && instructions.get(0) instanceof Jump)
+            return tell();
+        StringBuilder builder = new StringBuilder();
+        builder.append(getName()).append(":\n");
+        for (var iter = instructions.listIterator(); iter.hasNext(); ) {
+            var inst = iter.next();
+            if (iter.hasNext())
+                builder.append("\t").append(inst.tell()).append('\n');
+            else {
+                if (inst instanceof Jump) {
+                    if (!(((Jump) inst).getDest() == next))
+                        builder.append("\t").append(inst.tell()).append('\n');
+                } else if (inst instanceof RVBranch) {
+                    if (((RVBranch) inst).falseDest == next) {
+                        builder.append("\t").append(((RVBranch) inst).onlyTrueTell()).append('\n');
+                    } else
+                        builder.append("\t").append(inst.tell()).append('\n');
+                }else
+                    builder.append("\t").append(inst.tell()).append('\n');
+            }
+        }
         return builder.toString();
     }
 }

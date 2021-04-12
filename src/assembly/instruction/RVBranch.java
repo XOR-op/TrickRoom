@@ -9,7 +9,7 @@ public class RVBranch extends ControlFlowInst {
 
     private RelaType rt;
     private RVRegister rs1, rs2;
-    private RVBlock trueDest, falseDest;
+    public RVBlock trueDest, falseDest;
     private boolean isUnsigned;
 
     public RVBranch(RelaType rt, boolean isUnsigned, RVRegister rs1, RVRegister rs2, RVBlock trueDest, RVBlock falseDest) {
@@ -26,6 +26,10 @@ public class RVBranch extends ControlFlowInst {
 //        throw new UnimplementedError();
         return "b"+rt+(isUnsigned?"u":"")+" "+rs1.tell()+", "+rs2.tell()+", "+trueDest.getName()
                 +"\n\t"+"j "+falseDest.getName();
+    }
+
+    public String onlyTrueTell(){
+        return "b"+rt+(isUnsigned?"u":"")+" "+rs1.tell()+", "+rs2.tell()+", "+trueDest.getName();
     }
 
     @Override

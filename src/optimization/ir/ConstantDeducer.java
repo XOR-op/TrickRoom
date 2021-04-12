@@ -25,7 +25,10 @@ public class ConstantDeducer extends IRFunctionPass {
                             case add -> finalResult = val1 + val2;
                             case sub -> finalResult = val1 - val2;
                             case mul -> finalResult = val1 * val2;
-                            case sdiv -> finalResult = val1 / val2;
+                            case sdiv -> {
+                                if(val2==0)continue;
+                                finalResult = val1 / val2;
+                            }
                             case srem -> finalResult = val1 % val2;
                             case and -> finalResult = val1 & val2;
                             case or -> finalResult = val1 | val2;

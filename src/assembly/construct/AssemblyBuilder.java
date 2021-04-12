@@ -265,10 +265,17 @@ public class AssemblyBuilder {
     }
 
     private void buildBinary(Binary inst) {
-        // should be optimized
-        assert !(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant);
         var ct = Computation.getCompType(inst.op);
         var rd = getRegister(inst.dest);
+        if(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant){
+            var load1=new LoadImm(ng.gen(),((IntConstant) inst.operand1).value);
+            var load2=new LoadImm(ng.gen(),((IntConstant) inst.operand2).value);
+            var compute=new Computation(rd,ct,load1.rd,load2.rd);
+            curBlock.addInst(load1);
+            curBlock.addInst(load2);
+            curBlock.addInst(compute);
+            return;
+        }
         RVRegister rs1, rs2 = null;
         Integer imm = null;
         if (inst.operand1 instanceof IntConstant) {
@@ -332,6 +339,7 @@ public class AssemblyBuilder {
         }
         if (inst.args.size() > 8) {
             // store to the sp
+            // assert that the offset not exceed 2048
             int curOff = 0;
             curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
                     PhysicalRegister.get("sp"), new Imm(-4 * (inst.args.size() - 8))));
@@ -404,7 +412,14 @@ public class AssemblyBuilder {
             int i = tp.size() * ((IntConstant) inst.indexing).value;
             if (inst.offset != null)
                 i += offset;
-            var calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, new Imm(i));
+            Computation calcAddr;
+            if(RVInfo.isShortImm(i)) {
+                calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, new Imm(i));
+            }else {
+                var loadImm=new LoadImm(ng.gen(),i);
+                curBlock.addInst(loadImm);
+                calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, loadImm.rd);
+            }
             curBlock.addInst(calcAddr);
         } else {
             var calcBase = new Computation(ng.gen(), Computation.CompType.sll,

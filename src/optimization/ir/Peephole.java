@@ -57,6 +57,18 @@ public class Peephole extends IRFunctionPass {
             instReplace(block);
             algebraicAssociation(block);
         });
+        /*
+        boolean flag=false;
+        do{
+            for(var iter=irFunc.blocks.listIterator();iter.hasNext();){
+                var block=iter.next();
+                if(block.prevs.isEmpty()&&block!= irFunc.entryBlock){
+                    block.nexts.forEach(block::removeFromNext);
+                    iter.remove();
+                    flag=true;
+                }
+            }
+        }while (flag);*/
     }
 
     private void instReplace(IRBlock block) {
