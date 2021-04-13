@@ -163,7 +163,8 @@ public class IRBuilder implements ASTVisitor {
                             curBlock = allAfter;
                             prevOrLogicalSecond = second;
                             return prevOrCondVar;
-                        } else */{
+                        } else */
+                        {
                             IRBlock after = new IRBlock("or_after" + blockSuffix);
                             curFunc.addBlock(after);
                             var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
@@ -180,8 +181,8 @@ public class IRBuilder implements ASTVisitor {
                             curFunc.defineVar(condReg, curBlock);
                             curBlock.setJumpTerminator(after);
 
-                            prevOrLogicalSecond=curBlock;
-                            prevOrCondVar=condReg;
+                            prevOrLogicalSecond = curBlock;
+                            prevOrCondVar = condReg;
                             curBlock = after;
                             return condReg;
                         }
@@ -534,26 +535,43 @@ public class IRBuilder implements ASTVisitor {
                     curBlock.setRetTerminator(new IntConstant(0));
                 } else {
                     // for constructor
+                    // need further checking
                     curBlock.setRetTerminator(new Register(new PointerType(curFunc.retTy), "this"));
                 }
                 curFunc.exitBlock = curBlock;
-            } else if (curFunc.returnBlocks.size() == 1) {
-                curFunc.exitBlock = curFunc.returnBlocks.get(0);
             } else {
-                var exit = new IRBlock("exit");
-                var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
-                curFunc.entryBlock.insertInstFromHead(new Assign(returnValue, new UndefConstant(returnValue.type)));
-                curFunc.declareVar(returnValue);
-                exit.setRetTerminator(returnValue);
-                curFunc.returnBlocks.forEach(b -> {
-                    IROperand ope = ((Ret) b.terminatorInst).value;
-                    b.terminatorInst = null;
-                    b.appendInst(new Assign(returnValue, ope));
-                    curFunc.defineVar(returnValue, b);
-                    b.setJumpTerminator(exit);
-                });
-                curFunc.addBlock(exit);
-                curFunc.exitBlock = exit;
+                if(!curBlock.hasTerminal()){
+                    // ugly workaround for those like after-block after a while-true loop
+                    if(curFunc.retTy.matches(Cst.int32))
+                        curBlock.setRetTerminator(new IntConstant(0));
+                    else if(curFunc.retTy.matches(Cst.bool))
+                        curBlock.setRetTerminator(new BoolConstant(false));
+                    else if(curFunc.retTy.matches(Cst.str)){
+                        var p=info.registerStrLiteral("");
+                        curBlock.setRetTerminator(p);
+                    }else{
+                        assert curFunc.retTy instanceof PointerType;
+                        curBlock.setRetTerminator(new NullptrConstant((PointerType) curFunc.retTy));
+                    }
+                }
+                if (curFunc.returnBlocks.size() == 1) {
+                    curFunc.exitBlock = curFunc.returnBlocks.get(0);
+                } else {
+                    var exit = new IRBlock("exit");
+                    var returnValue = new Register(curFunc.retTy, Cst.RETURN_VAL);
+                    curFunc.entryBlock.insertInstFromHead(new Assign(returnValue, new UndefConstant(returnValue.type)));
+                    curFunc.declareVar(returnValue);
+                    exit.setRetTerminator(returnValue);
+                    curFunc.returnBlocks.forEach(b -> {
+                        IROperand ope = ((Ret) b.terminatorInst).value;
+                        b.terminatorInst = null;
+                        b.appendInst(new Assign(returnValue, ope));
+                        curFunc.defineVar(returnValue, b);
+                        b.setJumpTerminator(exit);
+                    });
+                    curFunc.addBlock(exit);
+                    curFunc.exitBlock = exit;
+                }
             }
         }
         for (boolean removeFlag = true; removeFlag; ) {
