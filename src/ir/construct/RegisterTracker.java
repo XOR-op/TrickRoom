@@ -9,6 +9,7 @@ import ir.operand.Register;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -18,6 +19,7 @@ public class RegisterTracker {
     public final HashMap<String, HashSet<IRDestedInst>> defs = new HashMap<>();
     public final HashMap<String, HashSet<IRInst>> uses = new HashMap<>();
     public final HashMap<IRInst, IRBlock> instToBlock = new HashMap<>();
+    public final HashMap<IRBlock, LinkedList<IRInst>> sideEffectInst = new HashMap<>();
 
     public RegisterTracker(IRFunction irFunc) {
         this.irFunc = irFunc;
@@ -39,16 +41,21 @@ public class RegisterTracker {
             defs.get(reg.identifier()).add(inst);
         });
         irFunc.blocks.forEach(block -> {
+            var sideEffectSet = new LinkedList<IRInst>();
             Consumer<IRInst> func = inst -> {
                 instToBlock.put(inst, block);
                 srcProcess.accept(inst);
                 if (inst instanceof IRDestedInst)
                     destProcess.accept((IRDestedInst) inst);
+                if (inst.hasSideEffect())
+                    sideEffectSet.add(inst);
             };
             block.phiCollection.forEach(func);
             block.insts.forEach(func);
             func.accept(block.terminatorInst);
             srcProcess.accept(block.terminatorInst);
+            if (!sideEffectSet.isEmpty())
+                sideEffectInst.put(block, sideEffectSet);
         });
     }
 
@@ -108,8 +115,12 @@ public class RegisterTracker {
         }
     }
 
-    public void updateInstBelonging(IRInst inst, IRBlock newBlock){
-        instToBlock.put(inst,newBlock);
+    public void updateInstBelonging(IRInst inst, IRBlock newBlock) {
+        instToBlock.put(inst, newBlock);
+        if (inst.hasSideEffect()) {
+            if (!sideEffectInst.containsKey(newBlock)) sideEffectInst.put(newBlock, new LinkedList<>());
+            sideEffectInst.get(newBlock).add(inst);
+        }
     }
 
     public void removeRegister(Register reg) {

@@ -5,6 +5,7 @@ import ir.IRFunction;
 import ir.construct.DominanceTracker;
 import ir.construct.RegisterTracker;
 import ir.instruction.*;
+import ir.operand.GlobalVar;
 import ir.operand.Register;
 import misc.pass.IRFunctionPass;
 
@@ -39,24 +40,52 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
         findAndMotion(loop, parent);
     }
 
-    private void findAndMotion(Loop loop, Loop parentLoop) {
-        var motionInstSet = new LinkedList<IRInst>();
-        Consumer<IRBlock> perBlockLambda = irBlock -> {
-            for (var iter = irBlock.insts.iterator(); iter.hasNext(); ) {
-                var irInst = iter.next();
-                if (irInst.containsDest() && !irInst.hasSideEffect()) {
-                    var destInst = (IRDestedInst) irInst;
-                    // def outside
-                    boolean ok = true;
-                    for (var reg : destInst.getRegSrc()) {
-                        if (!usageTracker.isParameter(reg) &&
-                                (loop.loopBlock.contains(usageTracker.querySingleDefBlock(reg))
-                                        && !motionInstSet.contains(usageTracker.querySingleDef(reg)))) {
-                            ok = false;
+    private class AliasPolicy {
+        boolean flag = true;
+
+        public AliasPolicy(Loop loop) {
+            // naive alias
+            boolean f = false;
+            for (var block : loop.loopBlock) {
+                if (f) break;
+                if (usageTracker.sideEffectInst.containsKey(block)) {
+                    for (var i : usageTracker.sideEffectInst.get(block)) {
+                        if (i instanceof Call || i instanceof Store) {
+                            f = true;
+                            flag = false;
                             break;
                         }
                     }
-                    if (!ok) continue;
+                }
+            }
+        }
+
+        public boolean okToMotion(IRInst inst) {
+            return inst instanceof Load &&((Load) inst).address instanceof GlobalVar && flag;
+        }
+    }
+
+    private void findAndMotion(Loop loop, Loop parentLoop) {
+        var motionInstSet = new LinkedList<IRInst>();
+        var policy = new AliasPolicy(loop);
+        Consumer<IRBlock> perBlockLambda = irBlock -> {
+            for (var iter = irBlock.insts.iterator(); iter.hasNext(); ) {
+                var irInst = iter.next();
+                if (irInst.containsDest()) {
+                    if (!irInst.hasSideEffect()) {
+                        var destInst = (IRDestedInst) irInst;
+                        // def outside
+                        boolean ok = true;
+                        for (var reg : destInst.getRegSrc()) {
+                            if (!usageTracker.isParameter(reg) &&
+                                    (loop.loopBlock.contains(usageTracker.querySingleDefBlock(reg))
+                                            && !motionInstSet.contains(usageTracker.querySingleDef(reg)))) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        if (!ok) continue;
+                    } else if (!policy.okToMotion(irInst))continue;
                     motionInstSet.add(irInst);
                     iter.remove();
                 }
@@ -136,8 +165,9 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
         preheader.insts.addAll(motionInstSet);
         irFunc.addBlock(preheader);
         preheader.insts.forEach(inst -> usageTracker.updateInstBelonging(inst, preheader));
-        if (parentLoop != null)
+        if (parentLoop != null) {
             parentLoop.loopBlock.add(preheader);
+        }
     }
 
 }

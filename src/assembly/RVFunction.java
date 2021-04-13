@@ -51,9 +51,9 @@ public class RVFunction {
     }
 
     public void addVarOnStack(RVRegister reg) {
-        assert !varOffset.containsKey(reg);
+//        assert !varOffset.containsKey(reg);
+        if(varOffset.containsKey(reg))return; // reg as >8 arguments
         stackOffset -= 4;
-//        L.l("Stack:"+reg.toString()+"@"+System.identityHashCode(reg));
         varOffset.put(reg, stackOffset);
     }
 
