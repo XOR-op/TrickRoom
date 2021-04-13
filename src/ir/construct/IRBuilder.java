@@ -103,6 +103,7 @@ public class IRBuilder implements ASTVisitor {
                     case logic_and -> {
                         IRBlock second = new IRBlock("and_second" + blockSuffix);
                         curFunc.addBlock(second);
+                        /*
                         if (node.lhs instanceof BinaryExprNode && ((BinaryExprNode) node.lhs).lexerSign.equals(Cst.AND_LOGIC)) {
                             blockSuffix++;
                             node.lhs.accept(this);
@@ -120,7 +121,7 @@ public class IRBuilder implements ASTVisitor {
                             curBlock = allAfter;
                             prevAndLogicalSecond = second;
                             return prevAndCondVar;
-                        } else {
+                        } else */{
                             IRBlock after = new IRBlock("and_after" + blockSuffix);
                             curFunc.addBlock(after);
                             var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "and" + blockSuffix);
