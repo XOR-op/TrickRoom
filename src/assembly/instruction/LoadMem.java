@@ -1,5 +1,6 @@
 package assembly.instruction;
 
+import assembly.RVInfo;
 import assembly.operand.Imm;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualImm;
@@ -31,7 +32,13 @@ public class LoadMem extends RVInst {
 
     @Override
     public String tell() {
-        return "l" + wt + " " + rd.tell() + "," + imm.tell() + "(" + rs1.tell() + ")";
+        if(RVInfo.isShortImm(imm.getVal()))
+            return "l" + wt + " " + rd.tell() + "," + imm.tell() + "(" + rs1.tell() + ")";
+        else {
+            return  "li "+rd.tell()+","+imm.tell()+"\n\t"+
+                    "add "+rd.tell()+" "+rd.tell()+","+rs1.tell()+"\n\t"+
+                    "l" + wt + " " + rd.tell() + "," +  "0(" + rd.tell() + ")";
+        }
     }
 
     @Override
