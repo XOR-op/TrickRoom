@@ -33,33 +33,33 @@ public class GraphRegisterAllocator {
 
     // register structures
 
-    private final Map<RVRegister, HashSet<RVRegister>> interferenceGraph = new HashMap<>();
-    private final Map<RVRegister, Integer> degrees = new HashMap<>();
-    private final Map<RVRegister, Integer> weights = new HashMap<>();
-    private final Map<RVRegister, Integer> color = new HashMap<>();
+    private final Map<RVRegister, LinkedHashSet<RVRegister>> interferenceGraph = new LinkedHashMap<>();
+    private final Map<RVRegister, Integer> degrees = new LinkedHashMap<>();
+    private final Map<RVRegister, Integer> weights = new LinkedHashMap<>();
+    private final Map<RVRegister, Integer> color = new LinkedHashMap<>();
 
     private final Set<RVRegister>
-            preColored = new HashSet<>(),
-            initialList = new HashSet<>(),
-            simplifyWorkList = new HashSet<>(),
-            freezeWorkList = new HashSet<>(),
-            highDegreeWorkList = new HashSet<>(),
-            decidedSpillSet = new HashSet<>(),
-            coalescedSet = new HashSet<>(),
-            coloredSet = new HashSet<>();
+            preColored = new LinkedHashSet<>(),
+            initialList = new LinkedHashSet<>(),
+            simplifyWorkList = new LinkedHashSet<>(),
+            freezeWorkList = new LinkedHashSet<>(),
+            highDegreeWorkList = new LinkedHashSet<>(),
+            decidedSpillSet = new LinkedHashSet<>(),
+            coalescedSet = new LinkedHashSet<>(),
+            coloredSet = new LinkedHashSet<>();
 
     private final LinkedHashSet<RVRegister> selectedRegisterStack = new LinkedHashSet<>();
 
     // move instructions
     private final Set<Move>
-            workListMoves = new HashSet<>(),
-            constrainedMoves = new HashSet<>(),
-            coalescedMoves = new HashSet<>(),
-            frozenMoves = new HashSet<>(),
-            activeMoves = new HashSet<>();
+            workListMoves = new LinkedHashSet<>(),
+            constrainedMoves = new LinkedHashSet<>(),
+            coalescedMoves = new LinkedHashSet<>(),
+            frozenMoves = new LinkedHashSet<>(),
+            activeMoves = new LinkedHashSet<>();
 
-    private final HashMap<RVRegister, HashSet<Move>> moveRelation = new HashMap<>(); // mapping reg to all moves containing the reg
-    private final HashMap<RVRegister, RVRegister> aliasMapping = new HashMap<>();
+    private final LinkedHashMap<RVRegister, LinkedHashSet<Move>> moveRelation = new LinkedHashMap<>(); // mapping reg to all moves containing the reg
+    private final LinkedHashMap<RVRegister, RVRegister> aliasMapping = new LinkedHashMap<>();
 
     private void build() {
         preColored.clear();
@@ -88,7 +88,7 @@ public class GraphRegisterAllocator {
             color.put(reg, i);
             weights.put(reg, Integer.MAX_VALUE);
             degrees.put(reg, 0);
-            moveRelation.put(reg, new HashSet<>());
+            moveRelation.put(reg, new LinkedHashSet<>());
         }
         for (int i = 5; i <= 31; ++i) {
             immutableColorList.add(i);
@@ -115,13 +115,13 @@ public class GraphRegisterAllocator {
         });
         initialList.forEach(reg -> {
             degrees.put(reg, 0);
-            moveRelation.put(reg, new HashSet<>());
+            moveRelation.put(reg, new LinkedHashSet<>());
         });
     }
 
     private void singleEdge(RVRegister rv1, RVRegister rv2) {
         if (!interferenceGraph.containsKey(rv1)) {
-            var newSet = new HashSet<RVRegister>();
+            var newSet = new LinkedHashSet<RVRegister>();
             newSet.add(rv2);
             interferenceGraph.put(rv1, newSet);
             degrees.put(rv1, preColored.contains(rv1) ? 0 : 1);
@@ -185,12 +185,12 @@ public class GraphRegisterAllocator {
 
     private void buildInterfere() {
         asmFunc.blocks.forEach(b -> {
-            var live = new HashSet<>(b.liveOut);
+            var live = new LinkedHashSet<>(b.liveOut);
             for (var iter = b.instructions.descendingIterator(); iter.hasNext(); ) {
                 var inst = iter.next();
                 if (inst instanceof Move) {
                     Consumer<RVRegister> lambda = r -> {
-                        if (!moveRelation.containsKey(r)) moveRelation.put(r, new HashSet<>());
+                        if (!moveRelation.containsKey(r)) moveRelation.put(r, new LinkedHashSet<>());
                         moveRelation.get(r).add((Move) inst);
                     };
                     inst.forEachRegSrc(lambda);
@@ -313,7 +313,7 @@ public class GraphRegisterAllocator {
 
     private boolean BriggsCriterion(RVRegister u, RVRegister v) {
         if (preColored.contains(u)) return false;
-        var conjunction = new HashSet<RVRegister>();
+        var conjunction = new LinkedHashSet<RVRegister>();
         forEachAdjacent(u, conjunction::add);
         forEachAdjacent(v, conjunction::add);
         return (conjunction.stream().filter(reg -> degrees.get(reg) >= REG_NUM).count()) < REG_NUM;
@@ -418,7 +418,7 @@ public class GraphRegisterAllocator {
         for (var ele : selectedRegisterStack) tmpStack.push(ele);
         while (!tmpStack.isEmpty()) {
             var reg = tmpStack.pop();
-            var remainingColor = new HashSet<>(immutableColorList);
+            var remainingColor = new LinkedHashSet<>(immutableColorList);
             if (interferenceGraph.containsKey(reg)) {
                 interferenceGraph.get(reg).forEach(adj -> {
                     var w = getAlias(adj);
