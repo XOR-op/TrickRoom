@@ -33,13 +33,7 @@ public class LoadMem extends RVInst {
 
     @Override
     public String tell() {
-        if (imm instanceof AddrImm || RVInfo.isShortImm(imm.getVal()))
-            return "l" + wt + " " + rd.tell() + "," + imm.tell() + "(" + rs1.tell() + ")";
-        else {
-            return "li " + rd.tell() + "," + imm.tell() + "\n\t" +
-                    "add " + rd.tell() + " " + rd.tell() + "," + rs1.tell() + "\n\t" +
-                    "l" + wt + " " + rd.tell() + "," + "0(" + rd.tell() + ")";
-        }
+        return "l" + wt + " " + rd.tell() + "," + imm.tell() + "(" + rs1.tell() + ")";
     }
 
     @Override
