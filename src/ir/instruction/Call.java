@@ -1,8 +1,10 @@
 package ir.instruction;
 
 import ir.IRFunction;
+import ir.IRInfo;
 import ir.operand.IROperand;
 import ir.operand.Register;
+import misc.Cst;
 
 import java.util.ArrayList;
 import java.util.StringJoiner;
@@ -22,6 +24,10 @@ public class Call extends IRDestedInst {
     public Call push(IROperand irOperand) {
         args.add(irOperand);
         return this;
+    }
+
+    public boolean isMalloc() {
+        return function.name.equals(Cst.globalPrefix(Cst.MALLOC));
     }
 
     @Override

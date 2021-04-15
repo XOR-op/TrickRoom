@@ -2,29 +2,28 @@ package optimization.ir;
 
 import ir.IRBlock;
 import ir.IRFunction;
-import ir.construct.DominanceTracker;
-import ir.construct.RegisterTracker;
+import ir.IRInfo;
 import ir.instruction.*;
 import ir.operand.GlobalVar;
 import ir.operand.Register;
-import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Stack;
 import java.util.function.Consumer;
 
 public class LoopInvariantCodeMotion extends LoopAnalyzer {
+    private final AliasAnalyzer aliasAnalyzer;
 
-
-    public LoopInvariantCodeMotion(IRFunction f) {
+    public LoopInvariantCodeMotion(IRFunction f, IRInfo info) {
         super(f);
+        aliasAnalyzer = new AliasAnalyzer(f, info);
     }
 
     @Override
     protected void run() {
         super.run();
+        aliasAnalyzer.run();
         motionAll();
     }
 
@@ -41,7 +40,9 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
     }
 
     private class AliasPolicy {
-        boolean flag = true;
+        boolean safeAlias = true;
+        private final HashMap<IRInst, Register> memInsts = new HashMap<>();
+        private final HashSet<IRInst> noIntervene = new HashSet<>();
 
         public AliasPolicy(Loop loop) {
             // naive alias
@@ -50,19 +51,53 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
                 if (f) break;
                 if (usageTracker.sideEffectInst.containsKey(block)) {
                     for (var i : usageTracker.sideEffectInst.get(block)) {
-                        if (i instanceof Call || i instanceof Store) {
+                        if (i instanceof Call) {
                             f = true;
-                            flag = false;
+                            safeAlias = false;
                             break;
+                        } else if (i instanceof Load || i instanceof Store) {
+                            memInsts.put(i, (Register) (i instanceof Load ? ((Load) i).address : ((Store) i).address));
                         }
+                    }
+                }
+            }
+            if (safeAlias) {
+                for (var iter = memInsts.entrySet().iterator(); iter.hasNext(); ) {
+                    var pair = iter.next();
+                    var inst = pair.getKey();
+                    var addr = pair.getValue();
+                    boolean noInterveneFlag = true;
+                    for (var anoPair : memInsts.entrySet()) {
+                        if (anoPair.getKey() != inst) {
+                            if (aliasAnalyzer.check(anoPair.getValue().identifier(), addr.identifier()) != AliasAnalyzer.stat.NEVER
+                                    && (inst instanceof Store || anoPair.getKey() instanceof Store)) {
+                                noInterveneFlag = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (noInterveneFlag) {
+                        iter.remove();
+                        noIntervene.add(inst);
                     }
                 }
             }
         }
 
-        public boolean okToMotion(IRInst inst) {
-            return inst instanceof Load &&((Load) inst).address instanceof GlobalVar && flag;
+        public boolean okToMotion(IRInst inst, Loop loop) {
+            return safeAlias && noIntervene.contains(inst) && instDefOutside(inst, loop, new LinkedList<>());
         }
+    }
+
+    private boolean instDefOutside(IRInst destInst, Loop loop, LinkedList<IRInst> motionInstSet) {
+        for (var reg : destInst.getRegSrc()) {
+            if (!(reg instanceof GlobalVar) && !usageTracker.isParameter(reg) &&
+                    (loop.loopBlock.contains(usageTracker.querySingleDefBlock(reg))
+                            && !motionInstSet.contains(usageTracker.querySingleDef(reg)))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void findAndMotion(Loop loop, Loop parentLoop) {
@@ -71,21 +106,7 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
         Consumer<IRBlock> perBlockLambda = irBlock -> {
             for (var iter = irBlock.insts.iterator(); iter.hasNext(); ) {
                 var irInst = iter.next();
-                if (irInst.containsDest()) {
-                    if (!irInst.hasSideEffect()) {
-                        var destInst = (IRDestedInst) irInst;
-                        // def outside
-                        boolean ok = true;
-                        for (var reg : destInst.getRegSrc()) {
-                            if (!usageTracker.isParameter(reg) &&
-                                    (loop.loopBlock.contains(usageTracker.querySingleDefBlock(reg))
-                                            && !motionInstSet.contains(usageTracker.querySingleDef(reg)))) {
-                                ok = false;
-                                break;
-                            }
-                        }
-                        if (!ok) continue;
-                    } else if (!policy.okToMotion(irInst))continue;
+                if ((!irInst.hasSideEffect() && instDefOutside(irInst, loop, motionInstSet)) || (irInst instanceof Load && policy.okToMotion(irInst, loop))) {
                     motionInstSet.add(irInst);
                     iter.remove();
                 }
@@ -108,6 +129,7 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
         if (!motionInstSet.isEmpty()) {
             motion(motionInstSet, loop, parentLoop);
         }
+
     }
 
     private void motion(LinkedList<IRInst> motionInstSet, Loop loop, Loop parentLoop) {

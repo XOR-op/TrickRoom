@@ -100,7 +100,7 @@ public class IRFunction {
     public Object[] inlineClone(int serial) {
         HashMap<IRBlock, IRBlock> originToNew = new HashMap<>();
         String prefix = Cst.inlinePrefix(name, serial);
-        blocks.forEach(b -> originToNew.put(b, new IRBlock(prefix + b.blockName)));
+        blocks.forEach(b -> originToNew.put(b, new IRBlock(prefix + b.blockName.substring(2))));
         for (var pair : originToNew.entrySet()) {
             var origin = pair.getKey();
             var substitute = pair.getValue();

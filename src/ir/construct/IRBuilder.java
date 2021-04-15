@@ -67,9 +67,6 @@ public class IRBuilder implements ASTVisitor {
     private IRBlock prevAndLogicalSecond;
     private Register prevAndCondVar;
 
-    private IRBlock prevOrLogicalSecond;
-    private Register prevOrCondVar;
-
     @Override
     public IROperand visit(BinaryExprNode node) {
         if (node.lhs.type.equals(TypeConst.String) || node.rhs.type.equals(TypeConst.String)) {
@@ -145,26 +142,7 @@ public class IRBuilder implements ASTVisitor {
                     }
                     case logic_or -> {
                         IRBlock second = new IRBlock("or_second" + blockSuffix);
-                        curFunc.addBlock(second);/*
-                        if (node.lhs instanceof BinaryExprNode && ((BinaryExprNode) node.lhs).lexerSign.equals(Cst.OR_LOGIC)) {
-                            blockSuffix++;
-                            node.lhs.accept(this);
-                            assert prevOrCondVar != null && prevOrLogicalSecond != null;
-                            assert prevOrLogicalSecond.nexts.contains(curBlock);
-                            var allAfter = curBlock;
-                            prevOrLogicalSecond.terminatorInst = null;
-                            prevOrLogicalSecond.setBranchTerminator(prevOrCondVar, allAfter, second);
-
-                            curBlock = second;
-                            regAssign(prevOrCondVar, (IROperand) node.rhs.accept(this));
-                            curFunc.defineVar(prevOrCondVar, curBlock);
-                            curBlock.setJumpTerminator(allAfter);
-
-                            curBlock = allAfter;
-                            prevOrLogicalSecond = second;
-                            return prevOrCondVar;
-                        } else */
-                        {
+                        curFunc.addBlock(second);
                             IRBlock after = new IRBlock("or_after" + blockSuffix);
                             curFunc.addBlock(after);
                             var condReg = new Register(Cst.bool, Cst.SHORT_CIRCUIT_COND + "or" + blockSuffix);
@@ -181,11 +159,8 @@ public class IRBuilder implements ASTVisitor {
                             curFunc.defineVar(condReg, curBlock);
                             curBlock.setJumpTerminator(after);
 
-                            prevOrLogicalSecond = curBlock;
-                            prevOrCondVar = condReg;
                             curBlock = after;
                             return condReg;
-                        }
                     }
                     default -> {
                         // binary instruction

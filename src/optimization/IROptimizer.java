@@ -21,9 +21,9 @@ public class IROptimizer extends IRInfoPass {
                 new ConstantDeducer(f).invoke();
                 new Peephole(f).invoke();
                 new SimpleDCE(f).invoke();
-                new AliasOptimizer(f, info).invoke();
+                new MemAccessOptimizer(f, info).invoke();
                 new BlockCoalesce(f).invoke();
-                new LoopInvariantCodeMotion(f).invoke();
+                new LoopInvariantCodeMotion(f,info).invoke();
             });
             new GlobalInliner(info).invoke();
         }

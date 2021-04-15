@@ -65,7 +65,7 @@ public class IRInfo {
     }
 
     private IRFunction addBuiltinFunction(IRType ret, String name) {
-        var f = new IRFunction("_gbl_" + name, ret, true);
+        var f = new IRFunction(Cst.globalPrefix(name), ret, true);
         functions.put(name, f);
         globalFunction.add(f);
         return f;
