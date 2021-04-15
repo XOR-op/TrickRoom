@@ -24,14 +24,14 @@ public class FuncCallAnalyzer extends IRInfoPass {
 
     @Override
     protected void run() {
-        collectDependency();
+        info.forEachFunction(f -> collectDependency(f, false));
     }
 
-    private void collectDependency() {
-        info.forEachFunction(this::collectDependency);
+    public void collectAndInline() {
+        info.forEachFunction(f -> collectDependency(f, true));
     }
 
-    private void collectDependency(IRFunction func) {
+    private void collectDependency(IRFunction func, boolean doInline) {
         if (callGraph.containsKey(func)) return;
         if (func.isBuiltin()) {
             callGraph.put(func, new HashSet<>());
@@ -48,7 +48,7 @@ public class FuncCallAnalyzer extends IRInfoPass {
         func.invokedFunctions.forEach((successor, count) -> {
             next.add(successor);
             if (!callGraph.containsKey(successor)) {
-                collectDependency(successor);
+                collectDependency(successor,doInline);
                 if (!successor.isBuiltin())
                     lowLink.put(func, Math.min(lowLink.get(successor), lowLink.get(func)));
             } else if (!successor.isBuiltin() && tarjanStack.contains(successor)) {
@@ -62,7 +62,7 @@ public class FuncCallAnalyzer extends IRInfoPass {
                 tarjanStack.pop();
                 if (!func.invokedFunctions.containsKey(func))
                     ableToInline.add(func);
-                else {
+                else if (doInline) {
                     int callNumber = GlobalInliner.recurUnfoldPolicy(func);
                     if (callNumber > 0) {
                         for (; callNumber > 0; callNumber = GlobalInliner.recurUnfoldPolicy(func)) {

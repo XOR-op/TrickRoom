@@ -76,7 +76,7 @@ public class MemAccessOptimizer extends IRFunctionPass {
                         // no previous record
                         memRefStorage.put(addr, store.source);
                     }
-                } else if (inst instanceof Call && ((Call) inst).function.hasSideEffect) {
+                } else if (inst instanceof Call&&((Call) inst).function.hasSideEffect) {
                     memRefStorage.clear();
                     dirty.clear();
                 }

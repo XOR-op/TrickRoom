@@ -16,7 +16,7 @@ public class GlobalInliner extends IRInfoPass {
 
     public GlobalInliner(IRInfo info) {
         super(info);
-        funcCallAnalyzer=new FuncCallAnalyzer(info);
+        funcCallAnalyzer = new FuncCallAnalyzer(info);
     }
 
     public static boolean inlinePolicy(IRFunction f) {
@@ -34,7 +34,7 @@ public class GlobalInliner extends IRInfoPass {
 
     @Override
     protected void run() {
-        funcCallAnalyzer.invoke();
+        funcCallAnalyzer.collectAndInline();
         inlineFilter();
         funcCallAnalyzer.ableToInline.addAll(funcCallAnalyzer.selfRecursion);
         dfsInlineVisited.addAll(funcCallAnalyzer.selfRecursion);
@@ -44,6 +44,7 @@ public class GlobalInliner extends IRInfoPass {
                 new Inliner(f, funcCallAnalyzer.ableToInline).invoke();
         });
     }
+
     private void inlineFilter() {
         funcCallAnalyzer.ableToInline.removeIf(f -> !inlinePolicy(f));
     }
