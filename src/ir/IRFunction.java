@@ -21,6 +21,7 @@ public class IRFunction {
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
+    public boolean hasSideEffect=true;
     private final boolean isBuiltin;
     public int inlineSerial = 0;
     public int originDuplication = 1;

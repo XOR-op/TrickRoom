@@ -1,10 +1,11 @@
-package optimization.ir;
+package misc.analysis;
 
 import ir.IRBlock;
 import ir.IRFunction;
 import ir.construct.DominanceTracker;
 import ir.construct.RegisterTracker;
 import misc.pass.IRFunctionPass;
+import optimization.ir.LoopInvariantCodeMotion;
 
 import java.util.HashMap;
 import java.util.HashSet;

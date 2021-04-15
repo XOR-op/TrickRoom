@@ -11,7 +11,7 @@ public class IROptimizer extends IRInfoPass {
 
     @Override
     protected void run() {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 5; ++i) {
             info.forEachFunction(f -> {
                 new AggressiveDCE(f).invoke();
                 new BlockCoalesce(f).invoke();

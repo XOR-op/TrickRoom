@@ -6,25 +6,60 @@ import ir.IRInfo;
 import ir.instruction.*;
 import ir.operand.GlobalVar;
 import ir.operand.Register;
+import misc.analysis.AliasAnalyzer;
+import misc.analysis.FuncCallAnalyzer;
+import misc.analysis.LoopAnalyzer;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class LoopInvariantCodeMotion extends LoopAnalyzer {
     private final AliasAnalyzer aliasAnalyzer;
+    private final FuncCallAnalyzer funcCallAnalyzer;
+    private final Set<IRFunction> dfsInlineVisited = new HashSet<>();
+    private final IRInfo info;
 
     public LoopInvariantCodeMotion(IRFunction f, IRInfo info) {
         super(f);
+        this.info = info;
         aliasAnalyzer = new AliasAnalyzer(f, info);
+        funcCallAnalyzer = new FuncCallAnalyzer(info);
     }
 
     @Override
     protected void run() {
         super.run();
-        aliasAnalyzer.run();
+        aliasAnalyzer.invoke();
+        funcCallAnalyzer.invoke();
+        dfsInline(info.getInit());
         motionAll();
+    }
+
+    private boolean dfsInline(IRFunction func) {
+        var hasSideEffect = false;
+        if (!dfsInlineVisited.contains(func)) {
+            dfsInlineVisited.add(func);
+            for (IRFunction f : funcCallAnalyzer.callGraph.get(func)) {
+                if (!dfsInlineVisited.contains(f))
+                    hasSideEffect |= dfsInline(f);
+            }
+        }
+        if (!hasSideEffect) {
+            // search for side-effected instructions
+            for (var block : func.blocks) {
+                for (var inst : block.insts) {
+                    if (inst instanceof Load || inst instanceof Store) {
+                        func.hasSideEffect = true;
+                        return true;
+                    }
+                }
+            }
+        }
+        func.hasSideEffect = hasSideEffect;
+        return hasSideEffect;
     }
 
 
@@ -41,17 +76,17 @@ public class LoopInvariantCodeMotion extends LoopAnalyzer {
 
     private class AliasPolicy {
         boolean safeAlias = true;
-        private final HashMap<IRInst, Register> memInsts = new HashMap<>();
         private final HashSet<IRInst> noIntervene = new HashSet<>();
 
         public AliasPolicy(Loop loop) {
             // naive alias
             boolean f = false;
+            HashMap<IRInst, Register> memInsts = new HashMap<>();
             for (var block : loop.loopBlock) {
                 if (f) break;
                 if (usageTracker.sideEffectInst.containsKey(block)) {
                     for (var i : usageTracker.sideEffectInst.get(block)) {
-                        if (i instanceof Call) {
+                        if (i instanceof Call && ((Call) i).function.hasSideEffect) {
                             f = true;
                             safeAlias = false;
                             break;

@@ -35,9 +35,9 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
         addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
         // string methods
-        addStringMethod(Cst.int32, "length");
-        addStringMethod(Cst.int32, "parseInt");
-        addStringMethod(Cst.int32, "ord").addParam(Cst.int32, "pos");
+        addStringMethod(Cst.int32, "length").hasSideEffect = false;
+        addStringMethod(Cst.int32, "parseInt").hasSideEffect = false;
+        addStringMethod(Cst.int32, "ord").addParam(Cst.int32, "pos").hasSideEffect = false;
         addStringMethod(Cst.str, "substring").addParam(Cst.int32, "left").addParam(Cst.int32, "right");
         // operator overloading
         addStringMethod(Cst.str, "concat").addParam(Cst.str, "rhs");
@@ -47,12 +47,11 @@ public class IRInfo {
         addStrCmp("le");
         addStrCmp("gt");
         addStrCmp("ge");
-
         scopeScan(scope);
     }
 
     private void addStrCmp(String name) {
-        addStringMethod(Cst.bool, name).addParam(Cst.str, "rhs");
+        addStringMethod(Cst.bool, name).addParam(Cst.str, "rhs").hasSideEffect = false;
     }
 
     private IRFunction addStringMethod(IRType ret, String name) {
@@ -224,7 +223,7 @@ public class IRInfo {
 
     }
 
-    public IRFunction getMain(){
+    public IRFunction getMain() {
         for (var entry : functions.entrySet()) {
             if (entry.getValue().name.equals("main")) return entry.getValue();
         }

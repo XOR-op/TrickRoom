@@ -1,17 +1,13 @@
 package optimization.ir;
 
-import assembly.instruction.Move;
 import ir.IRFunction;
 import ir.IRInfo;
-import ir.construct.RegisterTracker;
 import ir.instruction.*;
 import ir.operand.IRConstant;
 import ir.operand.IROperand;
-import ir.operand.IntConstant;
 import ir.operand.Register;
-import misc.Cst;
+import misc.analysis.AliasAnalyzer;
 import misc.pass.IRFunctionPass;
-import misc.tools.DisjointSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +25,7 @@ public class MemAccessOptimizer extends IRFunctionPass {
 
     @Override
     protected void run() {
-        analyzer.run();
+        analyzer.invoke();
         irFunc.blocks.forEach(block -> {
             var memRefStorage = new HashMap<String, IROperand>();
             var dirty = new HashSet<String>();
@@ -80,7 +76,7 @@ public class MemAccessOptimizer extends IRFunctionPass {
                         // no previous record
                         memRefStorage.put(addr, store.source);
                     }
-                } else if (inst instanceof Call) {
+                } else if (inst instanceof Call && ((Call) inst).function.hasSideEffect) {
                     memRefStorage.clear();
                     dirty.clear();
                 }
