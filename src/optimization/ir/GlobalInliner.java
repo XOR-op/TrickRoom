@@ -29,7 +29,7 @@ public class GlobalInliner extends IRInfoPass {
         for (var b : f.blocks) {
             for (var inst : b.insts) if (inst instanceof Call && ((Call) inst).function == f) recursionCall++;
         }
-        return (recursionCall <= 4 && f.originDuplication <= 8 && f.blocks.stream().mapToInt(b -> b.insts.size()).sum() < 400) ? recursionCall : -1;
+        return (recursionCall <= 2 && f.originDuplication <= 4 && f.blocks.stream().mapToInt(b -> b.insts.size()).sum() < 400) ? recursionCall : -1;
     }
 
     @Override
