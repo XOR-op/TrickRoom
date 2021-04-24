@@ -21,7 +21,7 @@ public class GlobalInliner extends IRInfoPass {
 
     public static boolean inlinePolicy(IRFunction f) {
         var instSum = f.blocks.stream().mapToInt(b -> b.insts.size()).sum();
-        return !(f.blocks.size() > 30 || instSum > 80);
+        return !(f.blocks.size() > 50 || instSum > 500);
     }
 
     public static int recurUnfoldPolicy(IRFunction f) {
@@ -29,7 +29,7 @@ public class GlobalInliner extends IRInfoPass {
         for (var b : f.blocks) {
             for (var inst : b.insts) if (inst instanceof Call && ((Call) inst).function == f) recursionCall++;
         }
-        return (recursionCall <= 2 && f.originDuplication <= 4 && f.blocks.stream().mapToInt(b -> b.insts.size()).sum() < 50) ? recursionCall : -1;
+        return (recursionCall <= 4 && f.originDuplication <= 8 && f.blocks.stream().mapToInt(b -> b.insts.size()).sum() < 400) ? recursionCall : -1;
     }
 
     @Override
