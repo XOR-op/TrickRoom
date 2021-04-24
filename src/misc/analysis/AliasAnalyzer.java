@@ -4,6 +4,7 @@ import ir.IRFunction;
 import ir.IRInfo;
 import ir.construct.RegisterTracker;
 import ir.instruction.Assign;
+import ir.instruction.BitCast;
 import ir.instruction.Call;
 import ir.instruction.GetElementPtr;
 import ir.operand.IRConstant;
@@ -36,7 +37,8 @@ public class AliasAnalyzer extends IRFunctionPass {
 
     public boolean noConflict(HashMap<String, IROperand> storage, String addr) {
         for (var s : storage.entrySet())
-            if (check(s.getKey(), addr) != stat.NEVER && !addr.equals(s.getKey())) return false;
+            if (check(s.getKey(), addr) != stat.NEVER && !addr.equals(s.getKey()))
+                return false;
         return true;
     }
 
@@ -48,6 +50,9 @@ public class AliasAnalyzer extends IRFunctionPass {
             if (def instanceof Assign && ((Assign) def).src instanceof Register) {
                 unionFind.put(def.dest.identifier(), unionFind.query(((Register) ((Assign) def).src).identifier()));
                 reg = (Register) ((Assign) def).src;
+            }else if(def instanceof BitCast && ((BitCast) def).from instanceof Register) {
+                unionFind.put(def.dest.identifier(), unionFind.query(((Register) ((BitCast) def).from).identifier()));
+                reg = (Register) ((BitCast) def).from;
             }
             if (reg != null)
                 unionFind.put(def.dest.identifier(), unionFind.query(reg.identifier()));
@@ -74,8 +79,9 @@ public class AliasAnalyzer extends IRFunctionPass {
         else if (isMalloc(reg1) && isMalloc(reg2)) return eqOrNot(reg1, reg2);
         else {
             var inst1 = tracker.querySingleDef(unionFind.query(reg1));
-            var inst2 = tracker.querySingleDef(unionFind.query(reg1));
+            var inst2 = tracker.querySingleDef(unionFind.query(reg2));
             if (inst1 instanceof GetElementPtr && inst2 instanceof GetElementPtr) {
+                if (!inst1.dest.type.matches(inst2.dest.type))return stat.NEVER;
                 if (((Register) ((GetElementPtr) inst1).base).sameIdentifier(((GetElementPtr) inst2).base)) {
                     if (((GetElementPtr) inst1).indexing instanceof Register
                             && ((Register) ((GetElementPtr) inst1).indexing).sameIdentifier(((GetElementPtr) inst2).indexing) ||

@@ -11,6 +11,7 @@ import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.Consumer;
 
 /*
  * Address registers emerge from GlobalVar, Assign, BitCast, Call, GetElementPtr, Load and Phi.
@@ -62,6 +63,23 @@ public class MemAccessOptimizer extends IRFunctionPass {
                 } else if (inst instanceof Store) {
                     var store = (Store) inst;
                     var addr = ((Register) store.address).identifier();
+
+                    if (!analyzer.noConflict(memRefStorage, addr)) {
+                        iter.previous();
+                        for (var mapIter = memRefStorage.entrySet().iterator(); mapIter.hasNext(); ) {
+                            var s = mapIter.next();
+                            if (analyzer.check(s.getKey(), addr) != AliasAnalyzer.stat.NEVER) {
+                                // store conflicted memory data
+                                if (dirty.contains(s.getKey())) {
+                                    dirty.remove(s.getKey());
+                                    iter.add(new Store(s.getValue(), analyzer.str2reg(s.getKey())));
+                                }
+                                mapIter.remove();
+                            }
+                        }
+                        iter.next();
+                    }
+
                     if (memRefStorage.containsKey(addr)) {
                         if ((store.source instanceof Register && ((Register) store.source).sameIdentifier(memRefStorage.get(addr))
                                 || (store.source instanceof IRConstant && memRefStorage.get(addr) instanceof IRConstant
@@ -76,7 +94,7 @@ public class MemAccessOptimizer extends IRFunctionPass {
                         // no previous record
                         memRefStorage.put(addr, store.source);
                     }
-                } else if (inst instanceof Call&&((Call) inst).function.hasSideEffect) {
+                } else if (inst instanceof Call && ((Call) inst).function.hasSideEffect) {
                     memRefStorage.clear();
                     dirty.clear();
                 }
