@@ -140,6 +140,13 @@ public class RegisterTracker {
         return irFunc.parameters.contains(reg);
     }
 
+    public Register queryParameter(String name){
+        for (var reg : irFunc.parameters) {
+            if (reg.identifier().equals(name)) return reg;
+        }
+        throw new IllegalStateException();
+    }
+
     private boolean validate() {
         for (var entry : uses.entrySet()) {
             if (!defs.containsKey(entry.getKey()))

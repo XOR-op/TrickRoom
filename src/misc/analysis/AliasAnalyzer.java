@@ -50,7 +50,7 @@ public class AliasAnalyzer extends IRFunctionPass {
             if (def instanceof Assign && ((Assign) def).src instanceof Register) {
                 unionFind.put(def.dest.identifier(), unionFind.query(((Register) ((Assign) def).src).identifier()));
                 reg = (Register) ((Assign) def).src;
-            }else if(def instanceof BitCast && ((BitCast) def).from instanceof Register) {
+            } else if (def instanceof BitCast && ((BitCast) def).from instanceof Register) {
                 unionFind.put(def.dest.identifier(), unionFind.query(((Register) ((BitCast) def).from).identifier()));
                 reg = (Register) ((BitCast) def).from;
             }
@@ -76,23 +76,30 @@ public class AliasAnalyzer extends IRFunctionPass {
 
     public stat check(String reg1, String reg2) {
         if (isGlobal(reg1) || isGlobal(reg2)) return eqOrNot(reg1, reg2);
-        else if (isMalloc(reg1) && isMalloc(reg2)) return eqOrNot(reg1, reg2);
+        else if (tracker.isParameter(reg1) || tracker.isParameter(reg2)) {
+            var theReg1 = (tracker.isParameter(reg1)) ? tracker.queryParameter(reg1) : tracker.queryRegisterDefs(reg1).iterator().next().dest;
+            var theReg2 = (tracker.isParameter(reg2)) ? tracker.queryParameter(reg2) : tracker.queryRegisterDefs(reg2).iterator().next().dest;
+            return (theReg1.type.matches(theReg2.type)) ? stat.MAY : stat.NEVER;
+        } else if (isMalloc(reg1) && isMalloc(reg2)) return eqOrNot(reg1, reg2);
         else {
             var inst1 = tracker.querySingleDef(unionFind.query(reg1));
             var inst2 = tracker.querySingleDef(unionFind.query(reg2));
             if (inst1 instanceof GetElementPtr && inst2 instanceof GetElementPtr) {
-                if (!inst1.dest.type.matches(inst2.dest.type))return stat.NEVER;
-                if (((Register) ((GetElementPtr) inst1).base).sameIdentifier(((GetElementPtr) inst2).base)) {
-                    if (((GetElementPtr) inst1).indexing instanceof Register
-                            && ((Register) ((GetElementPtr) inst1).indexing).sameIdentifier(((GetElementPtr) inst2).indexing) ||
-                            (((GetElementPtr) inst1).indexing instanceof IntConstant && ((GetElementPtr) inst2).indexing instanceof IntConstant &&
-                                    ((IntConstant) ((GetElementPtr) inst1).indexing).sameConst((IRConstant) ((GetElementPtr) inst2).indexing))) {
-                        if (((GetElementPtr) inst1).offset == null ^ ((GetElementPtr) inst2).offset == null) {
+                GetElementPtr gep1 = (GetElementPtr) inst1, gep2 = (GetElementPtr) inst2;
+                if (!inst1.dest.type.matches(inst2.dest.type)) return stat.NEVER;
+                if (check(((Register) (gep1).base).identifier(), ((Register) (gep2).base).identifier()) == stat.NEVER)
+                    return stat.NEVER;
+                if (((Register) (gep1).base).sameIdentifier((gep2).base)) {
+                    if ((gep1).indexing instanceof Register
+                            && ((Register) (gep1).indexing).sameIdentifier((gep2).indexing) ||
+                            ((gep1).indexing instanceof IntConstant && (gep2).indexing instanceof IntConstant &&
+                                    ((IntConstant) (gep1).indexing).sameConst((IRConstant) (gep2).indexing))) {
+                        if ((gep1).offset == null ^ (gep2).offset == null) {
                             return stat.NEVER;
-                        } else if (((GetElementPtr) inst1).offset == null && ((GetElementPtr) inst2).offset == null) {
+                        } else if ((gep1).offset == null && (gep2).offset == null) {
                             return stat.MUST;
                         } else {
-                            return ((GetElementPtr) inst1).offset.sameConst(((GetElementPtr) inst2).offset) ? stat.MUST : stat.NEVER;
+                            return (gep1).offset.sameConst((gep2).offset) ? stat.MUST : stat.NEVER;
                         }
                     }
                 }
