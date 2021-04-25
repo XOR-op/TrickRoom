@@ -17,13 +17,14 @@ public class IROptimizer extends IRInfoPass {
                 new BlockCoalesce(f).invoke();
                 new SCCP(f).invoke();
                 new CopyPropagation(f).invoke();
+                new TailRecursion(f).invoke();
                 new CommonSubexpElimination(f, CommonSubexpElimination.Type.LOCAL).invoke();
                 new ConstantDeducer(f).invoke();
                 new Peephole(f).invoke();
                 new SimpleDCE(f).invoke();
                 new MemAccessOptimizer(f, info).invoke();
                 new BlockCoalesce(f).invoke();
-                new LoopInvariantCodeMotion(f,info).invoke();
+                new LoopInvariantCodeMotion(f, info).invoke();
             });
             new GlobalInliner(info).invoke();
         }

@@ -21,7 +21,7 @@ public class IRFunction {
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
-    public boolean hasSideEffect=true;
+    public boolean hasSideEffect = true;
     private final boolean isBuiltin;
     public int inlineSerial = 0;
     public int originDuplication = 1;
@@ -89,7 +89,11 @@ public class IRFunction {
         var argJoiner = new StringJoiner(",", "(", ")");
         parameters.forEach(p -> argJoiner.add(p.type.tell() + " " + p.tell()));
         builder.append("define ").append(retTy.tell()).append(" @").append(name).append(argJoiner.toString()).append(" #0 {\n");
-        blocks.forEach(b -> builder.append(b.tell()));
+        builder.append(entryBlock.tell());
+        blocks.forEach(b -> {
+            if (b != entryBlock)
+                builder.append(b.tell());
+        });
         return builder.append("}\n").toString();
     }
 

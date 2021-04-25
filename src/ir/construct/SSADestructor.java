@@ -20,12 +20,16 @@ public class SSADestructor extends IRFunctionPass {
         public void addPair(Register dest, IROperand operand) {
             copyList.add(new Assign(dest, operand));
             if (operand instanceof Register) {
-                var name=((Register) operand).identifier();
-                if (!srcCollection.containsKey(name))
-                    srcCollection.put(name, 1);
-                else
-                    srcCollection.put(name, srcCollection.get(name) + 1);
+                addSource((Register) operand);
             }
+        }
+
+        public void addSource(Register reg) {
+            var name = reg.identifier();
+            if (!srcCollection.containsKey(name))
+                srcCollection.put(name, 1);
+            else
+                srcCollection.put(name, srcCollection.get(name) + 1);
         }
 
         public void removePair(Assign ass) {
@@ -109,14 +113,11 @@ public class SSADestructor extends IRFunctionPass {
                 var cur = iter.next();
                 if (!cur.dest.equals(cur.src)) {
                     iter.remove();
-                    theCopy.removePair(cur);
                     flag = true;
                     var substitute = new Assign(new Register(cur.dest.type), cur.src);
                     theBlock.appendInst(substitute);
-                    theCopy.copyList.forEach(each -> {
-                        if (cur.dest.equals(each.src))
-                            each.src = substitute.dest;
-                    });
+                    theCopy.removePair(cur);
+                    theCopy.addPair(cur.dest,substitute.dest);
                     break;
                 }
             }
