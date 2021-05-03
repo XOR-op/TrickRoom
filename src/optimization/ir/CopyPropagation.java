@@ -2,6 +2,7 @@ package optimization.ir;
 
 import ir.IRFunction;
 import ir.construct.RegisterTracker;
+import ir.construct.RegisterUnification;
 import ir.instruction.Assign;
 import ir.operand.Register;
 import misc.pass.IRFunctionPass;
@@ -42,7 +43,6 @@ public class CopyPropagation extends IRFunctionPass {
             tracker.queryRegisterUses(r).forEach(inst ->
                     inst.replaceRegisterWithOperand(tracker.nameToRegister(unionFind.query(r.identifier())), r));
         });
-        var newTrack = new RegisterTracker(irFunc);
-        newTrack.run();
+        new RegisterUnification(irFunc).invoke();
     }
 }

@@ -7,6 +7,7 @@ import ir.operand.Register;
 import ir.operand.StringConstant;
 import ir.typesystem.*;
 import misc.Cst;
+import misc.UnimplementedError;
 import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
@@ -33,7 +34,16 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
+        if (false) {
+            // gc-ver malloc
+            var f = new IRFunction(Cst.globalPrefix(Cst.MALLOC) + "_gcVer", new PointerType(Cst.byte_t), true);
+            functions.put(Cst.MALLOC, f);
+            globalFunction.add(f);
+            f.addParam(Cst.int32, "len");
+            addBuiltinFunction(Cst.void_t, Cst.GC_HINT).addParam(Cst.int32, "len");
+            addBuiltinFunction(Cst.void_t, Cst.GC_UNHINT).addParam(Cst.int32, "len");
+        } else
+            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
         // string methods
         addStringMethod(Cst.int32, "length").hasSideEffect = false;
         addStringMethod(Cst.int32, "parseInt").hasSideEffect = false;

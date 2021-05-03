@@ -10,6 +10,8 @@ public class Cst {
     public static final String RETURN_VAL = "_ret_val";
     public static final String INIT = "_gbl_init";
     public static final String MALLOC = "malloc";
+    public static final String GC_HINT = "_gbl_gc_hint";
+    public static final String GC_UNHINT = "_gbl_gc_unhint";
     public static final String COPY_ELIMINATION = "_copy";
     public static final String LOOP_INCRE_NAME = "_loop_new";
     public static final String SHORT_CIRCUIT_COND = "_short_cond";

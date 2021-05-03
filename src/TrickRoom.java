@@ -5,6 +5,7 @@ import ast.struct.RootNode;
 import ir.construct.IRBuilder;
 import ast.exception.*;
 import ir.IRInfo;
+import ir.construct.RegisterUnification;
 import misc.Cst;
 import misc.analysis.LoopAnalyzer;
 import optimization.AsmOptimizer;
@@ -185,7 +186,10 @@ public class TrickRoom {
     private IRInfo llvmGen(RootNode rootNode) {
         IRBuilder builder = new IRBuilder(rootNode);
         IRInfo info = builder.constructIR();
-        info.forEachFunction(f -> new SSAConverter(f).invoke());
+        info.forEachFunction(f -> {
+            new SSAConverter(f).invoke();
+            new RegisterUnification(f).invoke();
+        });
         if (entryRenameFlag)
             info.renameMain();
         return info;

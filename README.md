@@ -4,20 +4,27 @@
 Compiler for Mx* language.
 ## Mx* language
 [Mx*](https://github.com/ACMClassCourses/Compiler-Design-Implementation) is a programming language designed for teaching purpose, 
-which resembles a mixture of Java and Cpp.
+which resembles a mixture of Java and CPP.
 
 The precise grammar definition can be referenced in MxStar.g4 in the repository.
 
 ## Command Options
-#### -fsyntax-only
-only do semantic check
-#### -emit-llvm
-generate llvm IR code
-#### -O2
-do optimization
-#### -i $FILE
-redirect input from stdin to file
-#### -o $FILE
-redirect output from stdout to file
+- `-fsyntax-only`: Perform semantic check only.
+- `-emit-llvm`: Generate llvm IR code and stop.
+- `-O2`: Do IR-level optimization.
+- `-i $FILE`: Redirect input from stdin to file.
+- `-o $FILE`: Redirect output from stdout to file.
+- `-ir64`: 64-bit address mode to support correct llvm-IR for 64-bit machine.
+- `-disable-gc`: Disable garbage collection to improve benchmark efficiency.
 ## Technique Specs
-todo
+- Support llvm output
+- Implement the following optimizations:
+  - ADCE
+  - Copy propagation
+  - Local CSE
+  - Inline
+  - LICM
+  - SCCP
+  - Tail recursion optimization
+  - Basic peephole
+  

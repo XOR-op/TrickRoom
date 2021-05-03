@@ -137,7 +137,7 @@ public class RegisterTracker {
     }
 
     public boolean isParameter(Register reg) {
-        return irFunc.parameters.contains(reg);
+        return isParameter(reg.identifier());
     }
 
     public Register queryParameter(String name){

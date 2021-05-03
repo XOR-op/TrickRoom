@@ -22,21 +22,21 @@ public class StructureType extends IRType {
     public StructureType addMember(Register mem) {
         // without padding now
         members.add(mem);
-        size += mem.type.size();
+        size += Math.min(4, mem.type.size());
         return this;
     }
 
     public int getMemberOffset(int which) {
         int off = 0;
         for (int idx = 0; idx < which; ++idx) {
-            off += members.get(idx).type.size();
+            off += Math.min(4, members.get(idx).type.size());
         }
         return off;
     }
 
-    public IntConstant getMemberIndex(String mem){
-        for (int idx = 0; idx < members.size() ; ++idx) {
-            if(members.get(idx).getName().equals(mem))return new IntConstant(idx);
+    public IntConstant getMemberIndex(String mem) {
+        for (int idx = 0; idx < members.size(); ++idx) {
+            if (members.get(idx).getName().equals(mem)) return new IntConstant(idx);
         }
         throw new IllegalStateException();
     }
@@ -64,6 +64,6 @@ public class StructureType extends IRType {
 
     @Override
     public boolean matches(IRType rhs) {
-        return rhs==this;
+        return rhs == this;
     }
 }
