@@ -3,6 +3,8 @@ package ir.instruction;
 import ir.IRFunction;
 import ir.operand.Register;
 
+import java.util.StringJoiner;
+
 public class VaArg extends Call {
     public VaArg(Register dst, IRFunction func) {
         super(dst, func);
@@ -15,7 +17,10 @@ public class VaArg extends Call {
 
     @Override
     public String tell() {
-        throw new UnsupportedOperationException("Non-standard llvm instruction");
+        StringJoiner sb=new StringJoiner(",","(",")");
+        for(var a:args)sb.add(a.tell());
+        return "NSI: va_arg "+sb;
+//        throw new UnsupportedOperationException("Non-standard llvm instruction");
     }
 
     @Override

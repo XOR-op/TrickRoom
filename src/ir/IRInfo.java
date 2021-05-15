@@ -20,7 +20,7 @@ public class IRInfo {
     private final HashMap<String, StringConstant> strLiterals = new HashMap<>();
     private final HashMap<String, String> stringMethods = new HashMap<>();
 
-    private final HashMap<String, GlobalVar> globalVars = new HashMap<>();
+    public final HashMap<String, GlobalVar> globalVars = new HashMap<>();
     private final HashSet<IRFunction> globalFunction = new HashSet<>();
     private int strCounter = 0;
     private IRFunction init = null;
@@ -34,14 +34,18 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        if (false) {
+        if (true) {
             // gc-ver malloc
-            var f = new IRFunction(Cst.globalPrefix(Cst.MALLOC) + "_gcVer", new PointerType(Cst.byte_t), true);
+            var f = new IRFunction(Cst.globalPrefix(Cst.MALLOC_GC), new PointerType(Cst.byte_t), true);
             functions.put(Cst.MALLOC, f);
             globalFunction.add(f);
             f.addParam(Cst.int32, "len");
-            addBuiltinFunction(Cst.void_t, Cst.GC_HINT).addParam(Cst.int32, "len");
-            addBuiltinFunction(Cst.void_t, Cst.GC_UNHINT).addParam(Cst.int32, "len");
+            addBuiltinFunction(Cst.void_t, Cst.GC_INIT).addParam(Cst.int32, "len");
+            addBuiltinFunction(Cst.void_t, Cst.GC_RECLAIM);
+            addBuiltinFunction(Cst.void_t, Cst.GC_STATIC_HINT);
+            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_STRUCT_MALLOC).addParam(Cst.int32, "size").addParam(Cst.int32,"ptrSZ");
+            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_ARRAY_MALLOC).addParam(Cst.int32, "length").addParam(Cst.int32,"eleSZ");
+            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC_SYS).addParam(Cst.int32, "len");
         } else
             addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
         // string methods
@@ -124,6 +128,7 @@ public class IRInfo {
         cls.constructor.forEach(func -> addMethod(cls, func));
         var struct = types.get(cls.id);
         cls.memberVars.forEach((k, v) -> struct.addMember(new Register(resolveType(v.getType()), k)));
+        struct.rearrange();
     }
 
     public void addFunction(FunctionType func) {

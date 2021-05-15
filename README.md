@@ -1,4 +1,6 @@
 # TrickRoom
+[![Version:0.0.1](https://img.shields.io/badge/TrickRoom-v0.0.1-blue?style=flat-square)]()
+
 <img src="https://cdn.bulbagarden.net/upload/thumb/8/87/Trick_Room_VIII.png/800px-Trick_Room_VIII.png" alt="Trick Room" width="50%"/>
 
 Compiler for Mx* language.
@@ -14,8 +16,7 @@ The precise grammar definition can be referenced in MxStar.g4 in the repository.
 - `-O2`: Do IR-level optimization.
 - `-i $FILE`: Redirect input from stdin to file.
 - `-o $FILE`: Redirect output from stdout to file.
-- `-ir64`: 64-bit address mode to support correct llvm-IR for 64-bit machine.
-- `-disable-gc`: Disable garbage collection to improve benchmark efficiency.
+- `-ir64`: 64-bit address mode to support correct llvm-IR for 64-bit machine.(Incompatible with GC)
 ## Technique Specs
 - Support llvm output
 - Implement the following optimizations:

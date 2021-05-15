@@ -10,16 +10,25 @@ public class Cst {
     public static final String RETURN_VAL = "_ret_val";
     public static final String INIT = "_gbl_init";
     public static final String MALLOC = "malloc";
-    public static final String GC_HINT = "_gbl_gc_hint";
-    public static final String GC_UNHINT = "_gbl_gc_unhint";
+    public static final String MALLOC_SYS = "malloc_sysVer";
+    public static final String MALLOC_GC = "malloc_gcVer";
     public static final String COPY_ELIMINATION = "_copy";
     public static final String LOOP_INCRE_NAME = "_loop_new";
     public static final String SHORT_CIRCUIT_COND = "_short_cond";
     public final static String NAME_GENERATE_PREFIX = "_asm_virReg";
     public final static String RESERVE_PREFIX = "_reserve";
+    public final static String RESERVE_COUNT = "#reserved_gc_count";
     public final static String INLINE_PREFIX = "ile_";
     public final static String SPLIT_PREFIX = "_split";
     public final static String BUILTIN_PREFIX = "_gbl_";
+    // gc
+    public static final String GC_INIT = "gc_init";
+    public static final String GC_RECLAIM = "gc_reclaim";
+    public static final String GC_HINT = "gc_hint";
+    public static final String GC_STATIC_HINT = "gc_static_hint";
+    public static final String GC_UNHINT = "gc_unhint";
+    public static final String GC_STRUCT_MALLOC = "gc_struct_malloc";
+    public static final String GC_ARRAY_MALLOC = "gc_array_malloc";
     public static String globalPrefix(String func){
         return BUILTIN_PREFIX+func;
     }

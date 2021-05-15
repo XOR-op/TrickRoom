@@ -4,6 +4,7 @@ import ir.IRBlock;
 import ir.IRFunction;
 import ir.instruction.*;
 import ir.operand.Register;
+import misc.UnimplementedError;
 import misc.pass.IRFunctionPass;
 
 import java.util.HashMap;
@@ -53,12 +54,12 @@ public class CommonSubexpElimination extends IRFunctionPass {
 
     @Override
     protected void run() {
-       if(type== CommonSubexpElimination.Type.LOCAL)
-           local();
-       else global();
+        if (type == CommonSubexpElimination.Type.LOCAL)
+            local();
+        else global();
     }
 
-    private void local(){
+    private void local() {
         irFunc.blocks.forEach(block -> {
             LookUpTable table = new LookUpTable();
             for (var iter = block.insts.listIterator(); iter.hasNext(); ) {
@@ -70,8 +71,8 @@ public class CommonSubexpElimination extends IRFunctionPass {
         });
     }
 
-    private void global(){
-        var mapping=new HashMap<IRBlock,LookUpTable>();
-        // todo
+    private void global() {
+        var mapping = new HashMap<IRBlock, LookUpTable>();
+        throw new UnimplementedError();
     }
 }

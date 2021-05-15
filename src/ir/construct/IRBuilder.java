@@ -74,9 +74,11 @@ public class IRBuilder implements ASTVisitor {
     private final RootNode root;
     private int blockSuffix = 0;
     private int loopSuffix = 0;
+    private int heapSize;
 
-    public IRBuilder(RootNode rootNode) {
+    public IRBuilder(RootNode rootNode, int heapSize) {
         root = rootNode;
+        this.heapSize = heapSize;
         info = new IRInfo((FileScope) rootNode.scope);
     }
 
@@ -91,6 +93,11 @@ public class IRBuilder implements ASTVisitor {
         curFunc = new IRFunction(Cst.INIT, Cst.int32);
         info.setInit(curFunc);
         curBlock = curFunc.entryBlock;
+        curBlock.appendInst(new Call(null, info.getFunction(Cst.GC_INIT)).push(new IntConstant(heapSize)));
+        var staticHint=new Call(null,info.getFunction(Cst.GC_STATIC_HINT));
+        staticHint.push(new IntConstant(info.globalVars.size()));
+        curBlock.appendInst(staticHint);
+        info.globalVars.forEach((k,v)->staticHint.push(v));
         node.globalVars.forEach(decl -> {
             if (decl.expr != null) {
                 var varReg = new GlobalVar(new PointerType(info.resolveType(decl.sym.getType())), decl.sym.nameAsReg);
@@ -101,6 +108,7 @@ public class IRBuilder implements ASTVisitor {
         });
         var callMain = new Call(new Register(Cst.int32), info.getFunction("main"));
         curBlock.appendInst(callMain);
+        curBlock.appendInst(new Call(null,info.getFunction(Cst.GC_RECLAIM)));
         curBlock.setRetTerminator(callMain.dest);
         curFunc.exitBlock = curBlock;
         curFunc.addInvoked(callMain.function);
@@ -303,8 +311,9 @@ public class IRBuilder implements ASTVisitor {
             }
             var indexing = new GetElementPtr(new Register(ptr.type), ptr, new IntConstant(-1));
             var load = new Load(new Register(Cst.int32), indexing.dest);
-            curBlock.appendInst(indexing).appendInst(load);
-            return load.dest;
+            var masking = new Binary(Binary.BinInstEnum.and, new Register(Cst.int32), load.dest, new IntConstant(0x3fffffff));
+            curBlock.appendInst(indexing).appendInst(load).appendInst(masking);
+            return masking.dest;
         } else {
             if (node.func.isGlobal()) {
                 call = new Call(withType(info.resolveType(node.func.returnType)), info.getFunction(node.func.id));
@@ -329,14 +338,7 @@ public class IRBuilder implements ASTVisitor {
                 }
             }
             curFunc.addInvoked(call.function);
-            /*
-            if (curScope.needHint()) {
-                curBlock.appendInst(curScope.generateHint());
-                curBlock.appendInst(call);
-                curBlock.appendInst(curScope.Unhint());
-            } else {*/
             curBlock.appendInst(call);
-//            }
             return call.dest;
         }
     }
@@ -365,26 +367,14 @@ public class IRBuilder implements ASTVisitor {
     private Register arrayInitialize(int level, ArrayList<IROperand> dims, IRType elementType) {
         // n-dim nested loop
         // if using stack, it may be more efficient by eliminate repeated calculation of size
-        IRDestedInst arrayWidth = new Binary(Binary.BinInstEnum.mul, new Register(Cst.int32),
-                dims.get(level), new IntConstant(elementType.size()));
-        IRDestedInst calcSize = new Binary(Binary.BinInstEnum.add, new Register(Cst.int32),
-                new IntConstant(Cst.int32.size()), arrayWidth.dest);
-        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
-        alloc.push(calcSize.dest);
+        var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.GC_ARRAY_MALLOC));
+        alloc.push(dims.get(level)).push(new IntConstant(elementType.size()));
 
-        // calculate real array address
-        IRDestedInst trueArrayAddress = new GetElementPtr(new Register(new PointerType(Cst.byte_t)), alloc.dest,
-                new IntConstant(4));
-        IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)),
-                trueArrayAddress.dest);
-        // store size
-        IRDestedInst cast = new BitCast(new Register(new PointerType(Cst.int32)), alloc.dest);
-        IRInst storeSize = new Store(dims.get(level), cast.dest);
-        curBlock.appendInst(arrayWidth).appendInst(calcSize).appendInst(alloc);
-        curBlock.appendInst(cast).appendInst(storeSize);
-        curBlock.appendInst(trueArrayAddress).appendInst(returnCast);
+        IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)), alloc.dest);
 
-        if (level < dims.size() - 1) {
+        curBlock.appendInst(alloc).appendInst(returnCast);
+
+        if (level < dims.size() - 1 || elementType instanceof PointerType) {
             var loopedAddr = new Register(new PointerType(elementType), Cst.LOOP_INCRE_NAME + loopSuffix++);
             IRDestedInst copyAddr = new Assign(loopedAddr, returnCast.dest);
             curFunc.declareVar(loopedAddr);
@@ -406,14 +396,16 @@ public class IRBuilder implements ASTVisitor {
             cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
             curBlock = loopBody;
 
-            Register initDone = arrayInitialize(level + 1, dims, ((PointerType) elementType).subType());
+            IROperand initDone = (level < dims.size() - 1) ?
+                    arrayInitialize(level + 1, dims, ((PointerType) elementType).subType())
+                    : new NullptrConstant((PointerType) elementType);
 
             curBlock.appendInst(new Store(initDone, loopedAddr));
             curBlock.appendInst(incrPtr);
             curFunc.defineVar(loopedAddr, curBlock);
             curBlock.setJumpTerminator(cond);
             curBlock = afterLoop;
-        } // we assume no initialization is needed for the most internal elements
+        } // we assume no initialization is needed for the most internal elements except pointer
         return returnCast.dest;
     }
 
@@ -422,9 +414,13 @@ public class IRBuilder implements ASTVisitor {
         // return pointer to newed object
         // allocate heap with i8* returned
         if (node.isClass) {
-            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.MALLOC));
+            var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.GC_STRUCT_MALLOC));
+            // struct object
+            var structType = info.resolveClass((ClassType) node.classNew.type);
+            alloc.push(new IntConstant(structType.size())).push(new IntConstant(structType.getPointerSize()));
+
+            // the in fact pointer type
             var classType = info.resolveType(node.classNew.type);
-            alloc.push(new IntConstant(info.resolveClass((ClassType) node.classNew.type).size()));
             var cast = new BitCast(new Register(classType), alloc.dest);
             var constructCall = new Call(new Register(classType),
                     info.getClassMethod(node.classNew.type.id, node.classNew.func.id));

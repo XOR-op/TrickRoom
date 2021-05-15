@@ -9,14 +9,13 @@ import java.util.ArrayList;
 import java.util.StringJoiner;
 
 public class StructureType extends IRType {
-    private int size;
-    public ArrayList<Register> members;
+    private int size = 0;
+    private Integer pointerSize = null;
+    public ArrayList<Register> members = new ArrayList<>();
     public String name;
 
     public StructureType(String name) {
         this.name = name;
-        members = new ArrayList<>();
-        size = 0;
     }
 
     public StructureType addMember(Register mem) {
@@ -39,6 +38,23 @@ public class StructureType extends IRType {
             if (members.get(idx).getName().equals(mem)) return new IntConstant(idx);
         }
         throw new IllegalStateException();
+    }
+
+    public void rearrange() {
+        assert pointerSize == null;
+        ArrayList<Register> pointerReg = new ArrayList<>(), nonPointerReg = new ArrayList<>();
+        for (var r : members) {
+            if (r.type instanceof PointerType) pointerReg.add(r);
+            else nonPointerReg.add(r);
+        }
+        pointerSize = pointerReg.size();
+        pointerReg.addAll(nonPointerReg);
+        members = pointerReg;
+    }
+
+    public int getPointerSize() {
+        assert pointerSize != null && pointerSize >= 0;
+        return pointerSize;
     }
 
     @Override

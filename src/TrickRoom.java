@@ -40,6 +40,7 @@ public class TrickRoom {
     private static final String HELP_ABBR = "-h";
     private static final String IR64 = "-ir64";
     private static final String NO_RENAME = "-fnorename-entry";
+    private static final String HEAP_SIZE = "-heap-size";
 
     private Verbose verb;
     private InputStream is;
@@ -49,6 +50,7 @@ public class TrickRoom {
     private Boolean optimizationFlag;
     private Boolean entryRenameFlag;
     private Boolean ssaDestructFlag;
+    private int heapSize = 128;
 
     private void logln(String s) {
         System.err.println(s);
@@ -98,7 +100,7 @@ public class TrickRoom {
                             is = new FileInputStream(args[i + 1]);
                             i++;
                         } catch (FileNotFoundException e) {
-                            error("file not found:" + args[i + 1]);
+                            error("file not found: " + args[i + 1]);
                         }
                     }
                     case OUTPUT_FILE -> {
@@ -107,7 +109,18 @@ public class TrickRoom {
                             os = new FileOutputStream(args[i + 1]);
                             i++;
                         } catch (FileNotFoundException e) {
-                            error("cannot write file:" + args[i + 1]);
+                            error("cannot write file: " + args[i + 1]);
+                        }
+                    }
+                    case HEAP_SIZE -> {
+                        if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no heap size specified");
+                        try {
+                            heapSize = Integer.parseInt(args[i + 1]);
+                            if (heapSize < 32)
+                                error("Heap too small: minimum 32 KiB is required");
+                            i++;
+                        } catch (NumberFormatException e) {
+                            error("not a valid number: " + args[i + 1]);
                         }
                     }
                     case VERBOSE -> verb = Verbose.INFO;
@@ -116,7 +129,7 @@ public class TrickRoom {
                         System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
                         System.exit(0);
                     }
-                    case IR64 -> Cst.pointerSize = 8;
+                    case IR64 -> throw new UnsupportedOperationException("64 bit IR is not supported with GC");
                     case NO_RENAME -> entryRenameFlag = false;
                     case SSA_DESTRUCT -> ssaDestructFlag = true;
                 }
@@ -184,7 +197,7 @@ public class TrickRoom {
     }
 
     private IRInfo llvmGen(RootNode rootNode) {
-        IRBuilder builder = new IRBuilder(rootNode);
+        IRBuilder builder = new IRBuilder(rootNode, heapSize);
         IRInfo info = builder.constructIR();
         info.forEachFunction(f -> {
             new SSAConverter(f).invoke();
