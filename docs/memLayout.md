@@ -10,14 +10,15 @@
 
 ## Array
 
-| | | | |
-|:---:|:---:|:---:|:---:|
-| isArray| is-4-bits|count of elements | elements |
-| 1bit |1bit|30 bits|||
-|1 | 1 if 4-bits; 0 if 1-bit| |<-address of pointer|
+| | | | | |
+|:---:|:---:|:---:|:---:|:---:|
+| isArray| is-4-bits|isPointer|count of elements | elements |
+| 1bit |1bit|1bit|29 bits|||
+|1 | 1 if 4-bits; 0 if 1-bit| 0 or 1| |<-address of pointer|
 
 ## Marked 
-| | | | |
-|:---:|:---:|:---:|:---:|
-|mark|moved addr(high 24 bits)|moved addr(low 8bits)|no used|
-| 2bits| |<-address of pointer| |
+| | | | | |
+|:---:|:---:|:---:|:---:|:---:|
+|mark| no used |moved addr|moved addr|no used|
+| 2bits| 6bits|24bits | 8bits| |
+| 01| | |<-address of pointer| |

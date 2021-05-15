@@ -41,6 +41,7 @@ public class IRInfo {
             globalFunction.add(f);
             f.addParam(Cst.int32, "len");
             addBuiltinFunction(Cst.void_t, Cst.GC_INIT).addParam(Cst.int32, "len");
+            addBuiltinFunction(Cst.void_t, Cst.GC_UNHINT);
             addBuiltinFunction(Cst.void_t, Cst.GC_RECLAIM);
             addBuiltinFunction(Cst.void_t, Cst.GC_STATIC_HINT);
             addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_STRUCT_MALLOC).addParam(Cst.int32, "size").addParam(Cst.int32,"ptrSZ");

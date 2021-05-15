@@ -176,6 +176,9 @@ public class AssemblyBuilder {
             entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + reg.tell()), reg));
         });
         entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
+        entry.addInst(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
+        entry.addInst(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
+        entry.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_INIT))));
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -212,6 +215,7 @@ public class AssemblyBuilder {
             curBlock.addInst(new assembly.instruction.Jump(curBlockMapping.getBlock(((Jump) irBlock.terminatorInst).getTarget())));
         } else {
             assert irBlock.terminatorInst instanceof Ret;
+            curBlock.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_UNHINT))));
             var val = ((Ret) irBlock.terminatorInst).value;
             if (val != null) {
                 copyToReg(PhysicalRegister.get("a0"), val);
@@ -267,10 +271,10 @@ public class AssemblyBuilder {
     private void buildBinary(Binary inst) {
         var ct = Computation.getCompType(inst.op);
         var rd = getRegister(inst.dest);
-        if(inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant){
-            var load1=new LoadImm(ng.gen(),((IntConstant) inst.operand1).value);
-            var load2=new LoadImm(ng.gen(),((IntConstant) inst.operand2).value);
-            var compute=new Computation(rd,ct,load1.rd,load2.rd);
+        if (inst.operand1 instanceof IntConstant && inst.operand2 instanceof IntConstant) {
+            var load1 = new LoadImm(ng.gen(), ((IntConstant) inst.operand1).value);
+            var load2 = new LoadImm(ng.gen(), ((IntConstant) inst.operand2).value);
+            var compute = new Computation(rd, ct, load1.rd, load2.rd);
             curBlock.addInst(load1);
             curBlock.addInst(load2);
             curBlock.addInst(compute);
@@ -327,6 +331,10 @@ public class AssemblyBuilder {
     }
 
     private void buildCall(Call inst) {
+        // save pointer
+        for (var ptr : curFunc.pointerReg) {
+            curBlock.addInst(new StoreMem(RVInst.WidthType.w, ptr, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
+        }
         for (int i = 0; i < Integer.min(8, inst.args.size()); ++i) {
             var operand = inst.args.get(i);
             if (operand instanceof StringConstant || operand instanceof GlobalVar) {
@@ -355,13 +363,25 @@ public class AssemblyBuilder {
         } else
             curBlock.addInst(new RVCall(rvInfo.getFunc(inst.function)));
 
+        // after call
         if (inst.args.size() > 8) {
             // restore sp
             curBlock.addInst(new Computation(PhysicalRegister.get("sp"), Computation.CompType.add,
                     PhysicalRegister.get("sp"), new Imm(4 * (inst.args.size() - 8))));
         }
-        if (inst.containsDest())
+        // reload pointer
+        if (inst.containsDest()) {
+            var theDest = getRegister(inst.dest);
+            for (var ptr : curFunc.pointerReg) {
+                if (ptr != theDest)
+                    curBlock.addInst(new LoadMem(ptr, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
+            }
             curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
+        } else {
+            for (var ptr : curFunc.pointerReg) {
+                curBlock.addInst(new LoadMem(ptr, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
+            }
+        }
     }
 
     private void buildCompare(Compare inst) {
@@ -413,10 +433,10 @@ public class AssemblyBuilder {
             if (inst.offset != null)
                 i += offset;
             Computation calcAddr;
-            if(RVInfo.isShortImm(i)) {
+            if (RVInfo.isShortImm(i)) {
                 calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, new Imm(i));
-            }else {
-                var loadImm=new LoadImm(ng.gen(),i);
+            } else {
+                var loadImm = new LoadImm(ng.gen(), i);
                 curBlock.addInst(loadImm);
                 calcAddr = new Computation(getRegister(inst.dest), Computation.CompType.add, base, loadImm.rd);
             }

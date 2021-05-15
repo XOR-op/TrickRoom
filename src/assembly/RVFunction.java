@@ -7,8 +7,11 @@ import assembly.instruction.Return;
 import assembly.operand.RVRegister;
 import assembly.operand.VirtualRegister;
 import ir.IRFunction;
+import ir.operand.Register;
+import ir.typesystem.PointerType;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class RVFunction {
     public String name;
@@ -17,9 +20,9 @@ public class RVFunction {
     public RVBlock entry;
 
     private int stackOffset = 0;
-    private int curOffset = 0;
     private final HashMap<RVRegister, Integer> varOffset = new HashMap<>();
     public final HashMap<String, VirtualRegister> nameToVirReg = new HashMap<>();
+    public final HashSet<VirtualRegister> pointerReg = new HashSet<>();
 
     public boolean isBuiltin() {
         return isBuiltin;
@@ -34,6 +37,22 @@ public class RVFunction {
         for (int i = 8; i < parameterCount; ++i) {
             var reg = new VirtualRegister(irFunc.parameters.get(i));
             nameToVirReg.put(irFunc.parameters.get(i).getName(), reg);
+        }
+        if (!isBuiltin) {
+            Consumer<Register> logging = register -> {
+                if (!nameToVirReg.containsKey(register.identifier())) {
+                    var newVReg = new VirtualRegister(register.identifier());
+                    nameToVirReg.put(register.identifier(), newVReg);
+                    if (register.type instanceof PointerType) {
+                        pointerReg.add(newVReg);
+                        addVarOnStack(newVReg);
+                    }
+                }
+            };
+            irFunc.blocks.forEach(b -> b.insts.forEach(inst -> {
+                inst.forEachRegSrc(logging);
+                inst.forEachRegDest(logging);
+            }));
         }
     }
 
@@ -51,8 +70,7 @@ public class RVFunction {
     }
 
     public void addVarOnStack(RVRegister reg) {
-//        assert !varOffset.containsKey(reg);
-        if(varOffset.containsKey(reg))return; // reg as >8 arguments
+        if (varOffset.containsKey(reg)) return; // reg as >8 arguments
         stackOffset -= 4;
         varOffset.put(reg, stackOffset);
     }
@@ -66,33 +84,6 @@ public class RVFunction {
         var so = -stackOffset;
         return so % 16 == 0 ? so : (so / 16) * 16 + 16;
     }
-
-    /*
-    private HashMap<RVBlock, RVBlock> blockSort() {
-        HashMap<RVBlock, RVBlock> nextMap = new HashMap<>();
-        HashMap<RVBlock, Integer> count = new HashMap<>();
-        Stack<RVBlock> dfsStack = new Stack<>();
-        for (var block : blocks) {
-            if (block.instructions.peekLast() instanceof Jump) {
-                nextMap.put(block, ((Jump) block.instructions.peekLast()).getDest());
-            }
-        }
-        for (var entry : nextMap.entrySet()) {
-            if (!count.containsKey(entry.getKey())) {
-                var target = entry.getValue();
-                while (!count.containsKey(target) && target != null) {
-                    dfsStack.push(target);
-                    target = nextMap.get(target);
-                }
-                int i = target == null ? 1 : count.get(target) + 1;
-                for (; !dfsStack.isEmpty(); ++i) {
-                    count.put(dfsStack.pop(), i);
-                }
-                count.put(entry.getKey(), 2);
-            }
-        }
-        HashMap<RVBlock, RVBlock> retValue = new HashMap<>();
-    }*/
 
     private ArrayList<RVBlock> dfsSort() {
         HashSet<RVBlock> visited = new HashSet<>();

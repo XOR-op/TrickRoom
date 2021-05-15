@@ -91,32 +91,19 @@ bool _str_ge(const char* lhs, const char* rhs) {
  * GC functions
  */
 
-typedef int* int_ptr_t;
-int_ptr_t GC_control_root,
-    GC_static_start,
-    GC_control_start, GC_control_end,
+typedef char* ptr_t;
+ptr_t GC_control_root,
     mem_0_start, mem_1_start, mem_1_end,
-    mem_cursor_in_alloc, mem_cursor_in_gc;
-int current_state = 0;
-
-char* __private_malloc(int size) {
-    int_ptr_t retval = mem_cursor_in_alloc;
-    mem_cursor_in_alloc += size;
-    return retval;
-}
-
-void __private_gc_run() {
-    if (current_state == 0) {
-        scan =
-    }
-}
+    mem_cursor, new_region_end;
+ptr_t GC_static_start, GC_control_start, GC_control_end;
+int current_is_one = 0;
 
 void _gbl_gc_init(int size) {
     GC_control_root = (int*)malloc(size);
     GC_control_end = GC_control_start;
     // 8 KiB control region
     mem_0_start = GC_control_start + 8 * 1024;
-    mem_1_start = GC_control_start + (size / 2 + 4) * 1024;
+    mem_1_start = mem_0_start + ((size - 8) / 2) * 1024;
     mem_1_end = GC_control_start + size * 1024;
 }
 
@@ -124,32 +111,96 @@ void _gbl_gc_reclaim() {
     free(GC_control_root);
 }
 
-#define IS_ARRAY(x) ((x)&0x80000000)
-#define STRUCT_LEN(x) (((x)&0x3ffff000) >> 12)
-#define IS_4BIT(x) ((x)&0x40000000)
-#define ARRAY_ELE_LEN(x) ((x)&0x3fffffff)
-#define MARKED(x) ((x)&0x40000000)
+#define SET_ZERO(x, bit) ((x) &= ~(1 << bit))
+#define SET_ONE(x, bit) ((x) |= (1 << bit))
+#define GET_BIT(x, bit) (((x) & (1 << bit)) >> bit)
+#define IS_ARRAY(x) GET_BIT(*((int*)(x)), 31)
+#define STRUCT_LEN(x) ((*((int*)(x)) & 0x3ffff000) >> 12)
+#define IS_4BIT(x) GET_BIT(*((int*)(x)), 30)
+#define CAN_DEREFERENCE(x) (*((int*)(x)) & 0x20000000)
+#define ARRAY_ELE_LEN(x) (*((int*)(x)) & 0x1fffffff)
+#define MARKED(x) ((*((int*)(x)) & 0xc0000000) == 0x40000000)
 int __private_get_len(int* addr) {
-    if (IS_ARRAY(*addr)) {
-        return STRUCT_LEN(*addr);
+    if (IS_ARRAY(addr)) {
+        return STRUCT_LEN(addr);
     } else {
-        return IS_4BIT(*addr) ? (ARRAY_ELE_LEN(*addr) << 2) : ARRAY_ELE_LEN(*addr);
+        return IS_4BIT(addr) ? (ARRAY_ELE_LEN(addr) << 2) : ARRAY_ELE_LEN(addr);
     }
 }
 
-char* __private_move(char* addr) {
-    char* meta_addr = addr - 4;
-    if (MARKED(*meta_addr))
-        return (char*)(meta_addr + 1);
-    int size = __private_get_len(meta_addr) + 4; // size with metadata
-    char* retval = mem_cursor_in_gc;
-    memcpy(mem_cursor_in_gc, meta_addr, size); // move
-    *meta_addr = 0x80;  // mark
-    *((int*)(meta_addr + 1)) = retval; // save new address
+ptr_t __private_malloc(int size) {
+    if (current_is_one) {
+        if (mem_cursor + size + 4 >= mem_1_end)
+            __private_gc_run();
+    } else {
+        if (mem_cursor + size + 4 >= mem_1_start)
+            __private_gc_run();
+    }
+    ptr_t retval = mem_cursor;
+    mem_cursor += size;
     return retval;
 }
 
-char* _gbl_malloc_gcVer(int size) {
+bool __private_in_old_region(ptr_t addr) {
+    if (current_is_one) {
+        return addr >= mem_1_start && addr < mem_1_end;
+    } else {
+        return addr >= mem_0_start && addr < mem_1_start;
+    }
+}
+
+void __private_gc_run() {
+    ptr_t new_region_start = current_is_one ? mem_0_start : mem_1_start;
+    new_region_end = new_region_start;
+    // static root
+    for (ptr_t ptr = GC_static_start; ptr != GC_control_start; ptr += 4) {
+        *((ptr_t*)ptr) = __private_move(*((ptr_t*)ptr));
+    }
+    // stack root
+    for (ptr_t ptr = GC_control_start; ptr != GC_control_end; ptr += 8) {
+        ptr_t sp = *((ptr_t*)ptr);
+        int n = *((int*)(ptr + 4));
+        for (int i = 0; i < n; ++i) {
+            ptr_t* local_ptr = (ptr_t*)(sp - 4 * i);
+            *local_ptr = __private_move(*local_ptr);
+        }
+    }
+    // bfs
+    while (new_region_start < new_region_end) {
+        if (IS_ARRAY(new_region_start)) {
+            if (CAN_DEREFERENCE(new_region_start)) {
+                __private_scan_and_perform(*((int*)new_region_start) & 0x1fffffff)
+            }
+        } else {
+            // struct
+            __private_scan_and_perform(*((int*)new_region_start) & 0xfff)
+        }
+    }
+    mem_cursor = new_region_end;
+    current_is_one = 1 - current_is_one;
+}
+
+void __private_scan_and_perform(int pointerSize) {
+    int i = 0;
+    for (ptr_t* ptr = new_region_start + 4; i < pointerSize; ptr++, i++) {
+        *ptr = __private_move(*ptr);
+    }
+    new_region_start += STRUCT_LEN(new_region_start) + 4;
+}
+
+ptr_t __private_move(ptr_t addr) {
+    if (!__private_in_old_region(addr))
+        return addr;
+    ptr_t meta_addr = addr - 4;
+    if (MARKED(*meta_addr))
+        return (char*)(meta_addr + 1);
+    int size = __private_get_len(meta_addr) + 4;  // size with metadata
+    ptr_t retval = new_region_end;
+    memcpy(new_region_end, meta_addr, size);  // move
+    new_region_end += size;
+    *meta_addr = 0x80;                  // mark
+    *((int*)(meta_addr + 1)) = retval;  // save new address
+    return retval;
 }
 
 void _gbl_gc_static_hint() {
@@ -208,87 +259,37 @@ void _gbl_gc_static_hint() {
         "after_label:\n"
         :
         :
-        :)
-        GC_control_end = GC_control_start;
-}
-
-void _gbl_gc_hint() {
-    asm volatile(
-        "    lui t0,%hi(GC_control_end)\n"
-        "    lw t0,%lo(GC_control_end)(t0)\n"
-        "    slli t1,a0,2\n"
-        "    addi t1,t0,t1\n"
-        "    lui t2,%hi(GC_control_end)\n"
-        "    sw t1,%lo(GC_control_end)(t2)\n"
-        "    bne t0,t1,label1\n"
-        "    ret\n"
-        "label1:\n"
-        "    sw a1,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label2\n"
-        "    ret\n"
-        "label2:\n"
-        "    sw a2,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label3\n"
-        "    ret\n"
-        "label3:\n"
-        "    sw a3,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label4\n"
-        "    ret\n"
-        "label4:\n"
-        "    sw a4,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label5\n"
-        "    ret\n"
-        "label5:\n"
-        "    sw a5,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label6\n"
-        "    ret\n"
-        "label6:\n"
-        "    sw a6,t0\n"
-        "    addi t0,t0,4\n"
-        "    bne t0,t1,label7\n"
-        "    ret\n"
-        "label7:\n"
-        "    sw a7,t0\n"
-        "    addi t0,t0,4\n"
-        "    add t2,sp,a0\n"
-        "br_label:\n"
-        "    beq t0,t1,after_label\n"
-        "    lw t3,t2\n"
-        "    sw t3,t1\n"
-        "    addi t2,t2,4\n"
-        "    addi t0,t0,4\n"
-        "after_label:\n"
-        "    ret\n"
-        "    \n"
-        :
-        :
         :);
 }
 
-void _gbl_gc_unhint(int num) {
-    GC_control_end -= 4 * num;
+void _gbl_gc_hint(int* sp, int n) {
+    *((int**)GC_control_start) = sp;
+    *((int*)(GC_control_start + 4)) = n;
 }
 
-char* _gbl_gc_struct_malloc(int size, int pointerCount) {
-    char* memory = __private_malloc(size + 4);
+void _gbl_gc_unhint() {
+    GC_control_end -= 8;
+}
+
+ptr_t _gbl_gc_struct_malloc(int size, int pointerCount) {
+    ptr_t memory = __private_malloc(size + 4);
     int metadata = pointerCount & 0xfff;
     metadata |= (size << 12);
     *((int*)memory) = metadata;
     return memory + 4;
 }
 
-char* __gbl_gc_array_malloc(int length, int elementSize) {
-    char* memory = __private_malloc(length * elementSize + 4);
+ptr_t __gbl_gc_array_malloc(int length, int elementSize, bool isPointer) {
+    ptr_t memory = __private_malloc(length * elementSize + 4);
     int metadata = elementSize | 0x80000000;
     if (elementSize == 4)
-        metadata |= 0x40000000;
+        SET_ONE(metadata, 30);
     else
-        metadata &= 0xbfffffff;
+        SET_ZERO(metadata, 30);
+    if (isPointer)
+        SET_ONE(metadata, 29);
+    else
+        SET_ZERO(metadata, 29);
     *((int*)memory) = metadata;
     return memory + 4;
 }
