@@ -34,21 +34,19 @@ public class IRInfo {
         addBuiltinFunction(Cst.str, "getString");
         addBuiltinFunction(Cst.int32, "getInt");
         addBuiltinFunction(Cst.str, "toString").addParam(Cst.int32, "i");
-        if (true) {
-            // gc-ver malloc
-            var f = new IRFunction(Cst.globalPrefix(Cst.MALLOC_GC), new PointerType(Cst.byte_t), true);
-            functions.put(Cst.MALLOC, f);
-            globalFunction.add(f);
-            f.addParam(Cst.int32, "len");
-            addBuiltinFunction(Cst.void_t, Cst.GC_INIT).addParam(Cst.int32, "len");
-            addBuiltinFunction(Cst.void_t, Cst.GC_UNHINT);
-            addBuiltinFunction(Cst.void_t, Cst.GC_RECLAIM);
-            addBuiltinFunction(Cst.void_t, Cst.GC_STATIC_HINT);
-            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_STRUCT_MALLOC).addParam(Cst.int32, "size").addParam(Cst.int32,"ptrSZ");
-            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_ARRAY_MALLOC).addParam(Cst.int32, "length").addParam(Cst.int32,"eleSZ");
-            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC_SYS).addParam(Cst.int32, "len");
-        } else
-            addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC).addParam(Cst.int32, "len");
+        // gc-ver malloc
+        var f = new IRFunction(Cst.globalPrefix(Cst.MALLOC_GC), new PointerType(Cst.byte_t), true);
+        functions.put(Cst.MALLOC, f);
+        globalFunction.add(f);
+        f.addParam(Cst.int32, "len");
+        addBuiltinFunction(Cst.void_t, Cst.GC_INIT).addParam(Cst.int32, "len");
+        addBuiltinFunction(Cst.void_t, Cst.GC_HINT).addParam(Cst.int32, "sp").addParam(Cst.int32, "count");
+        addBuiltinFunction(Cst.void_t, Cst.GC_UNHINT);
+        addBuiltinFunction(Cst.void_t, Cst.GC_RECLAIM);
+        addBuiltinFunction(Cst.void_t, Cst.GC_STATIC_HINT);
+        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_STRUCT_MALLOC).addParam(Cst.int32, "size").addParam(Cst.int32, "ptrSZ");
+        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.GC_ARRAY_MALLOC).addParam(Cst.int32, "length").addParam(Cst.int32, "eleSZ");
+        addBuiltinFunction(new PointerType(Cst.byte_t), Cst.MALLOC_SYS).addParam(Cst.int32, "len");
         // string methods
         addStringMethod(Cst.int32, "length").hasSideEffect = false;
         addStringMethod(Cst.int32, "parseInt").hasSideEffect = false;

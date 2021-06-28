@@ -311,7 +311,7 @@ public class IRBuilder implements ASTVisitor {
             }
             var indexing = new GetElementPtr(new Register(ptr.type), ptr, new IntConstant(-1));
             var load = new Load(new Register(Cst.int32), indexing.dest);
-            var masking = new Binary(Binary.BinInstEnum.and, new Register(Cst.int32), load.dest, new IntConstant(0x3fffffff));
+            var masking = new Binary(Binary.BinInstEnum.and, new Register(Cst.int32), load.dest, new IntConstant(0x1fffffff));
             curBlock.appendInst(indexing).appendInst(load).appendInst(masking);
             return masking.dest;
         } else {

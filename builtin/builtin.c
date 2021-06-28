@@ -94,17 +94,23 @@ bool _str_ge(const char* lhs, const char* rhs) {
 typedef char* ptr_t;
 ptr_t GC_control_root,
     mem_0_start, mem_1_start, mem_1_end,
-    mem_cursor, new_region_end;
+    mem_cursor, new_region_start, new_region_end;
 ptr_t GC_static_start, GC_control_start, GC_control_end;
 int current_is_one = 0;
 
 void _gbl_gc_init(int size) {
-    GC_control_root = (int*)malloc(size);
+    GC_control_root = (ptr_t)malloc(size*1024);
+    GC_control_start = GC_control_root;
     GC_control_end = GC_control_start;
+    GC_static_start=GC_control_root;
     // 8 KiB control region
-    mem_0_start = GC_control_start + 8 * 1024;
+    mem_0_start = GC_control_root + 8 * 1024;
     mem_1_start = mem_0_start + ((size - 8) / 2) * 1024;
-    mem_1_end = GC_control_start + size * 1024;
+    mem_1_end = GC_control_root + size * 1024;
+    mem_cursor=mem_0_start;
+    current_is_one=0;
+//    printf("DEBUG: gc init.\n");
+//    printf("Current is %d, mem cursor: %d, mem_0_start:%d, mem_1_start:%d, mem_1_end:%d\n",1-current_is_one,mem_cursor,mem_0_start,mem_1_start,mem_1_end);
 }
 
 void _gbl_gc_reclaim() {
@@ -128,19 +134,6 @@ int __private_get_len(int* addr) {
     }
 }
 
-ptr_t __private_malloc(int size) {
-    if (current_is_one) {
-        if (mem_cursor + size + 4 >= mem_1_end)
-            __private_gc_run();
-    } else {
-        if (mem_cursor + size + 4 >= mem_1_start)
-            __private_gc_run();
-    }
-    ptr_t retval = mem_cursor;
-    mem_cursor += size;
-    return retval;
-}
-
 bool __private_in_old_region(ptr_t addr) {
     if (current_is_one) {
         return addr >= mem_1_start && addr < mem_1_end;
@@ -149,8 +142,33 @@ bool __private_in_old_region(ptr_t addr) {
     }
 }
 
+ptr_t __private_move(ptr_t addr) {
+    if(addr==0)
+        return 0;
+    if (!__private_in_old_region(addr))
+        return addr;
+    ptr_t meta_addr = addr - 4;
+    if (MARKED(*((int*)meta_addr)))
+        return (char*)(meta_addr + 1);
+    int size = __private_get_len((int*)meta_addr) + 4;  // size with metadata
+    ptr_t retval = new_region_end;
+    memcpy(new_region_end, meta_addr, size);  // move
+    new_region_end += size;
+    *meta_addr = 0x80;                  // mark
+    *((int*)(meta_addr + 1)) = (int)retval;  // save new address
+    return retval;
+}
+
+void __private_scan_and_perform(int pointerSize) {
+    int i = 0;
+    for (ptr_t* ptr = (ptr_t*) (new_region_start + 4); i < pointerSize; ptr++, i++) {
+        *ptr = __private_move(*ptr);
+    }
+    new_region_start += STRUCT_LEN(new_region_start) + 4;
+}
+
 void __private_gc_run() {
-    ptr_t new_region_start = current_is_one ? mem_0_start : mem_1_start;
+    new_region_start = current_is_one ? mem_0_start : mem_1_start;
     new_region_end = new_region_start;
     // static root
     for (ptr_t ptr = GC_static_start; ptr != GC_control_start; ptr += 4) {
@@ -169,94 +187,87 @@ void __private_gc_run() {
     while (new_region_start < new_region_end) {
         if (IS_ARRAY(new_region_start)) {
             if (CAN_DEREFERENCE(new_region_start)) {
-                __private_scan_and_perform(*((int*)new_region_start) & 0x1fffffff)
+                __private_scan_and_perform(*((int*)new_region_start) & 0x1fffffff);
             }
         } else {
             // struct
-            __private_scan_and_perform(*((int*)new_region_start) & 0xfff)
+            __private_scan_and_perform(*((int*)new_region_start) & 0xfff);
         }
     }
     mem_cursor = new_region_end;
     current_is_one = 1 - current_is_one;
 }
 
-void __private_scan_and_perform(int pointerSize) {
-    int i = 0;
-    for (ptr_t* ptr = new_region_start + 4; i < pointerSize; ptr++, i++) {
-        *ptr = __private_move(*ptr);
+ptr_t __private_malloc(int size) {
+    if (current_is_one) {
+        if (mem_cursor + size + 4 >= mem_1_end)
+            __private_gc_run();
+    } else {
+        if (mem_cursor + size + 4 >= mem_1_start)
+            __private_gc_run();
     }
-    new_region_start += STRUCT_LEN(new_region_start) + 4;
-}
-
-ptr_t __private_move(ptr_t addr) {
-    if (!__private_in_old_region(addr))
-        return addr;
-    ptr_t meta_addr = addr - 4;
-    if (MARKED(*meta_addr))
-        return (char*)(meta_addr + 1);
-    int size = __private_get_len(meta_addr) + 4;  // size with metadata
-    ptr_t retval = new_region_end;
-    memcpy(new_region_end, meta_addr, size);  // move
-    new_region_end += size;
-    *meta_addr = 0x80;                  // mark
-    *((int*)(meta_addr + 1)) = retval;  // save new address
+    ptr_t retval = mem_cursor;
+    mem_cursor += size;
     return retval;
 }
 
+__attribute__ ((naked))
 void _gbl_gc_static_hint() {
     asm volatile(
-        "    lui t0,%hi(GC_static_start)\n"
-        "    lw t0,%lo(GC_static_start)(t0)\n"
+        "    lui t0,%%hi(GC_static_start)\n"
+        "    lw t0,%%lo(GC_static_start)(t0)\n"
         "    slli t1,a0,2\n"
-        "    addi t1,t0,t1\n"
-        "    lui t2,%hi(GC_control_start)\n"
-        "    sw t1,%lo(GC_control_start)(t2)\n"
-        "    lui t3,%hi(GC_control_end)\n"
-        "    sw t1,%lo(GC_control_end)(t3)\n"
+        "    add t1,t0,t1\n"
+        "    lui t2,%%hi(GC_control_start)\n"
+        "    sw t1,%%lo(GC_control_start)(t2)\n"
+        "    lui t3,%%hi(GC_control_end)\n"
+        "    sw t1,%%lo(GC_control_end)(t3)\n"
         "\n"
-        "    bne t0,t1,label1\n"
-        "    j after_label\n"
-        "label1:\n"
-        "    sw a1,t0\n"
+        "    bne t0,t1,.LB1\n"
+        "    ret\n"
+        ".LB1:\n"
+        "    sw a1,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label2\n"
-        "    j after_label\n"
-        "label2:\n"
-        "    sw a2,t0\n"
+        "    bne t0,t1,.LB2\n"
+        "    ret\n"
+        ".LB2:\n"
+        "    sw a2,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label3\n"
-        "    j after_label\n"
-        "label3:\n"
-        "    sw a3,t0\n"
+        "    bne t0,t1,.LB3\n"
+        "    ret\n"
+        ".LB3:\n"
+        "    sw a3,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label4\n"
-        "    j after_label\n"
-        "label4:\n"
-        "    sw a4,t0\n"
+        "    bne t0,t1,.LB4\n"
+        "    ret\n"
+        ".LB4:\n"
+        "    sw a4,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label5\n"
-        "    j after_label\n"
-        "label5:\n"
-        "    sw a5,t0\n"
+        "    bne t0,t1,.LB5\n"
+        "    ret\n"
+        ".LB5:\n"
+        "    sw a5,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label6\n"
-        "    j after_label\n"
-        "label6:\n"
-        "    sw a6,t0\n"
+        "    bne t0,t1,.LB6\n"
+        "    ret\n"
+        ".LB6:\n"
+        "    sw a6,0(t0)\n"
         "    addi t0,t0,4\n"
-        "    bne t0,t1,label7\n"
-        "    j after_label\n"
-        "label7:\n"
-        "    sw a7,t0\n"
+        "    bne t0,t1,.LB7\n"
+        "    ret\n"
+        ".LB7:\n"
+        "    sw a7,0(t0)\n"
         "    addi t0,t0,4\n"
         "    add t2,sp,a0\n"
-        "br_label:\n"
-        "    beq t0,t1,after_label\n"
-        "    lw t3,t2\n"
-        "    sw t3,t1\n"
+        ".BRLABEL:\n"
+        "    bge t0,t1,.AFTERLABEL\n"
+        "    lw t3,0(t2)\n"
+        "    sw t3,0(t1)\n"
         "    addi t2,t2,4\n"
         "    addi t0,t0,4\n"
-        "after_label:\n"
+        "    j .BRLABEL\n"
+        ".AFTERLABEL:\n"
+        "    ret\n"
         :
         :
         :);
@@ -272,6 +283,7 @@ void _gbl_gc_unhint() {
 }
 
 ptr_t _gbl_gc_struct_malloc(int size, int pointerCount) {
+//    printf("DEBUG: gc run. Current is %d, mem cursor: %d, mem_1_start:%d, mem_1_end:%d\n",1-current_is_one,mem_cursor,mem_1_start,mem_1_end);
     ptr_t memory = __private_malloc(size + 4);
     int metadata = pointerCount & 0xfff;
     metadata |= (size << 12);
@@ -279,9 +291,9 @@ ptr_t _gbl_gc_struct_malloc(int size, int pointerCount) {
     return memory + 4;
 }
 
-ptr_t __gbl_gc_array_malloc(int length, int elementSize, bool isPointer) {
+ptr_t _gbl_gc_array_malloc(int length, int elementSize, bool isPointer) {
     ptr_t memory = __private_malloc(length * elementSize + 4);
-    int metadata = elementSize | 0x80000000;
+    int metadata = length| 0x80000000;
     if (elementSize == 4)
         SET_ONE(metadata, 30);
     else

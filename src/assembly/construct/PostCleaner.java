@@ -37,6 +37,8 @@ public class PostCleaner extends RVFunctionPass {
                     ((LoadMem) inst).replaceImm(so);
                 else if (inst instanceof StoreMem)
                     ((StoreMem) inst).replaceImm(so);
+                else if(inst instanceof Computation)
+                    ((Computation) inst).replaceImm(so-rvFunc.pointerReg.size()*4);
                 else if (overflowFlag && inst instanceof RVCall) {
                     if (iter.hasPrevious()) iter.previous();
                     else iter = block.instructions.listIterator();

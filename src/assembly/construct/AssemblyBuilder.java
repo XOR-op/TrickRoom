@@ -176,9 +176,12 @@ public class AssemblyBuilder {
             entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + reg.tell()), reg));
         });
         entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
-        entry.addInst(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
-        entry.addInst(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
-        entry.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_INIT))));
+        if (curFunc.pointerReg.size() > 0) {
+            entry.addInst(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
+            entry.addInst(new Computation(PhysicalRegister.get("a0"), Computation.CompType.add,PhysicalRegister.get("a0"),new VirtualImm(0)));
+            entry.addInst(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
+            entry.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_HINT))));
+        }
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
         curFunc = null;
     }
@@ -215,7 +218,8 @@ public class AssemblyBuilder {
             curBlock.addInst(new assembly.instruction.Jump(curBlockMapping.getBlock(((Jump) irBlock.terminatorInst).getTarget())));
         } else {
             assert irBlock.terminatorInst instanceof Ret;
-            curBlock.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_UNHINT))));
+            if (curFunc.pointerReg.size() > 0)
+                curBlock.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_UNHINT))));
             var val = ((Ret) irBlock.terminatorInst).value;
             if (val != null) {
                 copyToReg(PhysicalRegister.get("a0"), val);
@@ -333,7 +337,7 @@ public class AssemblyBuilder {
     private void buildCall(Call inst) {
         // save pointer
         for (var ptr : curFunc.pointerReg) {
-            curBlock.addInst(new StoreMem(RVInst.WidthType.w, ptr, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
+            curBlock.addInst(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ptr, new VirtualImm(curFunc.getVarOffset(ptr))));
         }
         for (int i = 0; i < Integer.min(8, inst.args.size()); ++i) {
             var operand = inst.args.get(i);

@@ -2,6 +2,7 @@ package assembly.instruction;
 
 import assembly.operand.Imm;
 import assembly.operand.RVRegister;
+import assembly.operand.VirtualImm;
 import ir.instruction.Binary;
 
 import java.util.function.Consumer;
@@ -33,6 +34,12 @@ public class Computation extends RVInst {
     @Override
     public void replaceRegDest(RVRegister newReg, RVRegister oldReg) {
         if (rd == oldReg) rd = newReg;
+    }
+
+    public void replaceImm(int stackLength) {
+        if (imm != null && imm instanceof VirtualImm) {
+            imm = new Imm(((VirtualImm) imm).offset + stackLength);
+        }
     }
 
     public enum CompType {
