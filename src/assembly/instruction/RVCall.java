@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 public class RVCall extends RVInst {
 
-    private RVFunction dest;
+    public RVFunction dest;
 
     public RVCall(RVFunction func) {
         assert func!=null;

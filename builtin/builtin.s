@@ -102,9 +102,8 @@ _gbl_getString:
 	sw	s0,24(sp)
 	addi	s0,sp,32
 	li	a0,1024
-	call	malloc
-	mv	a5,a0
-	sw	a5,-20(s0)
+	call	__private_malloc
+	sw	a0,-20(s0)
 	lw	a1,-20(s0)
 	lui	a5,%hi(.LC0)
 	addi	a0,a5,%lo(.LC0)
@@ -146,9 +145,8 @@ _gbl_toString:
 	addi	s0,sp,48
 	sw	a0,-36(s0)
 	li	a0,16
-	call	malloc
-	mv	a5,a0
-	sw	a5,-20(s0)
+	call	__private_malloc
+	sw	a0,-20(s0)
 	lw	a2,-36(s0)
 	lui	a5,%hi(.LC1)
 	addi	a1,a5,%lo(.LC1)
@@ -214,9 +212,8 @@ _str_substring:
 	sub	a5,a4,a5
 	addi	a5,a5,1
 	mv	a0,a5
-	call	malloc
-	mv	a5,a0
-	sw	a5,-20(s0)
+	call	__private_malloc
+	sw	a0,-20(s0)
 	lw	a5,-40(s0)
 	lw	a4,-36(s0)
 	add	a3,a4,a5
@@ -274,9 +271,8 @@ _str_concat:
 	sw	a0,-36(s0)
 	sw	a1,-40(s0)
 	li	a0,1024
-	call	malloc
-	mv	a5,a0
-	sw	a5,-20(s0)
+	call	__private_malloc
+	sw	a0,-20(s0)
 	lw	a1,-36(s0)
 	lw	a0,-20(s0)
 	call	strcpy
@@ -684,6 +680,11 @@ __private_in_old_region:
 	addi	sp,sp,32
 	jr	ra
 	.size	__private_in_old_region, .-__private_in_old_region
+	.section	.rodata
+	.align	2
+.LC3:
+	.string	"Move: from %d to %d, size %d\n"
+	.text
 	.align	2
 	.globl	__private_move
 	.type	__private_move, @function
@@ -712,7 +713,6 @@ __private_move:
 	sw	a5,-20(s0)
 	lw	a5,-20(s0)
 	lw	a5,0(a5)
-	lw	a5,0(a5)
 	mv	a4,a5
 	li	a5,-1073741824
 	and	a4,a4,a5
@@ -727,6 +727,14 @@ __private_move:
 	mv	a5,a0
 	addi	a5,a5,4
 	sw	a5,-24(s0)
+	lui	a5,%hi(new_region_end)
+	lw	a5,%lo(new_region_end)(a5)
+	lw	a3,-24(s0)
+	mv	a2,a5
+	lw	a1,-20(s0)
+	lui	a5,%hi(.LC3)
+	addi	a0,a5,%lo(.LC3)
+	call	printf
 	lui	a5,%hi(new_region_end)
 	lw	a5,%lo(new_region_end)(a5)
 	sw	a5,-28(s0)
@@ -1003,7 +1011,7 @@ __private_malloc:
 	.type	_gbl_gc_static_hint, @function
 _gbl_gc_static_hint:
  #APP
-# 216 "riscv-assembly/todo.c" 1
+# 219 "riscv-assembly/todo.c" 1
 	    lui t0,%hi(GC_static_start)
     lw t0,%lo(GC_static_start)(t0)
     slli t1,a0,2
@@ -1072,15 +1080,20 @@ _gbl_gc_hint:
 	addi	s0,sp,32
 	sw	a0,-20(s0)
 	sw	a1,-24(s0)
-	lui	a5,%hi(GC_control_start)
-	lw	a5,%lo(GC_control_start)(a5)
+	lui	a5,%hi(GC_control_end)
+	lw	a5,%lo(GC_control_end)(a5)
 	lw	a4,-20(s0)
 	sw	a4,0(a5)
-	lui	a5,%hi(GC_control_start)
-	lw	a5,%lo(GC_control_start)(a5)
+	lui	a5,%hi(GC_control_end)
+	lw	a5,%lo(GC_control_end)(a5)
 	addi	a5,a5,4
 	lw	a4,-24(s0)
 	sw	a4,0(a5)
+	lui	a5,%hi(GC_control_end)
+	lw	a5,%lo(GC_control_end)(a5)
+	addi	a4,a5,8
+	lui	a5,%hi(GC_control_end)
+	sw	a4,%lo(GC_control_end)(a5)
 	nop
 	lw	s0,28(sp)
 	addi	sp,sp,32

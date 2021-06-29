@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+typedef char* ptr_t;
+char* _gbl_string_malloc(int length) ;
 void _gbl_print(const char* str) {
     printf("%s", str);
 }
@@ -19,7 +21,7 @@ void _gbl_printlnInt(int n) {
 }
 
 const char* _gbl_getString() {
-    char* buf = malloc(sizeof(char) * 1024);
+    char* buf = __private_malloc(sizeof(char) * 1024);
     scanf("%s", buf);
     return buf;
 }
@@ -31,7 +33,7 @@ int _gbl_getInt() {
 }
 
 const char* _gbl_toString(int i) {
-    char* buf = malloc(sizeof(char) * 16);
+    char* buf = __private_malloc(sizeof(char) * 16);
     sprintf(buf, "%d", i);
     return buf;
 }
@@ -45,7 +47,7 @@ int _str_length(const char* str) {
 }
 
 const char* _str_substring(const char* str, int left, int right) {
-    char* buf = malloc(sizeof(char) * (right - left + 1));
+    char* buf = __private_malloc(sizeof(char) * (right - left + 1));
     memcpy(buf, str + left, right - left);
     buf[right - left] = '\0';
     return buf;
@@ -58,7 +60,7 @@ int _str_parseInt(const char* str) {
 }
 
 const char* _str_concat(const char* lhs, const char* rhs) {
-    char* buf = malloc(sizeof(char) * 1024);
+    char* buf = __private_malloc(sizeof(char) * 1024);
     strcpy(buf, lhs);
     strcat(buf, rhs);
     return buf;
@@ -91,7 +93,6 @@ bool _str_ge(const char* lhs, const char* rhs) {
  * GC functions
  */
 
-typedef char* ptr_t;
 ptr_t GC_control_root,
     mem_0_start, mem_1_start, mem_1_end,
     mem_cursor, new_region_start, new_region_end;
@@ -111,6 +112,7 @@ void _gbl_gc_init(int size) {
     current_is_one=0;
 //    printf("DEBUG: gc init.\n");
 //    printf("Current is %d, mem cursor: %d, mem_0_start:%d, mem_1_start:%d, mem_1_end:%d\n",1-current_is_one,mem_cursor,mem_0_start,mem_1_start,mem_1_end);
+//    printf("DEBUG: gc run. Current is %d, mem cursor: %d, mem_1_start:%d, mem_1_end:%d\n",1-current_is_one,mem_cursor,mem_1_start,mem_1_end);
 }
 
 void _gbl_gc_reclaim() {
@@ -148,9 +150,10 @@ ptr_t __private_move(ptr_t addr) {
     if (!__private_in_old_region(addr))
         return addr;
     ptr_t meta_addr = addr - 4;
-    if (MARKED(*((int*)meta_addr)))
+    if (MARKED(meta_addr))
         return (char*)(meta_addr + 1);
     int size = __private_get_len((int*)meta_addr) + 4;  // size with metadata
+    printf("Move: from %d to %d, size %d\n",meta_addr,new_region_end,size);
     ptr_t retval = new_region_end;
     memcpy(new_region_end, meta_addr, size);  // move
     new_region_end += size;
@@ -274,8 +277,9 @@ void _gbl_gc_static_hint() {
 }
 
 void _gbl_gc_hint(int* sp, int n) {
-    *((int**)GC_control_start) = sp;
-    *((int*)(GC_control_start + 4)) = n;
+    *((int**)GC_control_end) = sp;
+    *((int*)(GC_control_end + 4)) = n;
+    GC_control_end+=8;
 }
 
 void _gbl_gc_unhint() {
@@ -283,7 +287,6 @@ void _gbl_gc_unhint() {
 }
 
 ptr_t _gbl_gc_struct_malloc(int size, int pointerCount) {
-//    printf("DEBUG: gc run. Current is %d, mem cursor: %d, mem_1_start:%d, mem_1_end:%d\n",1-current_is_one,mem_cursor,mem_1_start,mem_1_end);
     ptr_t memory = __private_malloc(size + 4);
     int metadata = pointerCount & 0xfff;
     metadata |= (size << 12);

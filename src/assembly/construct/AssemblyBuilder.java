@@ -18,7 +18,10 @@ import ir.operand.*;
 import ir.typesystem.PointerType;
 import ir.typesystem.StructureType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.ListIterator;
+import java.util.function.Consumer;
 
 public class AssemblyBuilder {
     private IRInfo irInfo;
@@ -176,13 +179,26 @@ public class AssemblyBuilder {
             entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + reg.tell()), reg));
         });
         entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
-        if (curFunc.pointerReg.size() > 0) {
-            entry.addInst(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
-            entry.addInst(new Computation(PhysicalRegister.get("a0"), Computation.CompType.add,PhysicalRegister.get("a0"),new VirtualImm(0)));
-            entry.addInst(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
-            entry.addInst(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_HINT))));
+        boolean isProgramEntry=asmFunc.name.equals("main");
+        ArrayList<RVInst> hintCode=new ArrayList<>();
+        hintCode.add(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
+        hintCode.add(new Computation(PhysicalRegister.get("a0"), Computation.CompType.add,PhysicalRegister.get("a0"),new VirtualImm(0)));
+        hintCode.add(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
+        hintCode.add(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_HINT))));
+        if (curFunc.pointerReg.size() > 0 &&! isProgramEntry) {
+            hintCode.forEach(entry::addInst);
         }
         irFunc.blocks.forEach(b -> buildBlock(curBlockMapping.getBlock(b), b));
+        if(curFunc.pointerReg.size() > 0 && isProgramEntry){
+            // let hint appear after static_hint
+            var iter=entry.instructions.listIterator();
+            for(var cur=iter.next();;cur=iter.next()){
+                if(cur instanceof RVCall&&((RVCall) cur).dest==rvInfo.getFunc(irInfo.getFunction(Cst.GC_STATIC_HINT))){
+                    hintCode.forEach(iter::add);
+                    break;
+                }
+            }
+        }
         curFunc = null;
     }
 
