@@ -22,7 +22,7 @@ public class RVFunction {
     private int stackOffset = 0;
     private final HashMap<RVRegister, Integer> varOffset = new HashMap<>();
     public final HashMap<String, VirtualRegister> nameToVirReg = new HashMap<>();
-    public final HashSet<VirtualRegister> pointerReg = new HashSet<>();
+    public final HashMap<VirtualRegister,Boolean> pointerReg = new HashMap();
 
     public boolean isBuiltin() {
         return isBuiltin;
@@ -39,12 +39,12 @@ public class RVFunction {
             nameToVirReg.put(irFunc.parameters.get(i).getName(), reg);
         }
         if (!isBuiltin) {
-            Consumer<Register> logging = register -> {
+            Consumer<Register> logging = (register) -> {
                 if (!nameToVirReg.containsKey(register.identifier())) {
                     var newVReg = new VirtualRegister(register.identifier());
                     nameToVirReg.put(register.identifier(), newVReg);
-                    if (register.type instanceof PointerType) {
-                        pointerReg.add(newVReg);
+                    if (irFunc.traceablePointers.containsKey(register)) {
+                        pointerReg.put(newVReg,irFunc.traceablePointers.get(register));
                         addVarOnStack(newVReg);
                     }
                 }

@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Stack;
 
 public class IRBuilder implements ASTVisitor {
+    /*
     private class IRScope {
         private Stack<HashSet<Register>> currentAvailable = new Stack<>();
 
@@ -64,10 +65,12 @@ public class IRBuilder implements ASTVisitor {
         }
     }
 
+     */
+
     private ClassType curClass;
     private IRFunction curFunc = null;
     private IRBlock curBlock = null;
-    private IRScope curScope = null;
+    //    private IRScope curScope = null;
     private final Stack<IRBlock> UpdBlockStack = new Stack<>();
     private final Stack<IRBlock> AfterLoopStack = new Stack<>();
     private final IRInfo info;
@@ -94,10 +97,10 @@ public class IRBuilder implements ASTVisitor {
         info.setInit(curFunc);
         curBlock = curFunc.entryBlock;
         curBlock.appendInst(new Call(null, info.getFunction(Cst.GC_INIT)).push(new IntConstant(heapSize)));
-        var staticHint=new Call(null,info.getFunction(Cst.GC_STATIC_HINT));
+        var staticHint = new Call(null, info.getFunction(Cst.GC_STATIC_HINT));
         staticHint.push(new IntConstant(info.globalVars.size()));
         curBlock.appendInst(staticHint);
-        info.globalVars.forEach((k,v)->staticHint.push(v));
+        info.globalVars.forEach((k, v) -> staticHint.push(v));
         node.globalVars.forEach(decl -> {
             if (decl.expr != null) {
                 var varReg = new GlobalVar(new PointerType(info.resolveType(decl.sym.getType())), decl.sym.nameAsReg);
@@ -108,7 +111,7 @@ public class IRBuilder implements ASTVisitor {
         });
         var callMain = new Call(new Register(Cst.int32), info.getFunction("main"));
         curBlock.appendInst(callMain);
-        curBlock.appendInst(new Call(null,info.getFunction(Cst.GC_RECLAIM)));
+        curBlock.appendInst(new Call(null, info.getFunction(Cst.GC_RECLAIM)));
         curBlock.setRetTerminator(callMain.dest);
         curFunc.exitBlock = curBlock;
         curFunc.addInvoked(callMain.function);
@@ -137,6 +140,9 @@ public class IRBuilder implements ASTVisitor {
                 default -> throw new IllegalStateException("Unexpected value: " + node.lexerSign);
             }
             var inst = new Call(new Register(node.lexerSign.equals(Cst.ADD) ? Cst.str : Cst.bool), f);
+            if (node.lexerSign.equals(Cst.ADD)) {
+                curFunc.addTraceable(inst.dest,true);
+            }
             inst.push((IROperand) node.lhs.accept(this)).push((IROperand) node.rhs.accept(this));
             curBlock.appendInst(inst);
             return inst.dest;
@@ -337,6 +343,7 @@ public class IRBuilder implements ASTVisitor {
                     node.arguments.forEach(arg -> call.push((IROperand) arg.accept(this)));
                 }
             }
+            curFunc.addTraceableIfPointer(call.dest);
             curFunc.addInvoked(call.function);
             curBlock.appendInst(call);
             return call.dest;
@@ -351,6 +358,7 @@ public class IRBuilder implements ASTVisitor {
         );
         var loading = new Load(new Register(info.resolveType(node.type)), indexing.dest);
         curBlock.appendInst(indexing).appendInst(loading);
+        curFunc.addTraceableIfPointer(loading.dest);
         return loading.dest;
     }
 
@@ -361,6 +369,7 @@ public class IRBuilder implements ASTVisitor {
                 (Register) node.lhs.accept(this), (IROperand) node.rhs.accept(this));
         var loading = new Load(new Register(info.resolveType(node.type)), inst.dest);
         curBlock.appendInst(inst).appendInst(loading);
+        curFunc.addTraceableIfPointer(loading.dest);
         return loading.dest;
     }
 
@@ -368,41 +377,41 @@ public class IRBuilder implements ASTVisitor {
         // n-dim nested loop
         // if using stack, it may be more efficient by eliminate repeated calculation of size
         var alloc = new Call(new Register(new PointerType(Cst.byte_t)), info.getFunction(Cst.GC_ARRAY_MALLOC));
-        alloc.push(dims.get(level)).push(new IntConstant(elementType.size()));
+        alloc.push(dims.get(level)).push(new IntConstant(elementType.size())).push(new IntConstant(elementType instanceof PointerType ? 1 : 0));
 
         IRDestedInst returnCast = new BitCast(new Register(new PointerType(elementType)), alloc.dest);
+        curFunc.addTraceableIfPointer(returnCast.dest);
 
         curBlock.appendInst(alloc).appendInst(returnCast);
 
         if (level < dims.size() - 1 || elementType instanceof PointerType) {
-            var loopedAddr = new Register(new PointerType(elementType), Cst.LOOP_INCRE_NAME + loopSuffix++);
-            IRDestedInst copyAddr = new Assign(loopedAddr, returnCast.dest);
-            curFunc.declareVar(loopedAddr);
-            curFunc.defineVar(loopedAddr, curBlock);
-            curBlock.appendInst(copyAddr);
+            var loopVar=new Register(Cst.int32,Cst.LOOP_INCRE_NAME+loopSuffix++);
+            var loopVarInit=new Assign(loopVar,new IntConstant(0));
+            curFunc.declareVar(loopVar);
+            curFunc.defineVar(loopVar,curBlock);
+            curBlock.appendInst(loopVarInit);
+
             // initialize subarray
             var cond = new IRBlock("imp_cond" + blockSuffix);
             var loopBody = new IRBlock("imp_body" + blockSuffix);
             var afterLoop = new IRBlock("imp_after" + blockSuffix);
             curFunc.addBlock(cond).addBlock(loopBody).addBlock(afterLoop);
             blockSuffix++;
-            IRDestedInst endAddr = new GetElementPtr(new Register(new PointerType(elementType)),
-                    returnCast.dest, dims.get(level));
-            IRDestedInst cmpAddr = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), loopedAddr, endAddr.dest);
-            IRDestedInst incrPtr = new GetElementPtr(loopedAddr, loopedAddr, new IntConstant(1));
+            IRDestedInst cmpLoopVar = new Compare(Compare.CmpEnum.ne, new Register(Cst.bool), loopVar, dims.get(level));
+            IRDestedInst incrLoopVar = new Binary(Binary.BinInstEnum.add,loopVar, loopVar, new IntConstant(1));
 
-            curBlock.appendInst(endAddr);
             curBlock.setJumpTerminator(cond);
-            cond.appendInst(cmpAddr).setBranchTerminator(cmpAddr.dest, loopBody, afterLoop);
+            cond.appendInst(cmpLoopVar).setBranchTerminator(cmpLoopVar.dest, loopBody, afterLoop);
             curBlock = loopBody;
 
             IROperand initDone = (level < dims.size() - 1) ?
                     arrayInitialize(level + 1, dims, ((PointerType) elementType).subType())
                     : new NullptrConstant((PointerType) elementType);
 
-            curBlock.appendInst(new Store(initDone, loopedAddr));
-            curBlock.appendInst(incrPtr);
-            curFunc.defineVar(loopedAddr, curBlock);
+            IRDestedInst calcAddr=new GetElementPtr(new Register(new PointerType(elementType)),returnCast.dest,loopVar);
+            curBlock.appendInst(calcAddr).appendInst(new Store(initDone, calcAddr.dest));
+            curBlock.appendInst(incrLoopVar);
+            curFunc.defineVar(loopVar, curBlock);
             curBlock.setJumpTerminator(cond);
             curBlock = afterLoop;
         } // we assume no initialization is needed for the most internal elements except pointer
@@ -429,6 +438,7 @@ public class IRBuilder implements ASTVisitor {
                     exprNode -> constructCall.push((IROperand) exprNode.accept(this))
             );
             curBlock.appendInst(alloc).appendInst(cast).appendInst(constructCall);
+            curFunc.addTraceableIfPointer(cast.dest);
             return cast.dest;
         } else {
             // array [i32, ty]* with ty* returned
@@ -534,7 +544,7 @@ public class IRBuilder implements ASTVisitor {
         curFunc = curClass == null ? info.getFunction(node.funcId) : info.getClassMethod(curClass.id, node.funcId);
         assert curFunc != null;
         curBlock = curFunc.entryBlock;
-        curScope = new IRScope();
+        curFunc.parameters.forEach(p->curFunc.addTraceableIfPointer(p,false));
 
         node.suiteNode.accept(this);
 
@@ -615,7 +625,7 @@ public class IRBuilder implements ASTVisitor {
         }
 
         curFunc = null;
-        curScope = null;
+//        curScope = null;
         return null;
     }
 
@@ -631,8 +641,8 @@ public class IRBuilder implements ASTVisitor {
             // initialize with null
             regAssign(varReg, new NullptrConstant((PointerType) varReg.type));
         }
-        if (varReg.type instanceof PointerType)
-            curScope.addDecl(varReg);
+        curFunc.addTraceableIfPointer(varReg);
+
         return null;
     }
 
@@ -649,7 +659,7 @@ public class IRBuilder implements ASTVisitor {
 
     @Override
     public Object visit(LoopNode node) {
-        curScope.pushScope();
+//        curScope.pushScope();
         if (node.initExpr != null) node.initExpr.accept(this);
         else if (node.initDecl != null) node.initDecl.accept(this);
         boolean hasCond = node.condExpr != null;
@@ -689,7 +699,7 @@ public class IRBuilder implements ASTVisitor {
         curBlock = afterLoop;
         UpdBlockStack.pop();
         AfterLoopStack.pop();
-        curScope.popScope();
+//        curScope.popScope();
         return null;
     }
 
@@ -709,16 +719,16 @@ public class IRBuilder implements ASTVisitor {
         curFunc.addBlock(afterBranch);
         // visit instructions
         curBlock = trueBlock;
-        curScope.pushScope();
+//        curScope.pushScope();
         node.trueStat.accept(this);
-        curScope.popScope();
+//        curScope.popScope();
         if (!curBlock.hasTerminal())
             curBlock.setJumpTerminator(afterBranch);
         if (hasFalse) {
             curBlock = falseBlock;
-            curScope.pushScope();
+//            curScope.pushScope();
             node.falseStat.accept(this);
-            curScope.popScope();
+//            curScope.popScope();
             if (!curBlock.hasTerminal())
                 curBlock.setJumpTerminator(afterBranch);
         }
@@ -773,9 +783,9 @@ public class IRBuilder implements ASTVisitor {
     public Object visit(SuiteNode node) {
         for (var sub : node.statements) {
             if (sub instanceof SuiteNode) {
-                curScope.pushScope();
+//                curScope.pushScope();
                 sub.accept(this);
-                curScope.popScope();
+//                curScope.popScope();
             } else
                 sub.accept(this);
         }

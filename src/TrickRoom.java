@@ -93,7 +93,10 @@ public class TrickRoom {
                         llvmGenFlag = true;
                         assemblyGenFlag = false;
                     }
-                    case OPTIMIZATION -> optimizationFlag = true;
+                    case OPTIMIZATION -> {
+                        throw new RuntimeException("Not supported in gc version");
+//                        optimizationFlag = true;
+                    }
                     case INPUT_FILE -> {
                         if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no file input");
                         try {
@@ -142,10 +145,10 @@ public class TrickRoom {
         try {
             RootNode rootNode = astGen();
             collectType(rootNode);
-            if (optimizationFlag) new ConstantEliminator(rootNode).run();
+//            if (optimizationFlag) new ConstantEliminator(rootNode).run();
             if (llvmGenFlag || assemblyGenFlag) {
                 var info = llvmGen(rootNode);
-                if (optimizationFlag) new IROptimizer(info).invoke();
+//                if (optimizationFlag) new IROptimizer(info).invoke();
                 if (llvmGenFlag) {
                     try {
                         if (ssaDestructFlag) {
@@ -157,9 +160,9 @@ public class TrickRoom {
                     }
                 }
                 if (assemblyGenFlag) {
-                    postIROptimization(info);
+//                    postIROptimization(info);
                     var rvInfo = assemblyGen(info);
-                    if (optimizationFlag) new AsmOptimizer(rvInfo).invoke();
+//                    if (optimizationFlag) new AsmOptimizer(rvInfo).invoke();
                     try {
                         os.write(rvInfo.tell().getBytes(StandardCharsets.UTF_8));
                     } catch (IOException e) {
@@ -199,10 +202,10 @@ public class TrickRoom {
     private IRInfo llvmGen(RootNode rootNode) {
         IRBuilder builder = new IRBuilder(rootNode, heapSize);
         IRInfo info = builder.constructIR();
-        info.forEachFunction(f -> {
-            new SSAConverter(f).invoke();
-            new RegisterUnification(f).invoke();
-        });
+//        info.forEachFunction(f -> {
+//            new SSAConverter(f).invoke();
+//            new RegisterUnification(f).invoke();
+//        });
         if (entryRenameFlag)
             info.renameMain();
         return info;

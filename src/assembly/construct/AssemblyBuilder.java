@@ -181,9 +181,13 @@ public class AssemblyBuilder {
         entry.addInst(new Move(getRegister(Cst.RESERVE_PREFIX + PhysicalRegister.get("ra")), PhysicalRegister.get("ra")));
         boolean isProgramEntry=asmFunc.name.equals("main");
         ArrayList<RVInst> hintCode=new ArrayList<>();
+        curFunc.pointerReg.forEach((reg,bzero)->{
+            if(bzero)
+                entry.addInst(new LoadImm(reg,0));
+        });
         hintCode.add(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
         hintCode.add(new Computation(PhysicalRegister.get("a0"), Computation.CompType.add,PhysicalRegister.get("a0"),new VirtualImm(0)));
-        hintCode.add(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
+        hintCode.add(new LoadImm(PhysicalRegister.get("a1"), (int) curFunc.pointerReg.values().stream().filter(b->b==true).count()));
         hintCode.add(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_HINT))));
         if (curFunc.pointerReg.size() > 0 &&! isProgramEntry) {
             hintCode.forEach(entry::addInst);
@@ -352,7 +356,7 @@ public class AssemblyBuilder {
 
     private void buildCall(Call inst) {
         // save pointer
-        for (var ptr : curFunc.pointerReg) {
+        for (var ptr : curFunc.pointerReg.keySet()) {
             curBlock.addInst(new StoreMem(RVInst.WidthType.w, PhysicalRegister.get("sp"), ptr, new VirtualImm(curFunc.getVarOffset(ptr))));
         }
         for (int i = 0; i < Integer.min(8, inst.args.size()); ++i) {
@@ -392,13 +396,13 @@ public class AssemblyBuilder {
         // reload pointer
         if (inst.containsDest()) {
             var theDest = getRegister(inst.dest);
-            for (var ptr : curFunc.pointerReg) {
+            for (var ptr : curFunc.pointerReg.keySet()) {
                 if (ptr != theDest)
                     curBlock.addInst(new LoadMem(ptr, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
             }
             curBlock.addInst(new Move(getRegister(inst.dest), PhysicalRegister.get("a0")));
         } else {
-            for (var ptr : curFunc.pointerReg) {
+            for (var ptr : curFunc.pointerReg.keySet()) {
                 curBlock.addInst(new LoadMem(ptr, RVInst.WidthType.w, PhysicalRegister.get("sp"), new VirtualImm(curFunc.getVarOffset(ptr))));
             }
         }

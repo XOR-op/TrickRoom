@@ -6,6 +6,7 @@ import ir.instruction.Phi;
 import ir.instruction.Ret;
 import ir.operand.Register;
 import ir.typesystem.IRType;
+import ir.typesystem.PointerType;
 import misc.Cst;
 
 import java.util.*;
@@ -21,6 +22,7 @@ public class IRFunction {
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
+    public Map<Register,Boolean> traceablePointers=new HashMap<>(); // whether clear as 0
     public boolean hasSideEffect = true;
     private final boolean isBuiltin;
     public int inlineSerial = 0;
@@ -74,6 +76,19 @@ public class IRFunction {
     public void addInvoked(IRFunction dest) {
         if (!invokedFunctions.containsKey(dest)) invokedFunctions.put(dest, 1);
         else invokedFunctions.replace(dest, invokedFunctions.get(dest) + 1);
+    }
+
+    public void addTraceable(Register reg,boolean f){
+        assert !traceablePointers.containsKey(reg);
+        assert reg.type instanceof PointerType;
+        traceablePointers.put(reg,f);
+    }
+    public void addTraceableIfPointer(Register reg,boolean f){
+        if(reg!=null&&reg.type instanceof PointerType)
+            addTraceable(reg,f);
+    }
+    public void addTraceableIfPointer(Register reg){
+        addTraceableIfPointer(reg,true);
     }
 
     public String toDeclaration() {
