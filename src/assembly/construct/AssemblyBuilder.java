@@ -187,7 +187,7 @@ public class AssemblyBuilder {
         });
         hintCode.add(new Move(PhysicalRegister.get("a0"), PhysicalRegister.get("sp")));
         hintCode.add(new Computation(PhysicalRegister.get("a0"), Computation.CompType.add,PhysicalRegister.get("a0"),new VirtualImm(0)));
-        hintCode.add(new LoadImm(PhysicalRegister.get("a1"), (int) curFunc.pointerReg.values().stream().filter(b->b==true).count()));
+        hintCode.add(new LoadImm(PhysicalRegister.get("a1"), curFunc.pointerReg.size()));
         hintCode.add(new RVCall(rvInfo.getFunc(irInfo.getFunction(Cst.GC_HINT))));
         if (curFunc.pointerReg.size() > 0 &&! isProgramEntry) {
             hintCode.forEach(entry::addInst);

@@ -51,7 +51,6 @@ _gbl_println:
 	sw	s0,24(sp)
 	addi	s0,sp,32
 	sw	a0,-20(s0)
-	call	_pile
 	lw	a0,-20(s0)
 	call	puts
 	nop
@@ -710,24 +709,24 @@ __private_move:
 .L51:
 	lw	a5,-36(s0)
 	addi	a5,a5,-4
-	sw	a5,-28(s0)
-	lw	a5,-28(s0)
+	sw	a5,-20(s0)
+	lw	a5,-20(s0)
 	lw	a5,0(a5)
 	mv	a4,a5
 	li	a5,-1073741824
 	and	a4,a4,a5
 	li	a5,1073741824
 	bne	a4,a5,.L52
-	lw	a5,-28(s0)
+	lw	a5,-20(s0)
 	lw	a5,0(a5)
 	slli	a5,a5,8
-	lw	a4,-28(s0)
+	lw	a4,-20(s0)
 	addi	a4,a4,4
 	lbu	a4,0(a4)
 	or	a5,a5,a4
 	j	.L50
 .L52:
-	lw	a0,-28(s0)
+	lw	a0,-20(s0)
 	call	__private_get_len
 	mv	a5,a0
 	addi	a5,a5,4
@@ -735,12 +734,12 @@ __private_move:
 	lui	a5,%hi(new_region_end)
 	lw	a5,%lo(new_region_end)(a5)
 	addi	a5,a5,4
-	sw	a5,-20(s0)
+	sw	a5,-28(s0)
 	lui	a5,%hi(new_region_end)
 	lw	a5,%lo(new_region_end)(a5)
 	lw	a4,-24(s0)
 	mv	a2,a4
-	lw	a1,-28(s0)
+	lw	a1,-20(s0)
 	mv	a0,a5
 	call	memcpy
 	lui	a5,%hi(new_region_end)
@@ -749,19 +748,19 @@ __private_move:
 	add	a4,a4,a5
 	lui	a5,%hi(new_region_end)
 	sw	a4,%lo(new_region_end)(a5)
-	lw	a5,-20(s0)
+	lw	a5,-28(s0)
 	srli	a4,a5,8
 	li	a5,1073741824
 	or	a5,a4,a5
 	mv	a4,a5
-	lw	a5,-28(s0)
+	lw	a5,-20(s0)
 	sw	a4,0(a5)
-	lw	a4,-20(s0)
-	lw	a5,-28(s0)
+	lw	a4,-28(s0)
+	lw	a5,-20(s0)
 	addi	a5,a5,4
 	andi	a4,a4,0xff
 	sb	a4,0(a5)
-	lw	a5,-20(s0)
+	lw	a5,-28(s0)
 .L50:
 	mv	a0,a5
 	lw	ra,44(sp)
@@ -856,6 +855,7 @@ __private_gc_run:
 	lw	a5,%lo(GC_control_start)(a5)
 	lw	a4,-20(s0)
 	bne	a4,a5,.L60
+	call	_pile
 	lui	a5,%hi(GC_control_start)
 	lw	a5,%lo(GC_control_start)(a5)
 	sw	a5,-24(s0)
@@ -890,7 +890,6 @@ __private_gc_run:
 	lw	a4,-28(s0)
 	lw	a5,-36(s0)
 	blt	a4,a5,.L63
-	call	_pile
 	lw	a5,-24(s0)
 	addi	a5,a5,8
 	sw	a5,-24(s0)
@@ -1006,6 +1005,11 @@ __private_malloc:
 	add	a4,a4,a5
 	lui	a5,%hi(mem_cursor)
 	sw	a4,%lo(mem_cursor)(a5)
+	lw	a5,-36(s0)
+	mv	a2,a5
+	li	a1,0
+	lw	a0,-20(s0)
+	call	memset
 	lw	a5,-20(s0)
 	mv	a0,a5
 	lw	ra,44(sp)
@@ -1018,7 +1022,7 @@ __private_malloc:
 	.type	_gbl_gc_static_hint, @function
 _gbl_gc_static_hint:
  #APP
-# 261 "riscv-assembly/todo.c" 1
+# 273 "riscv-assembly/todo.c" 1
 	    lui t0,%hi(GC_static_start)
     lw t0,%lo(GC_static_start)(t0)
     slli t1,a0,2
@@ -1233,15 +1237,6 @@ _gbl_gc_array_malloc:
 	lw	a5,-24(s0)
 	lw	a4,-20(s0)
 	sw	a4,0(a5)
-	lw	a5,-24(s0)
-	addi	a3,a5,4
-	lw	a4,-36(s0)
-	lw	a5,-40(s0)
-	mul	a5,a4,a5
-	mv	a2,a5
-	li	a1,0
-	mv	a0,a3
-	call	memset
 	lw	a5,-24(s0)
 	addi	a5,a5,4
 	mv	a0,a5

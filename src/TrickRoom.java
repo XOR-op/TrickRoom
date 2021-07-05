@@ -50,7 +50,7 @@ public class TrickRoom {
     private Boolean optimizationFlag;
     private Boolean entryRenameFlag;
     private Boolean ssaDestructFlag;
-    private int heapSize = 128;
+    private int heapSize = 110;
 
     private void logln(String s) {
         System.err.println(s);

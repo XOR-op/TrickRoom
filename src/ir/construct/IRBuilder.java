@@ -19,6 +19,7 @@ import misc.UnimplementedError;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class IRBuilder implements ASTVisitor {
     /*
@@ -98,9 +99,10 @@ public class IRBuilder implements ASTVisitor {
         curBlock = curFunc.entryBlock;
         curBlock.appendInst(new Call(null, info.getFunction(Cst.GC_INIT)).push(new IntConstant(heapSize)));
         var staticHint = new Call(null, info.getFunction(Cst.GC_STATIC_HINT));
-        staticHint.push(new IntConstant(info.globalVars.size()));
+        var pointerGlobalVar=info.globalVars.values().stream().filter(gv->gv.type instanceof PointerType).collect(Collectors.toSet());
+        staticHint.push(new IntConstant(pointerGlobalVar.size()));
+        pointerGlobalVar.forEach(staticHint::push);
         curBlock.appendInst(staticHint);
-        info.globalVars.forEach((k, v) -> staticHint.push(v));
         node.globalVars.forEach(decl -> {
             if (decl.expr != null) {
                 var varReg = new GlobalVar(new PointerType(info.resolveType(decl.sym.getType())), decl.sym.nameAsReg);

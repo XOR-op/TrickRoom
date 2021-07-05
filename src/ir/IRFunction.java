@@ -22,7 +22,7 @@ public class IRFunction {
     public IRBlock entryBlock, exitBlock;
     public ArrayList<IRBlock> returnBlocks = new ArrayList<>();
     public Map<IRFunction, Integer> invokedFunctions = new HashMap();
-    public Map<Register,Boolean> traceablePointers=new HashMap<>(); // whether clear as 0
+    public Map<String,Boolean> traceablePointers=new HashMap<>(); // whether clear as 0
     public boolean hasSideEffect = true;
     private final boolean isBuiltin;
     public int inlineSerial = 0;
@@ -81,7 +81,7 @@ public class IRFunction {
     public void addTraceable(Register reg,boolean f){
         assert !traceablePointers.containsKey(reg);
         assert reg.type instanceof PointerType;
-        traceablePointers.put(reg,f);
+        traceablePointers.put(reg.identifier(),f);
     }
     public void addTraceableIfPointer(Register reg,boolean f){
         if(reg!=null&&reg.type instanceof PointerType)

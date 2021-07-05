@@ -43,8 +43,8 @@ public class RVFunction {
                 if (!nameToVirReg.containsKey(register.identifier())) {
                     var newVReg = new VirtualRegister(register.identifier());
                     nameToVirReg.put(register.identifier(), newVReg);
-                    if (irFunc.traceablePointers.containsKey(register)) {
-                        pointerReg.put(newVReg,irFunc.traceablePointers.get(register));
+                    if (irFunc.traceablePointers.containsKey(register.identifier())) {
+                        pointerReg.put(newVReg,irFunc.traceablePointers.get(register.identifier()));
                         addVarOnStack(newVReg);
                     }
                 }

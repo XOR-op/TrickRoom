@@ -13,7 +13,7 @@ void _gbl_print(const char* str) {
 }
 
 void _gbl_println(const char* str) {
-    _pile();
+    // _pile();
     printf("%s\n", str);
 }
 
@@ -140,7 +140,7 @@ void _gbl_gc_reclaim() {
 #define CAN_DEREFERENCE(x) (*((int*)(x)) & 0x20000000)
 #define ARRAY_ELE_LEN(x) (*((int*)(x)) & 0x1fffffff)
 #define MARKED(x) ((*((int*)(x)) & 0xc0000000) == 0x40000000)
-#define RECOVER_ADDR(meta) ((ptr_t)(((*((int*)(meta)) & 0xffffff) << 8) | *(meta + 4)))
+#define RECOVER_ADDR(meta) ((ptr_t)(((*((int*)(meta)) & 0xffffff) << 8) | *(((ptr_t)meta) + 4)))
 int __private_get_len(int* addr) {
     if (IS_ARRAY(addr)) {
         return IS_4BIT(addr) ? (ARRAY_ELE_LEN(addr) << 2) : ARRAY_ELE_LEN(addr);
@@ -158,25 +158,36 @@ bool __private_in_old_region(ptr_t addr) {
 }
 
 ptr_t __private_move(ptr_t addr) {
-    if (addr == 0)
+    if (addr == 0){
+        if(debug_flag)printf("Zero\n");
         return 0;
-    if (!__private_in_old_region(addr))
+    }
+    if (!__private_in_old_region(addr)){
+        if(debug_flag){
+            printf("global or moved: %d\n",addr);
+            if((unsigned int)addr>0xf00000){
+                printf("----WARNING----: global CORRUPT");
+                _abort();
+            }
+        }
         return addr;
+    }
     ptr_t meta_addr = addr - 4;
     if (MARKED(meta_addr)){
-        if(debug_flag)printf("Origin: %d,Marked:%d\n",addr,RECOVER_ADDR(meta_addr));
+       if(debug_flag)printf("Origin: %d,Marked:%d\n",addr,RECOVER_ADDR(meta_addr));
         return RECOVER_ADDR(meta_addr);
     }
     int size = __private_get_len((int*)meta_addr) + 4;  // size with metadata
     if (debug_flag) {
         printf("Move: from %d to %d, size %d\n", meta_addr, new_region_end, size);
         if (IS_ARRAY(meta_addr)) {
-            printf("Move Array: size %d, isPointer: %d\n", __private_get_len((int*)meta_addr), CAN_DEREFERENCE(meta_addr)==0x20000000);
-        } else {
-            printf("Move Struct: size %d, pointerCnt %d\n", __private_get_len((int*)meta_addr), *((int*)meta_addr) & 0xfff);
+            printf(">Move Array: size %d, isPointer: %d\n", __private_get_len((int*)meta_addr), CAN_DEREFERENCE(meta_addr)==0x20000000);
+        } 
+        else {
+            printf(">Move Struct: size %d, pointerCnt %d\n", __private_get_len((int*)meta_addr), *((int*)meta_addr) & 0xfff);
             int ssize=__private_get_len((int*)meta_addr),scnt= *((int*)meta_addr) & 0xfff;
             if(ssize==0||(scnt*4>ssize)){
-                printf("----WARNING----: move struct CRASH");
+                printf("----WARNING----: struct CORRUPT");
                 _abort();
             }
         }
@@ -186,17 +197,17 @@ ptr_t __private_move(ptr_t addr) {
     new_region_end += size;
     *((int*)meta_addr) = 0x40000000 | ((unsigned int)retval >> 8);  // save new address
     *(meta_addr + 4) = ((unsigned int)retval & 0xff);
-    if(debug_flag)printf("new addr:%d decode:%d\n",retval,RECOVER_ADDR(meta_addr));
     return retval;
 }
 
 void __private_scan_and_perform(int pointerSize) {
     int i = 0;
-    if(debug_flag)printf("Scan addr:%d with %d\n",new_region_start,pointerSize);
+    if(debug_flag)printf("<<Scan addr:%d with %d\n",new_region_start,pointerSize);
     for (ptr_t ptr = (new_region_start + 4); i < pointerSize; ptr += 4, i++) {
         // if(debug_flag) printf("Scan and perfrom: %dth: %d\n",i,ptr);
         *((ptr_t*)ptr) = __private_move(*((ptr_t*)ptr));
     }
+    if(debug_flag)printf("Scan done>>\n");
 }
 
 void __private_gc_run() {
@@ -210,6 +221,7 @@ void __private_gc_run() {
     for (ptr_t ptr = GC_static_start; ptr != GC_control_start; ptr += 4) {
         *((ptr_t*)*((ptr_t*)ptr)) = __private_move(*((ptr_t*)*((ptr_t*)ptr)));
     }
+   _pile();
     // stack root
     if (debug_flag)
         printf("Stack: gc\n");
@@ -220,7 +232,6 @@ void __private_gc_run() {
             ptr_t* local_ptr = (ptr_t*)(sp + 4 * i);
             *local_ptr = __private_move(*local_ptr);
         }
-    _pile();
     }
     if (debug_flag)
         printf("start bfs\n");
@@ -250,10 +261,11 @@ ptr_t __private_malloc(int size) {
         if (mem_cursor + size + 4 >= mem_1_start)
             __private_gc_run();
     }
-    ptr_t retval = mem_cursor;
-    mem_cursor += size;
     if (debug_flag)
         printf("DEBUG: malloc %d bytes at %d\n", size, mem_cursor);
+    ptr_t retval = mem_cursor;
+    mem_cursor += size;
+    memset(retval, 0,size);
     return retval;
 }
 
@@ -342,8 +354,10 @@ char* _gbl_string_malloc(int length) {
 }
 
 ptr_t _gbl_gc_array_malloc(int length, int elementSize, bool isPointer) {
-    // if(debug_flag)printf("Array alloc: length %d, elementSize %d, isPointer %d\n",length,elementSize,isPointer);
     ptr_t memory = __private_malloc(length * elementSize + 4);
+    if(debug_flag)
+        printf("Array alloc: length %d, elementSize %d, isPointer %d\n",length,elementSize,isPointer);
+    // _pile();
     int metadata = length | 0x80000000;
     if (elementSize == 4)
         SET_ONE(metadata, 30);
@@ -354,7 +368,6 @@ ptr_t _gbl_gc_array_malloc(int length, int elementSize, bool isPointer) {
     else
         SET_ZERO(metadata, 29);
     *((int*)memory) = metadata;
-    memset(memory + 4, 0, length * elementSize);
     return memory + 4;
 }
 
@@ -374,17 +387,18 @@ const char* __private_recover_str_addr(const char* addr) {
 
 void _pile(){
     if (debug_flag) {
+        printf("-----stack\n");
         int sum_n=0;
         for (ptr_t ptr = GC_control_start; ptr != GC_control_end; ptr += 8) {
             ptr_t sp = *((ptr_t*)ptr);
             int n = *((int*)(ptr + 4));
-            printf("deal with %d in addr %d\n",n,sp);
+            printf("-deal with %d in addr %d\n",n,sp);
             sum_n+=n;
             for (int i = 0; i < n; ++i) {
                 ptr_t* local_ptr = (ptr_t*)(sp + 4 * i);
-                printf("stack var is %d\n",*local_ptr);
+                printf("-stack var is %d\n",*local_ptr);
             }
         }
-        printf("Stack var total: %d\n",sum_n);
+        printf("------Stack var total: %d\n",sum_n);
     }
 }
