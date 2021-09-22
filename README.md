@@ -1,5 +1,5 @@
 # TrickRoom
-<img src="https://cdn.bulbagarden.net/upload/thumb/8/87/Trick_Room_VIII.png/800px-Trick_Room_VIII.png" alt="Trick Room" width="50%"/>
+<img src="https://cdn2.bulbagarden.net/upload/8/87/Trick_Room_VIII.png" alt="Trick Room" width="50%"/>
 
 Compiler for Mx* language.
 ## Mx* language
